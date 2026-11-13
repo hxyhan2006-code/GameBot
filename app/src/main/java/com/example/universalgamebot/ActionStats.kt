@@ -19,6 +19,7 @@ class ActionStats {
     private val fails = IntArray(FailureKind.values().size)
     private var totalMsSum = 0L; private var gestureMsSum = 0L; private var verifyMsSum = 0L
     var maxLatencyMs = 0L; private set
+    var bestStreak = 0; private set        // ประตูติดกันมากสุด (โปรไฟล์ควบคุมต่อเนื่อง)
 
     fun failures(kind: FailureKind) = fails[kind.ordinal]
     val failedCount get() = FailureKind.values().filter { it != FailureKind.REJECTED }.sumOf { fails[it.ordinal] }
@@ -32,6 +33,7 @@ class ActionStats {
     fun recordFailure(kind: FailureKind) { fails[kind.ordinal]++ }
     fun recordSuppressed() { suppressed++ }
     fun recordStaleSkip() { staleSkips++ }
+    fun recordStreak(n: Int) { if (n > bestStreak) bestStreak = n }
 
     /** อัตราสำเร็จที่ตรวจผลแล้ว (verified / attempts) คืน 0 ถ้ายังไม่มี action */
     fun successRate(): Float = if (attempts == 0) 0f else verified.toFloat() / attempts
@@ -46,6 +48,7 @@ class ActionStats {
         for (i in fails.indices) fails[i] += o.fails[i]
         totalMsSum += o.totalMsSum; gestureMsSum += o.gestureMsSum; verifyMsSum += o.verifyMsSum
         if (o.maxLatencyMs > maxLatencyMs) maxLatencyMs = o.maxLatencyMs
+        if (o.bestStreak > bestStreak) bestStreak = o.bestStreak
     }
 
     fun failureLine(): String = FailureKind.values().joinToString(" ") { "${it.name.lowercase()}=${fails[it.ordinal]}" }
@@ -61,7 +64,7 @@ class ActionStats {
         "$attempts actions, ${"%.1f".format(successRate() * 100)}% verified, avg ${avgLatencyMs()} ms (gesture ${avgGestureMs()} + verify ${avgVerifyMs()}), max $maxLatencyMs ms"
 
     fun serialize(): String =
-        listOf(attempts, verified, suppressed, staleSkips, totalMsSum, gestureMsSum, verifyMsSum, maxLatencyMs).joinToString(",") + "|" + fails.joinToString(",")
+        listOf(attempts, verified, suppressed, staleSkips, totalMsSum, gestureMsSum, verifyMsSum, maxLatencyMs).joinToString(",") + "|" + fails.joinToString(",") + "|" + bestStreak
 
     companion object {
         fun parse(s: String?): ActionStats {
@@ -72,6 +75,7 @@ class ActionStats {
                 r.attempts = a[0].toInt(); r.verified = a[1].toInt(); r.suppressed = a[2].toInt(); r.staleSkips = a[3].toInt()
                 r.totalMsSum = a[4]; r.gestureMsSum = a[5]; r.verifyMsSum = a[6]; r.maxLatencyMs = a[7]
                 parts[1].split(",").forEachIndexed { i, v -> if (i < r.fails.size) r.fails[i] = v.toInt() }
+                r.bestStreak = parts.getOrNull(2)?.toIntOrNull() ?: 0
             } catch (_: Exception) { return ActionStats() }
             return r
         }

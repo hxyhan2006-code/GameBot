@@ -60,6 +60,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         ErrorLog.init(this)
         profile = GameProfiles.byId(intent.getStringExtra("profile"))
+        OverlayState.showBoxes = profile.config.boxesVisible
         pendingScore = savedInstanceState?.getInt("score") ?: 0
         limit100 = getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("limit100", false)
         setContentView(buildScreen())
@@ -210,7 +211,7 @@ class MainActivity : Activity() {
 
         // แผง Debug
         debugText = TextView(this).apply { textSize = 10.5f; typeface = Typeface.MONOSPACE; setTextColor(Palette.MUTED); setPadding(dp(10), dp(8), dp(10), dp(8)) }
-        debugScroll = ScrollView(this).apply { addView(debugText); background = roundRect(Palette.CARD, 12) }
+        debugScroll = ScrollView(this).apply { addView(debugText); background = roundRect(Palette.CARD, 12); visibility = if (profile.config.debugVisible) View.VISIBLE else View.GONE }
         root.addView(debugScroll, LinearLayout.LayoutParams(-1, dp(120)).apply { topMargin = dp(8) })
 
         // arena = เกมของโปรไฟล์ + ชั้นกรอบ Vision
@@ -261,6 +262,8 @@ class MainActivity : Activity() {
         val svc = BotAccessibilityService.instance
         if (svc == null) { Toast.makeText(this, R.string.toast_need_accessibility, Toast.LENGTH_LONG).show(); return }
         publishArena()
+        val plan = surface.controlTestPlan()
+        if (plan != null) { runControlTest(plan); return }
         val action = surface.groundTruthAction() ?: return
         val before = surface.score
         DebugMonitor.log("TEST ${action.describe()} score before=$before")
@@ -270,6 +273,21 @@ class MainActivity : Activity() {
             else -> {}
         }
         ui.postDelayed({ DebugMonitor.log("TEST result: score now=${surface.score} (before $before), gesture=${DebugMonitor.gestureState}") }, 900)
+    }
+
+    private var controlTest: ControlTestRunner? = null
+
+    /** ทดสอบการควบคุมต่อเนื่อง (จอย + ปุ่มพร้อมกัน) ผ่าน Accessibility โดยไม่ผ่าน Vision แล้วเทียบกับตัวเลขที่เกมได้รับจริง */
+    private fun runControlTest(plan: List<ControlStep>) {
+        if (controlTest?.isRunning == true) return
+        EmergencyStop.reset()
+        ControlInputStats.reset()
+        DebugMonitor.log("TEST control: stick right -> up (no lift) -> shoot with stick -> pass with stick -> release")
+        val runner = ControlTestRunner(ContinuousGestureExecutor(packageName) { ui.post(it) }, ui) { msg ->
+            DebugMonitor.log("TEST control $msg: ${ControlInputStats.line()}")
+        }
+        controlTest = runner
+        runner.start(plan)
     }
 
     private fun copyReport() {
@@ -293,6 +311,7 @@ class MainActivity : Activity() {
         if (requestCode == requestCodeCapture && resultCode == RESULT_OK && data != null) {
             GroundTruth.update(surface.score, surface.mistakes)
             GroundTruth.begin()
+            ControlInputStats.reset()
             val intent = Intent(this, CaptureService::class.java).apply { putExtra("code", resultCode); putExtra("data", data); putExtra("profile", profile.id); putExtra("limit", if (limit100) 100 else 0) }
             startForegroundService(intent)
         }

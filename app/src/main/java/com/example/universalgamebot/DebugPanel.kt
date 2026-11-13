@@ -37,6 +37,12 @@ object DebugPanel {
             appendLine("Actions    : ${st?.attempts ?: 0} done, ${st?.verified ?: 0} verified (${"%.1f".format((st?.successRate() ?: 0f) * 100)}%), dup=${st?.suppressed ?: 0} staleSkip=${st?.staleSkips ?: 0}")
             appendLine("Failures   : ${st?.failureLine() ?: "-"}")
             appendLine("Latency    : avg ${st?.avgLatencyMs() ?: 0} ms (gesture ${st?.avgGestureMs() ?: 0} + verify ${st?.avgVerifyMs() ?: 0}), max ${st?.maxLatencyMs ?: 0} ms")
+            val ctl = e?.control
+            if (ctl != null) {
+                appendLine("Control    : ${ctl.line()}")
+                appendLine("Goal streak: current ${e?.streak ?: 0}, best ${e?.bestStreak ?: 0}")
+            }
+            if (ControlInputStats.used) appendLine("Pad (game) : ${ControlInputStats.line()}")
             appendLine("Gesture    : ${d.gestureState}  sent=${d.gesturesSent.get()} ok=${d.gesturesOk.get()} fail=${d.gesturesFailed.get()}")
             appendLine("CPU / RAM  : cpu ${"%.0f".format(p.cpuPercent)}% of 1 core, pss ${p.pssMb} MB, heap ${p.heapMb} MB, native ${p.nativeMb} MB")
             val cur = p.currentMa?.let { "$it mA" } ?: "n/a"
@@ -53,7 +59,9 @@ object DebugPanel {
                 val total = StatsStore.load(context, gp.id)
                 if (e != null && d.profileName == gp.id && d.session?.isRunning == true) total.plusAssign(e.stats)
                 appendLine("  ${gp.id}: ${total.summary()}")
-                if (total.attempts > 0) appendLine("    fails ${total.failureLine()} -> ${total.goalLine()}")
+                val sg = gp.config.streakGoal
+                val verdict = if (sg > 0) (if (total.bestStreak >= sg) "PASS ($sg goals in a row reached)" else "NOT YET (best streak ${total.bestStreak}/$sg)") else total.goalLine()
+                if (total.attempts > 0) appendLine("    fails ${total.failureLine()} -> $verdict")
             }
             if (d.lastSessionLine != "-") appendLine("Last run   : ${d.lastSessionLine}")
             appendLine("Cloud AI   : ${if (CloudVisionPolicy.mayUpload()) "ON" else "OFF (nothing leaves this phone)"}")

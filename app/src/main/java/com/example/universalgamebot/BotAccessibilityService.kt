@@ -28,6 +28,8 @@ class BotAccessibilityService : AccessibilityService() {
     override fun onInterrupt() {}
     override fun onDestroy() { instance = null; super.onDestroy() }
 
+    fun postMain(r: Runnable) { main.post(r) }
+
     /** package ของหน้าต่างที่ active (null ถ้าอ่านไม่ได้) ใช้เป็นข้อมูลประกอบ ไม่ใช่เงื่อนไขหลัก */
     fun activePackage(): String? = try { rootInActiveWindow?.packageName?.toString() } catch (e: Exception) { null }
 

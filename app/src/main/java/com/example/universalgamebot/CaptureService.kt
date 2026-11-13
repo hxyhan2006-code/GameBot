@@ -28,7 +28,7 @@ class CaptureService : Service() {
 
     private lateinit var profile: GameProfile
     private lateinit var vision: VisionEngine
-    private var engine: DecisionEngine? = null
+    private var engine: BotEngine? = null
     private val sampled = SampledFrame()
     private var seq = 0L
     private var lastProcessAt = 0L
@@ -90,19 +90,26 @@ class CaptureService : Service() {
         lastFpsAt = startedAt; lastFpsCount = 0; finished = false
         try {
             vision = VisionEngine(profile.createDetectors(this)) { msg, t -> DebugMonitor.error(msg, t) }
-            engine = DecisionEngine(
-                profile.createStrategy(this), profile.config.engine.let { if (limit > 0) it.copy(maxActions = limit) else it },
-                GestureExecutor(packageName) { handler.post(it) },
-                object : EngineListener {
-                    override fun onSnapshot(snapshot: EngineSnapshot) { DebugMonitor.engine = snapshot }
-                    override fun onStop(reason: String, isError: Boolean) {
-                        if (isError) DebugMonitor.error("bot stopped: $reason") else DebugMonitor.log("bot stopped: $reason")
-                        stopSelf()
-                    }
-                    override fun onLog(message: String) { DebugMonitor.log(message) }
-                },
-                SystemClock::elapsedRealtime
-            )
+            val listener = object : EngineListener {
+                override fun onSnapshot(snapshot: EngineSnapshot) { DebugMonitor.engine = snapshot }
+                override fun onStop(reason: String, isError: Boolean) {
+                    if (isError) DebugMonitor.error("bot stopped: $reason") else DebugMonitor.log("bot stopped: $reason")
+                    stopSelf()
+                }
+                override fun onLog(message: String) { DebugMonitor.log(message) }
+            }
+            val control = profile.createControlStrategy(this)
+            engine = if (control != null) {
+                // โปรไฟล์ควบคุมต่อเนื่อง (จอย + ปุ่มพร้อมกัน): limit > 0 = หยุดเมื่อทำประตูติดกันครบ streakGoal หรือยิงครบ limit
+                val rt = profile.config.realtime.let { if (limit > 0) it.copy(maxShots = limit, stopAtStreak = profile.config.streakGoal) else it }
+                RealtimeEngine(control, rt, ContinuousGestureExecutor(packageName) { handler.post(it) }, listener, SystemClock::elapsedRealtime)
+            } else {
+                DecisionEngine(
+                    profile.createStrategy(this) ?: throw IllegalStateException("profile ${profile.id} has no strategy"),
+                    profile.config.engine.let { if (limit > 0) it.copy(maxActions = limit) else it },
+                    GestureExecutor(packageName) { handler.post(it) }, listener, SystemClock::elapsedRealtime
+                )
+            }
             val mgr = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             projection = mgr.getMediaProjection(code, data)
             // Android 14+ บังคับ registerCallback ก่อน createVirtualDisplay
@@ -225,7 +232,11 @@ class CaptureService : Service() {
         s.end(now)
         val stats = eng.statsCopy()
         StatsStore.addSession(this, profile.id, stats)
-        val line = "${profile.id}: ${stats.summary()} | fails: ${stats.failureLine()} | ${s.fpsLine(now)} | ${GroundTruth.line()} | goal ${stats.goalLine()}"
+        val sg = profile.config.streakGoal
+        val goalTxt = if (sg > 0) (if (stats.bestStreak >= sg) "PASS ($sg in a row)" else "NOT YET (best ${stats.bestStreak}/$sg)") else stats.goalLine()
+        val streak = if (stats.bestStreak > 0) " | best streak ${stats.bestStreak}" else ""
+        val pad = if (ControlInputStats.used) " | ${ControlInputStats.line()}" else ""
+        val line = "${profile.id}: ${stats.summary()} | fails: ${stats.failureLine()} | ${s.fpsLine(now)} | ${GroundTruth.line()}$streak$pad | goal $goalTxt"
         DebugMonitor.lastSessionLine = line
         DebugMonitor.sessionProfile = profile.id
         DebugMonitor.sessionActions = stats
@@ -235,6 +246,7 @@ class CaptureService : Service() {
     }
 
     override fun onDestroy() {
+        engine?.release() // ปล่อยนิ้วจอยที่ค้าง (ถ้ามี) ก่อนปิดบริการ
         finishSession()
         running = false
         BotState.set(false)

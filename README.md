@@ -1,4 +1,4 @@
-# Universal Game Bot v0.4.2 (local proof of concept)
+# Universal Game Bot v0.5.0 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -62,3 +62,12 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 ## v0.4.2
 - Swipe Ball: new ball is now placed away from where the previous ball *started* (was compared with the dragged end position), removing ~9% false MISSED_TARGET (ground truth showed score +100, misses 0).
 - A normal Stop no longer logs "MediaProjection stopped by system" as an error.
+
+## v0.5: football training with a virtual joystick (continuous control)
+- New profile **Football Training**: 2D pitch (player, ball, goal, moving keeper) controlled by a virtual joystick + SHOOT/PASS buttons. Only the in-app simulator is controlled.
+- **Continuous control**: the joystick finger is one long stroke that is continued across gestures (`StrokeDescription.continueStroke`), so the direction changes without lifting the finger. SHOOT/PASS are tapped inside the same gesture while the stick is held (multi-touch).
+- **Vision tracking**: 7 color detectors (player, ball, keeper, goal, joystick, shoot, pass); velocities are estimated from consecutive frames and used to predict the keeper.
+- **Decision**: `FootballBrain` chases the ball, dribbles toward the corner farthest from the predicted keeper, then shoots while the stick is held. `RealtimeEngine` judges every shot from the screen (not from the game score), releases the stick when frames get stale and on emergency stop.
+- Auto-stop chip: Tap/Swipe profiles stop at 100 actions, football stops at 10 goals in a row (or 100 shots).
+- **Test button** in the football profile replays: stick right -> up without lifting -> shoot with stick -> pass with stick -> release, and the report shows what the game actually received (`pad touches:`).
+- Unit tests simulate the whole loop on the JVM (world -> pixels -> vision -> brain -> engine -> simulated Accessibility with latency).

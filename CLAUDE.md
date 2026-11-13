@@ -1,6 +1,6 @@
 # Universal Game Bot — คู่มือสำหรับ Claude
 
-แอป Android (Kotlin, ไม่มีเซิร์ฟเวอร์) ของ Han สำหรับทดลองวงจร **Screen Capture → Vision → Decision → Gesture** บนเกมทดสอบที่อยู่ในแอปเอง (มี 3 โปรไฟล์: จุดเขียว/เป้าวงกลมซ้อน/ปัดลูกบอล) · ทดสอบจริงบน Xiaomi 15T Pro (HyperOS / Android 16) · Build ด้วย GitHub Actions แล้วปล่อย APK ที่หน้า Releases · ไฟล์นี้สรุปจาก CLAUDE.md ของ repo อื่นของ Han (vaultet, My-twin-life, Onepiece-Vault, Meowrin-*) · repo นี้แยกจากโปรเจกต์อื่น **ห้ามแก้ repo อื่นจากที่นี่โดยไม่ถามก่อน**
+แอป Android (Kotlin, ไม่มีเซิร์ฟเวอร์) ของ Han สำหรับทดลองวงจร **Screen Capture → Vision → Decision → Gesture** บนเกมทดสอบที่อยู่ในแอปเอง (มี 4 โปรไฟล์: จุดเขียว/เป้าวงกลมซ้อน/ปัดลูกบอล/ซ้อมฟุตบอลด้วยจอยเสมือน) · ทดสอบจริงบน Xiaomi 15T Pro (HyperOS / Android 16) · Build ด้วย GitHub Actions แล้วปล่อย APK ที่หน้า Releases · ไฟล์นี้สรุปจาก CLAUDE.md ของ repo อื่นของ Han (vaultet, My-twin-life, Onepiece-Vault, Meowrin-*) · repo นี้แยกจากโปรเจกต์อื่น **ห้ามแก้ repo อื่นจากที่นี่โดยไม่ถามก่อน**
 
 ## วิธีคุยกับ Han (สำคัญที่สุด)
 - Han ไม่ใช่สายเทคนิค: **ตอบเป็นภาษาไทยเสมอ** สั้น กระชับ เป็นกันเอง อ่านบนมือถือได้ เลี่ยงศัพท์เทคนิค ถ้าจำเป็นให้อธิบายด้วยคำง่าย ๆ ในประโยคเดียวกัน (เช่น "Accessibility = สิทธิ์ให้แอปแตะจอแทนมือ") · ยกเว้นโค้ด ชื่อไฟล์ ชื่อเทคนิค
@@ -41,14 +41,16 @@
 - โปรไฟล์เกม (ทุกอย่างเฉพาะเกมอยู่ที่นี่): `GameProfile.kt` (interface + รายการ), `ProfileGreenDot.kt`, `ProfileBullseye.kt` (+ `TargetArt.kt`), `ProfileSwipeBall.kt`, `Strategy.kt` (สมอง Tap/Swipe)
 - หน้าจอ: `ProfileSelectActivity.kt` (หน้าแรก เลือกโปรไฟล์), `MainActivity.kt` (หน้าเกม), `DetectionOverlayView.kt` (กรอบวัตถุ), `DebugPanel.kt`, `UiKit.kt`, `LocaleHelper.kt`
 - Debug/ความปลอดภัย: `DebugMonitor.kt`, `PerfMonitor.kt` (FPS/CPU/RAM/แบต), `ErrorLog.kt` (ไฟล์ log), `EmergencyStop.kt`, `OverlayState.kt`, `CloudVision.kt` (interface เตรียมไว้ ปิดอยู่)
+- ควบคุมต่อเนื่อง (v0.5 จอยเสมือน + multi-touch): `ControlModel.kt` (ControlCommand/ControlStrategy/ControlExecutor/BotEngine), `RealtimeEngine.kt` (ส่งคำสั่งทีละรอบ ตัดสินผลยิงจากภาพ ปล่อยจอยเมื่อภาพเก่า/หยุด), `ContinuousGestureExecutor.kt` (จอย = เส้นลากต่อเนื่องไม่ยกนิ้วด้วย `continueStroke` + ปุ่มใน gesture เดียวกัน), `ControlTestRunner.kt` (ปุ่มทดสอบแยก Accessibility จาก Vision), `ControlInputStats.kt` (ตัวเลขฝั่งเกมไว้เทียบกับของบอท)
+- เกมฟุตบอล: `FootballWorld.kt` (ฟิสิกส์+กติกา ไม่ผูก Android), `FootballBrain.kt` (สมองบอท: ติดตามความเร็วจากภาพ ทำนายผู้รักษาประตู เล็งมุมไกลสุด ยิงขณะจับจอย), `FootballLayout.kt` (สีของฉากทั้งหมด + ตัวตรวจ 7 ชนิด + ตำแหน่งจอย/ปุ่ม), `FootballViews.kt` (Canvas สนาม + แถบควบคุมหลายนิ้ว), `ProfileFootball.kt`
 - สถิติ: `ActionStats.kt` (อัตราสำเร็จ/latency/ประเภทความล้มเหลว), `SessionStats.kt` (FPS เฉลี่ย + วิเคราะห์เฟรมที่หาย), `StatsStore.kt` (เก็บสะสมต่อโปรไฟล์ + `sessions.log` + `GroundTruth` = คะแนนจริงของเกม)
-- ไฟล์ที่ **ห้ามผูกกับ Android** (เทสต์บน JVM ได้): Model, SampledFrame, Detector, ColorDetector, TemplateDetector, TargetArt, Strategy, DecisionEngine, ActionStats, SessionStats · มี `SimulationTest` จำลองเกมทั้ง 3 แบบ (แอนิเมชันช้า/ตำแหน่งสั่น/เป้ากะพริบ) ต้องได้ verified >= 95% และตรงกับคะแนนจริง · เทสต์อยู่ที่ `app/src/test/`
+- ไฟล์ที่ **ห้ามผูกกับ Android** (เทสต์บน JVM ได้): Model, SampledFrame, Detector, ColorDetector, TemplateDetector, TargetArt, Strategy, DecisionEngine, ActionStats, SessionStats, ControlModel, RealtimeEngine, FootballWorld, FootballBrain, FootballLayout · มี `SimulationTest` จำลองเกม Tap/Swipe (แอนิเมชันช้า/ตำแหน่งสั่น/เป้ากะพริบ) และ `FootballSimulationTest` จำลองทั้งวงจรฟุตบอล (โลกจริง → ภาพ → Vision จริง → สมอง → RealtimeEngine → ผู้ลงมือจำลองที่หน่วงและลากต่อเนื่อง) ต้องทำประตูติดกัน 10 ครั้งทุก seed · เทสต์อยู่ที่ `app/src/test/`
 - ปุ่ม "ทดสอบ Gesture" ส่งคำสั่งที่ถูกต้องตามตำแหน่งจริงของเป้าผ่าน Accessibility โดยไม่ใช้ภาพ (ใช้ได้กับทุกโปรไฟล์) ไว้แยกปัญหา Vision กับ Accessibility
 - **เพิ่มเกมใหม่** = เขียนโปรไฟล์ใหม่ 1 ไฟล์ (surface + detectors + strategy) แล้วเพิ่มใน `GameProfiles.all` ห้ามแก้ระบบหลักเพื่อเกมเดียว
 
 ## ทดสอบและ Build
 - เครื่อง cloud คอมไพล์ Android ไม่ได้ (ไม่มี SDK) → ใช้ **GitHub Actions** (`.github/workflows/build-apk.yml`) เป็นตัวเช็กว่าคอมไพล์ผ่าน แล้วดูผลทุกครั้ง ถ้าล้มให้อ่าน log แก้ แล้วรันใหม่ · workflow รันได้ด้วย `workflow_dispatch` กับ branch ที่ระบุ และปล่อย APK ที่ Releases (`build-N`) อัตโนมัติเมื่อผ่าน
-- เพิ่มเวอร์ชันทุกครั้งที่ปล่อย: `versionName` ใน `app/build.gradle.kts` (ตอนนี้ 0.4.2) + อัปเดต README
+- เพิ่มเวอร์ชันทุกครั้งที่ปล่อย: `versionName` ใน `app/build.gradle.kts` (ตอนนี้ 0.5.0) + อัปเดต README
 - เขียนเทสต์ JVM ให้ตรรกะล้วน (Vision/Decision) และรัน `gradle testDebugUnitTest` ใน Actions ก่อน build · ตรวจเร็วในเครื่อง cloud ได้ด้วยโปรเจกต์ Gradle JVM เล็ก ๆ ที่ลิงก์ไฟล์ pure เหล่านั้น (ไม่ต้องมี Android SDK)
 - หลังปล่อย บอก Han: เลข build, เปลี่ยนอะไร, ขั้นตอนทดสอบบนมือถือ, อ่านค่าอะไรในแผง Debug, ถ้ายังไม่ได้ผลให้ส่งภาพแผง Debug (Last skip / Last error / Skip reasons)
 
@@ -75,6 +77,9 @@
 - หลัง push รายงาน: เลข build/เวอร์ชัน → เปลี่ยนอะไร → ทดสอบแล้ว/ยังไม่ได้ทดสอบ → ให้ Han ลองอะไรบนมือถือ → ย้อนได้ด้วยคำว่า "ย้อน"
 
 ## ค้างอยู่ / ควรรู้
+- **v0.5 (ฟุตบอล) ยังไม่มีผลยืนยันบน Xiaomi 15T Pro**: logic ผ่านเทสต์จำลองบน JVM (10 ประตูติดกัน, อัตราประตู >= 95% ต่อการยิง) แต่ส่วนที่ต้องพิสูจน์บนเครื่องจริงคือ `continueStroke` ข้าม gesture (ไม่ยกนิ้ว) บน HyperOS/Android 16, multi-touch ใน gesture เดียว, และความหน่วงจริงของภาพ · ใช้ปุ่ม "ทดสอบ Gesture" ในโปรไฟล์ฟุตบอลก่อน (ดูบรรทัด `pad touches:` ในรายงาน: stickDown ต้อง = 1, dirChanges >= 1, shoot while stick held >= 1)
+- v0.4.2 รวมเข้า `main` แล้ว จุดย้อนกลับ = branch `stable/v0.4.2` (git proxy ของ session นี้ push tag ไม่ได้) และ Release `build-11`
+- สี 7 ชนิดของฟุตบอล (นักเตะน้ำเงิน, ลูกเหลือง, ผู้รักษาประตูแดง, ประตูฟ้า, ฐานจอยม่วง, ปุ่มยิงส้ม, ปุ่มส่งชมพู) ห้ามใช้กับของอื่นในหน้าเกม · เขียนที่ `FootballColors`
 - ตรวจผล (verify) ทำงานเป็นช่วงเวลา: ดูทุกเฟรมใหม่หลัง gesture จบจนกว่าจะยืนยัน (รองรับแอนิเมชันช้า) แล้วจัดประเภทล้มเหลว: MISSED_TARGET / TIMEOUT / STALE_FRAME / DETECTION_ERROR (+ GESTURE_FAILED, REJECTED) · รัศมี "จุดเดิม" (`samePlacePx`) ต้องเล็ก และเกมทดสอบต้องไม่ให้เป้าใหม่เกิดซ้อนจุดเดิม (บทเรียน v0.4: verify ล้มเทียม ~8–19% เพราะเป้าใหม่เกิดใกล้จุดเก่า)
 - เป้าหมายคุณภาพ: ทุกโปรไฟล์ verified >= 95% จาก >= 100 action (ใช้ชิป "Stop at 100" แล้วดู `goal PASS/FAIL` ในแผง Debug) และ verified ต้องตรงกับคะแนนจริงของเกม
 - v0.4.1 (Build 10) Han ทดสอบ 100 action ต่อโปรไฟล์: Green 100/100 PASS, Bullseye 100/100 PASS, Swipe 91/100 FAIL แต่คะแนนจริงของเกม +100 พลาด 0 = ที่ตรวจผลไม่ผ่านเป็น verify ล้มเทียม (เกมสุ่มลูกบอลใหม่เทียบกับตำแหน่ง "ตอนถูกลากไปที่โซนเป้า" ไม่ใช่จุดเริ่มปัด จึงเกิดซ้อนจุดเริ่มได้ ~9%) · แก้ใน v0.4.2 (เทียบกับ restX/restY) · **Han ยืนยันบนเครื่องแล้ว (Build 11): Swipe 100/100 PASS, คะแนนจริง +100 พลาด 0, ไม่มี error** — ทั้ง 3 โปรไฟล์ผ่านเป้า 95% จาก 100 action (Green/Bullseye ทดสอบที่ Build 10, Swipe ที่ Build 11) · ไม่มี backpressure (superseded ~0.1%), FPS ต่ำเพราะจอเปลี่ยนไม่บ่อย ไม่ใช่เพราะ Vision ช้า (vision เฉลี่ย 1.5–4 ms)

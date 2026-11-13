@@ -39,7 +39,8 @@ interface EngineListener {
 
 class EngineSnapshot(
     val phase: BotPhase, val decision: String, val history: List<ActionRecord>,
-    val stats: ActionStats, val consecutiveFailures: Int
+    val stats: ActionStats, val consecutiveFailures: Int,
+    val control: ControlTelemetry? = null, val streak: Int = 0, val bestStreak: Int = 0
 )
 
 /**
@@ -54,7 +55,7 @@ class DecisionEngine(
     private val executor: ActionExecutor,
     private val listener: EngineListener,
     private val clock: () -> Long = { System.currentTimeMillis() }
-) {
+) : BotEngine {
     var phase = BotPhase.SCANNING; private set
     var decision = "starting"; private set
     private val history = ArrayDeque<ActionRecord>()
@@ -75,15 +76,15 @@ class DecisionEngine(
     private var lastSuccessAt = 0L
     private var lastRejectReason = ""
 
-    val isFinished get() = phase == BotPhase.STOPPED || phase == BotPhase.ERROR
-    fun statsCopy(): ActionStats = stats.copy()
+    override val isFinished get() = phase == BotPhase.STOPPED || phase == BotPhase.ERROR
+    override fun statsCopy(): ActionStats = stats.copy()
 
     /** ทุกเฟรมที่ระบบจับภาพส่งมา (แม้ยังไม่ได้ประมวลผล) ใช้แยก "จอไม่เปลี่ยน" ออกจาก "ท่อ Vision ล้าหลัง" */
-    fun onFrameReceived(timeMs: Long) { lastFrameAt = timeMs }
+    override fun onFrameReceived(timeMs: Long) { lastFrameAt = timeMs }
 
-    fun onObservation(o: Observation) { obs = o; step() }
+    override fun onObservation(o: Observation) { obs = o; step() }
 
-    fun step() {
+    override fun step() {
         if (isFinished) return
         val now = clock()
         when (phase) {
@@ -115,7 +116,7 @@ class DecisionEngine(
         listener.onStop(reason, isError)
     }
 
-    fun emergencyStop() = stop("EMERGENCY STOP")
+    override fun emergencyStop() = stop("EMERGENCY STOP")
 
     private fun decideNow(now: Long) {
         val o = obs

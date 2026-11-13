@@ -41,6 +41,13 @@ class SampledFrame {
             return f
         }
 
+        /** สร้างจากฟังก์ชันสีของพิกเซล (ใช้ในเทสต์จำลองฉากโดยไม่ต้องวาดทั้งภาพ) */
+        fun fromFunction(w: Int, h: Int, step: Int, pixel: (Int, Int) -> Int): SampledFrame {
+            val f = SampledFrame()
+            sampleInto(f, step, 0, 0, w, h, w, h, pixel)
+            return f
+        }
+
         /** อ่านจาก buffer RGBA_8888 ของ ImageReader (คืน false ถ้ากรอบว่าง) */
         fun sample(buf: ByteBuffer, rowStride: Int, pixelStride: Int, imgW: Int, imgH: Int,
                    left: Int, top: Int, right: Int, bottom: Int, step: Int, out: SampledFrame): Boolean {
