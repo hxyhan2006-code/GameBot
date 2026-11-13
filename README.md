@@ -1,4 +1,4 @@
-# Universal Game Bot v0.6.0 (local proof of concept)
+# Universal Game Bot v0.7.0 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -89,3 +89,8 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Game screen rebuilt: bigger arena, one main Start button; while the bot runs it becomes a large Emergency stop with FPS / gesture / verified numbers. Test gesture, Boxes, Debug and Copy report are an icon row (hidden while running).
 - Language, auto-stop at 100 actions and reset stats moved to the Settings tab.
 - No change to the bot, vision, decision or safety code. The arena size is now fixed across states.
+
+## v0.7.0 (Football Match 3v3, play it yourself)
+- New profile **Football Match 3v3**: two teams (2 field players + 1 keeper each), two goals, a 2 minute match against an AI opponent. Controls: joystick plus shoot, pass (snaps to a teammate within 25 degrees) and tackle buttons. The player you control switches automatically and is marked with a white dot.
+- Opponent level (easy / normal / hard) is chosen in Settings. Your wins / draws / losses per level show on the profile card.
+- No bot in this version. The color detectors, the shared object labels (`MatchLabels`) and the JVM tests that check players never overlap and are detected correctly are already in place for v0.7.1.

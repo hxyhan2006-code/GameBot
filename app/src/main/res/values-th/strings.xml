@@ -76,4 +76,25 @@
     <string name="streak_fmt">ประตูติดกัน %1$d / %2$d</string>
     <string name="goal_streak_fmt">เป้าหมาย: %d ประตูติดกัน</string>
     <string name="limit_hint">หยุดอัตโนมัติที่ 100</string>
+    <string name="profile_match_name">แข่งฟุตบอล 3v3</string>
+    <string name="profile_match_desc">สองทีม สองประตู แข่ง 2 นาที เล่นเองด้วยจอยกับปุ่มยิง ส่ง แย่ง สู้กับ AI คู่แข่ง บอทจะเข้ามาเล่นในเวอร์ชันถัดไป</string>
+    <string name="match_ready_title">พร้อมแข่ง</string>
+    <string name="match_ready_hint">กด \"เริ่มแมตช์ใหม่\" ด้านล่าง</string>
+    <string name="match_full_time">หมดเวลา</string>
+    <string name="match_goal">ประตู!</string>
+    <string name="match_result_fmt">%1$s: ชนะ %2$d เสมอ %3$d แพ้ %4$d</string>
+    <string name="match_result_none">%1$s: ยังไม่เคยแข่ง</string>
+    <string name="match_line_ready">ระดับ: %1$s - พร้อมเล่น</string>
+    <string name="match_line_final">หมดเวลา: เรา %1$d : %2$d คู่แข่ง (%3$s)</string>
+    <string name="match_line_fmt">เรา %1$d : %2$d คู่แข่ง   %3$s</string>
+    <string name="match_win">ชนะ</string>
+    <string name="match_draw">เสมอ</string>
+    <string name="match_loss">แพ้</string>
+    <string name="btn_new_match">เริ่มแมตช์ใหม่</string>
+    <string name="pill_manual">เล่นเอง</string>
+    <string name="settings_level">ระดับคู่แข่ง</string>
+    <string name="settings_level_sub">แตะเพื่อเปลี่ยน: ง่าย ปกติ ยาก</string>
+    <string name="level_easy">ง่าย</string>
+    <string name="level_normal">ปกติ</string>
+    <string name="level_hard">ยาก</string>
 </resources>

@@ -60,6 +60,7 @@ class MainActivity : Activity() {
             publishArena()
             overlay.invalidate()
             if (debugSheet?.isShowing == true) debugText?.text = DebugPanel.render(this@MainActivity)
+            if (surface.scoreLine != null) updateScore() // นาฬิกาแมตช์เดินต่อเนื่อง
             refreshUi()
             ui.postDelayed(this, 250)
         }
@@ -188,7 +189,7 @@ class MainActivity : Activity() {
         pill = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(12), 0, dp(12), 0)
-            setOnClickListener { if (!BotState.running) accSheet.show() }
+            setOnClickListener { if (profile.hasBot && !BotState.running) accSheet.show() }
         }
         pill.addView(pillDot, LinearLayout.LayoutParams(dp(8), dp(8)).apply { rightMargin = dp(8) })
         pill.addView(pillText)
@@ -217,14 +218,15 @@ class MainActivity : Activity() {
 
         // โซนควบคุมด้านล่าง: ความสูงคงที่ สลับระหว่าง "ก่อนเริ่ม" กับ "บอททำงาน"
         idleGroup = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        idleGroup.addView(actionButton(getString(R.string.btn_start_bot), Palette.ACCENT, Palette.ON_ACCENT) { debugSheet?.dismiss(); startCapture() }.also { it.minimumHeight = dp(60); it.minHeight = dp(60); it.textSize = 18f }, lp())
+        idleGroup.addView(actionButton(getString(if (profile.hasBot) R.string.btn_start_bot else R.string.btn_new_match), Palette.ACCENT, Palette.ON_ACCENT) { debugSheet?.dismiss(); if (profile.hasBot) startCapture() else surface.restart() }.also { it.minimumHeight = dp(60); it.minHeight = dp(60); it.textSize = 18f }, lp())
         val tools = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val tTest = toolButton(Icon.TAP, getString(R.string.tool_test_gesture)) { testGesture() }
         val tBoxes = toolButton(Icon.BOXES, getString(R.string.tool_boxes)) { OverlayState.showBoxes = !OverlayState.showBoxes; refreshUi() }
         val tDebug = toolButton(Icon.CODE, "Debug") { showDebug() }
         val tReport = toolButton(Icon.BARS, getString(R.string.tool_report)) { copyReport() }
         boxesTool = tBoxes.second
-        for (t in listOf(tTest, tBoxes, tDebug, tReport)) tools.addView(t.first, LinearLayout.LayoutParams(0, -2, 1f))
+        // โปรไฟล์ที่ยังไม่มีบอท (เล่นเอง) ไม่มี Vision/Gesture ให้ทดสอบ จึงซ่อนปุ่มทดสอบ Gesture กับกรอบตรวจจับ
+        for (t in if (profile.hasBot) listOf(tTest, tBoxes, tDebug, tReport) else listOf(tDebug, tReport)) tools.addView(t.first, LinearLayout.LayoutParams(0, -2, 1f))
         idleGroup.addView(tools, lp(6))
 
         runGroup = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
@@ -261,7 +263,7 @@ class MainActivity : Activity() {
     }
 
     private fun updateScore() {
-        scoreText.text = getString(R.string.score_fmt, surface.score) + if (surface.mistakes > 0) "   " + getString(R.string.mistakes_fmt, surface.mistakes) else ""
+        scoreText.text = surface.scoreLine ?: (getString(R.string.score_fmt, surface.score) + if (surface.mistakes > 0) "   " + getString(R.string.mistakes_fmt, surface.mistakes) else "")
     }
 
     private fun limitOn() = getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("limit100", false)
@@ -275,6 +277,7 @@ class MainActivity : Activity() {
         if (!running) runStartedAt = 0L
 
         val (tint, accent, label) = when {
+            !profile.hasBot -> Triple(Palette.ACCENT_TINT, Palette.ACCENT, getString(R.string.pill_manual))
             running -> {
                 val sec = ((SystemClock.elapsedRealtime() - runStartedAt) / 1000).toInt()
                 Triple(Palette.ACCENT_TINT, Palette.ACCENT, getString(R.string.pill_running_fmt, "%02d:%02d".format(sec / 60, sec % 60)))
@@ -295,7 +298,7 @@ class MainActivity : Activity() {
         infoRight.text = when {
             goal > 0 && running -> getString(R.string.streak_fmt, DebugMonitor.engine?.streak ?: 0, goal)
             goal > 0 -> getString(R.string.goal_streak_fmt, goal)
-            limitOn() && !running -> getString(R.string.limit_hint)
+            profile.hasBot && limitOn() && !running -> getString(R.string.limit_hint)
             else -> ""
         }
 
@@ -363,6 +366,7 @@ class MainActivity : Activity() {
     }
 
     private fun startCapture() {
+        if (!profile.hasBot) return // โปรไฟล์นี้ยังไม่มีบอท (เล่นเอง)
         if (BotAccessibilityService.instance == null) {
             Toast.makeText(this, R.string.toast_need_accessibility, Toast.LENGTH_LONG).show()
             return

@@ -38,6 +38,10 @@ class PadLayout(val width: Float, val height: Float, d: Float) {
     val passR = 26f * d
     val passCx = shootCx - shootR - passR - 18f * d
     val passCy = height / 2f + 12f * d
+    // ปุ่มแย่ง (ใช้เฉพาะโปรไฟล์แมตช์ 3v3) อยู่ซ้ายของปุ่มส่ง
+    val tackleR = 26f * d
+    val tackleCx = passCx - passR - tackleR - 14f * d
+    val tackleCy = height / 2f - 6f * d
 }
 
 /** ชุดตัวตรวจจับของเกมฟุตบอล (สุ่มทุก 4 พิกเซล: minCells ปรับตามขนาดวัตถุ) */

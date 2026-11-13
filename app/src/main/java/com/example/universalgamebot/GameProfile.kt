@@ -25,6 +25,10 @@ interface GameSurface {
     fun groundTruthAction(): BotAction?
     /** ลำดับทดสอบการควบคุมต่อเนื่อง (จอย + ปุ่มพร้อมกัน) สำหรับโปรไฟล์ที่ใช้จอย; null = ไม่มี */
     fun controlTestPlan(): List<ControlStep>? = null
+    /** บรรทัดสถานะของเกมแทนคะแนนธรรมดา (เช่น เวลาและสกอร์แมตช์); null = ใช้ score/mistakes */
+    val scoreLine: String? get() = null
+    /** เริ่มเกมใหม่/เริ่มแมตช์ (ใช้กับโปรไฟล์ที่ไม่มีบอท); ค่าเริ่มต้น = ไม่ทำอะไร */
+    fun restart() {}
 }
 
 /**
@@ -38,6 +42,10 @@ interface GameProfile {
     val visionMethod: String
     val actionTypes: String
     val config: ProfileConfig
+    /** false = ยังไม่มีบอทเล่นโปรไฟล์นี้ (ให้มนุษย์เล่นเอง) ปุ่มเริ่มบอทจะกลายเป็นปุ่มเริ่มเกมใหม่ */
+    val hasBot: Boolean get() = true
+    /** บรรทัดผลสะสมที่หน้าแรก (null = ใช้สถิติของบอทตามปกติ) */
+    fun resultLine(context: Context): String? = null
     fun createSurface(context: Context, onScore: (score: Int, mistakes: Int) -> Unit): GameSurface
     fun createDetectors(context: Context): List<Detector>
     /** สมองแบบแยกคำสั่ง (Tap/Swipe) ถ้าโปรไฟล์ใช้การควบคุมต่อเนื่องให้คืน null แล้วใช้ createControlStrategy แทน */
@@ -46,6 +54,6 @@ interface GameProfile {
 }
 
 object GameProfiles {
-    val all: List<GameProfile> = listOf(GreenDotProfile, BullseyeProfile, SwipeBallProfile, FootballProfile)
+    val all: List<GameProfile> = listOf(GreenDotProfile, BullseyeProfile, SwipeBallProfile, FootballProfile, MatchProfile)
     fun byId(id: String?): GameProfile = all.firstOrNull { it.id == id } ?: all[0]
 }

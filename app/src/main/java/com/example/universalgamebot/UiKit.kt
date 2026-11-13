@@ -63,7 +63,7 @@ fun Context.actionButton(label: String, fill: Int, textColor: Int, onClick: () -
     }
 
 /** ไอคอนเส้นที่วาดเอง (ไม่ใช้อีโมจิ/รูปภาพ) · วาดบนตาราง 24x24 แล้วขยายตามขนาดวิว */
-enum class Icon { GRID, SHIELD, BARS, SLIDERS, BACK, CHEVRON, DOT, RING, SWIPE, PAD, TAP, BOXES, CODE, WARN }
+enum class Icon { GRID, SHIELD, BARS, SLIDERS, BACK, CHEVRON, DOT, RING, SWIPE, PAD, TAP, BOXES, CODE, WARN, TEAM }
 
 class IconView(context: Context, private val icon: Icon, tint: Int = Palette.MUTED) : View(context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -100,6 +100,7 @@ class IconView(context: Context, private val icon: Icon, tint: Int = Palette.MUT
             Icon.RING -> { c.drawCircle(12f, 12f, 9f, paint); c.drawCircle(12f, 12f, 4f, paint) }
             Icon.SWIPE -> { poly(c, 12f, 20f, 12f, 6f); poly(c, 6f, 11f, 12f, 5f, 18f, 11f) }
             Icon.PAD -> { c.drawCircle(8f, 14f, 5f, paint); c.drawCircle(18f, 9f, 3f, paint) }
+            Icon.TEAM -> { c.drawCircle(7f, 8f, 3f, paint); c.drawCircle(17f, 8f, 3f, paint); c.drawCircle(12f, 17f, 3f, paint) }
             Icon.TAP -> { c.drawCircle(12f, 12f, 8f, paint); paint.style = Paint.Style.FILL; c.drawCircle(12f, 12f, 2.5f, paint) }
             Icon.BOXES -> { poly(c, 4f, 8f, 4f, 4f, 8f, 4f); poly(c, 16f, 4f, 20f, 4f, 20f, 8f); poly(c, 20f, 16f, 20f, 20f, 16f, 20f); poly(c, 8f, 20f, 4f, 20f, 4f, 16f) }
             Icon.CODE -> { poly(c, 8f, 6f, 3f, 12f, 8f, 18f); poly(c, 16f, 6f, 21f, 12f, 16f, 18f) }

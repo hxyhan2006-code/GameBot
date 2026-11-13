@@ -171,11 +171,13 @@ class ProfileSelectActivity : Activity() {
         "bullseye" -> Icon.RING
         "swipe_ball" -> Icon.SWIPE
         "football" -> Icon.PAD
+        "match" -> Icon.TEAM
         else -> Icon.GRID
     }
 
     /** ผลทดสอบสะสมของโปรไฟล์ (จาก StatsStore) · ผ่าน = ตามเป้าเดียวกับแผง Debug: streak ครบเป้า หรือ verified >= 95% จาก >= 100 action */
     private fun resultOf(p: GameProfile): Pair<String, Boolean> {
+        p.resultLine(this)?.let { return it to false }
         val s = StatsStore.load(this, p.id)
         val goal = p.config.streakGoal
         return when {
@@ -258,12 +260,15 @@ class ProfileSelectActivity : Activity() {
         val limitOn = prefs.getBoolean("limit100", false)
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(12), dp(16), dp(16)) }
         col.addView(settingRow(getString(R.string.settings_language), null, getString(R.string.lang_switch)) { LocaleHelper.toggle(this); recreate() }, lp())
+        col.addView(settingRow(getString(R.string.settings_level), getString(R.string.settings_level_sub), MatchRecordStore.levelName(this, MatchRecordStore.level(this))) {
+            MatchRecordStore.cycleLevel(this); showTab(Tab.SETTINGS)
+        }, lp(10))
         col.addView(settingRow(getString(R.string.settings_limit), getString(R.string.settings_limit_sub), getString(if (limitOn) R.string.settings_on else R.string.settings_off)) {
             prefs.edit().putBoolean("limit100", !limitOn).apply(); showTab(Tab.SETTINGS)
         }, lp(10))
         col.addView(settingRow(getString(R.string.chip_reset_stats), getString(if (resetArmed) R.string.settings_reset_confirm else R.string.settings_reset_sub), null, if (resetArmed) Palette.DANGER else Palette.MUTED) {
             if (!resetArmed) { resetArmed = true; refreshSettings() }
-            else { StatsStore.reset(this); resetArmed = false; Toast.makeText(this, R.string.toast_stats_reset, Toast.LENGTH_SHORT).show(); refreshSettings() }
+            else { StatsStore.reset(this); MatchRecordStore.reset(this); resetArmed = false; Toast.makeText(this, R.string.toast_stats_reset, Toast.LENGTH_SHORT).show(); refreshSettings() }
         }, lp(10))
         col.addView(TextView(this).apply { text = getString(R.string.cloud_status); textSize = 12f; setTextColor(Palette.DIM); gravity = Gravity.CENTER }, lp(24))
         col.addView(TextView(this).apply {

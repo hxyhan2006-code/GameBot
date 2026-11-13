@@ -20,14 +20,15 @@ private fun rgb(c: Int) = (0xFF shl 24) or c
  * แถบควบคุม: จอยลอยซ้าย (ลากค้างได้) + ปุ่มยิง/ส่งขวา รับหลายนิ้วพร้อมกัน (multi-touch) ใน View เดียว
  * ตัวเลขการสัมผัสทั้งหมดบันทึกใน ControlInputStats เพื่อตรวจว่าการควบคุมต่อเนื่องของบอทเป็นจริง
  */
-class ControlPadView(context: Context) : View(context) {
+class ControlPadView(context: Context, private val withTackle: Boolean = false) : View(context) {
     private val d = resources.displayMetrics.density
     private var pad = PadLayout(1f, 1f, d)
     @Volatile var stickX = 0f; private set
     @Volatile var stickY = 0f; private set
     private val shootFlag = AtomicBoolean(false)
     private val passFlag = AtomicBoolean(false)
-    private var stickId = -1; private var shootId = -1; private var passId = -1
+    private val tackleFlag = AtomicBoolean(false)
+    private var stickId = -1; private var shootId = -1; private var passId = -1; private var tackleId = -1
     private var refAngle = Float.NaN
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val label = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textAlign = Paint.Align.CENTER; typeface = Typeface.DEFAULT_BOLD; textSize = 12f * d }
@@ -36,6 +37,7 @@ class ControlPadView(context: Context) : View(context) {
     val layoutInfo get() = pad
     fun takeShoot() = shootFlag.getAndSet(false)
     fun takePass() = passFlag.getAndSet(false)
+    fun takeTackle() = tackleFlag.getAndSet(false)
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) { pad = PadLayout(w.toFloat(), h.toFloat(), d) }
 
@@ -68,6 +70,7 @@ class ControlPadView(context: Context) : View(context) {
                     stickId == -1 && hypot(x - pad.stickCx, y - pad.stickCy) <= pad.stickR * 1.6f -> { stickId = id; ControlInputStats.stickDown(); refAngle = Float.NaN; moveStick(x, y) }
                     shootId == -1 && hypot(x - pad.shootCx, y - pad.shootCy) <= pad.shootR * 1.25f -> { shootId = id; shootFlag.set(true); ControlInputStats.button(true, stickId != -1) }
                     passId == -1 && hypot(x - pad.passCx, y - pad.passCy) <= pad.passR * 1.25f -> { passId = id; passFlag.set(true); ControlInputStats.button(false, stickId != -1) }
+                    withTackle && tackleId == -1 && hypot(x - pad.tackleCx, y - pad.tackleCy) <= pad.tackleR * 1.25f -> { tackleId = id; tackleFlag.set(true); ControlInputStats.tackle(stickId != -1) }
                 }
             }
             MotionEvent.ACTION_MOVE -> for (i in 0 until ev.pointerCount) if (ev.getPointerId(i) == stickId) moveStick(ev.getX(i), ev.getY(i))
@@ -76,8 +79,9 @@ class ControlPadView(context: Context) : View(context) {
                 if (id == stickId) releaseStick()
                 if (id == shootId) shootId = -1
                 if (id == passId) passId = -1
+                if (id == tackleId) tackleId = -1
             }
-            MotionEvent.ACTION_CANCEL -> { if (stickId != -1) releaseStick(); shootId = -1; passId = -1 }
+            MotionEvent.ACTION_CANCEL -> { if (stickId != -1) releaseStick(); shootId = -1; passId = -1; tackleId = -1 }
         }
         invalidate()
         return true
@@ -97,6 +101,12 @@ class ControlPadView(context: Context) : View(context) {
         canvas.drawCircle(pad.passCx, pad.passCy, pad.passR, paint)
         if (passId != -1) canvas.drawCircle(pad.passCx, pad.passCy, pad.passR - ring.strokeWidth, ring)
         canvas.drawText("PASS", pad.passCx, pad.passCy + label.textSize * 0.35f, label)
+        if (withTackle) {
+            paint.color = rgb(MatchColors.TACKLE)
+            canvas.drawCircle(pad.tackleCx, pad.tackleCy, pad.tackleR, paint)
+            if (tackleId != -1) canvas.drawCircle(pad.tackleCx, pad.tackleCy, pad.tackleR - ring.strokeWidth, ring)
+            canvas.drawText("TACKLE", pad.tackleCx, pad.tackleCy + label.textSize * 0.35f, label)
+        }
     }
 }
 
