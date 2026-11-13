@@ -48,7 +48,7 @@
 
 ## ทดสอบและ Build
 - เครื่อง cloud คอมไพล์ Android ไม่ได้ (ไม่มี SDK) → ใช้ **GitHub Actions** (`.github/workflows/build-apk.yml`) เป็นตัวเช็กว่าคอมไพล์ผ่าน แล้วดูผลทุกครั้ง ถ้าล้มให้อ่าน log แก้ แล้วรันใหม่ · workflow รันได้ด้วย `workflow_dispatch` กับ branch ที่ระบุ และปล่อย APK ที่ Releases (`build-N`) อัตโนมัติเมื่อผ่าน
-- เพิ่มเวอร์ชันทุกครั้งที่ปล่อย: `versionName` ใน `app/build.gradle.kts` (ตอนนี้ 0.4.1) + อัปเดต README
+- เพิ่มเวอร์ชันทุกครั้งที่ปล่อย: `versionName` ใน `app/build.gradle.kts` (ตอนนี้ 0.4.2) + อัปเดต README
 - เขียนเทสต์ JVM ให้ตรรกะล้วน (Vision/Decision) และรัน `gradle testDebugUnitTest` ใน Actions ก่อน build · ตรวจเร็วในเครื่อง cloud ได้ด้วยโปรเจกต์ Gradle JVM เล็ก ๆ ที่ลิงก์ไฟล์ pure เหล่านั้น (ไม่ต้องมี Android SDK)
 - หลังปล่อย บอก Han: เลข build, เปลี่ยนอะไร, ขั้นตอนทดสอบบนมือถือ, อ่านค่าอะไรในแผง Debug, ถ้ายังไม่ได้ผลให้ส่งภาพแผง Debug (Last skip / Last error / Skip reasons)
 
@@ -77,6 +77,8 @@
 ## ค้างอยู่ / ควรรู้
 - ตรวจผล (verify) ทำงานเป็นช่วงเวลา: ดูทุกเฟรมใหม่หลัง gesture จบจนกว่าจะยืนยัน (รองรับแอนิเมชันช้า) แล้วจัดประเภทล้มเหลว: MISSED_TARGET / TIMEOUT / STALE_FRAME / DETECTION_ERROR (+ GESTURE_FAILED, REJECTED) · รัศมี "จุดเดิม" (`samePlacePx`) ต้องเล็ก และเกมทดสอบต้องไม่ให้เป้าใหม่เกิดซ้อนจุดเดิม (บทเรียน v0.4: verify ล้มเทียม ~8–19% เพราะเป้าใหม่เกิดใกล้จุดเก่า)
 - เป้าหมายคุณภาพ: ทุกโปรไฟล์ verified >= 95% จาก >= 100 action (ใช้ชิป "Stop at 100" แล้วดู `goal PASS/FAIL` ในแผง Debug) และ verified ต้องตรงกับคะแนนจริงของเกม
+- v0.4.1 (Build 10) Han ทดสอบ 100 action ต่อโปรไฟล์: Green 100/100 PASS, Bullseye 100/100 PASS, Swipe 91/100 FAIL แต่คะแนนจริงของเกม +100 พลาด 0 = ที่ตรวจผลไม่ผ่านเป็น verify ล้มเทียม (เกมสุ่มลูกบอลใหม่เทียบกับตำแหน่ง "ตอนถูกลากไปที่โซนเป้า" ไม่ใช่จุดเริ่มปัด จึงเกิดซ้อนจุดเริ่มได้ ~9%) · แก้ใน v0.4.2 (เทียบกับ restX/restY) **ยังต้องรอผล 100 action บนเครื่องจริง** · ไม่มี backpressure (superseded ~0.1%), FPS ต่ำเพราะจอเปลี่ยนไม่บ่อย ไม่ใช่เพราะ Vision ช้า (vision เฉลี่ย 1.5–4 ms)
+- ข้อความ "MediaProjection stopped by system" ตอนหยุดปกติเป็น log หลอก (v0.4.1) แก้แล้วใน v0.4.2
 - v0.4 (Build 9) Han ทดสอบแล้ว 3 โปรไฟล์ทำงาน: Green 10/12, Bullseye 37/40, Swipe 25/32, gesture ไม่ล้มเลย, confidence 0.94–1.00, ไม่มี error log
 - v0.3 (Build 8) Han ยืนยันบน Xiaomi 15T Pro แล้ว: Accessibility ทำงาน บอทแตะเป้าเขียนถึงคะแนน 40 · v0.4 เป็นสถาปัตยกรรมใหม่ **ยังไม่มีผลยืนยันบนเครื่อง** (โดยเฉพาะ Bullseye/Swipe และตัวเลข CPU/แบต)
 - ยังเป็นตัวตรวจจับสีแบบง่าย ไม่ใช่โมเดล AI · ยังไม่รองรับการทำงานเบื้องหลังหรือเกมอื่น (ตั้งใจ)

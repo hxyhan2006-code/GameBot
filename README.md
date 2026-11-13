@@ -1,4 +1,4 @@
-# Universal Game Bot v0.4.1 (local proof of concept)
+# Universal Game Bot v0.4.2 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -58,3 +58,7 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Frame drops are split into intentional throttling vs. superseded frames (backpressure); average FPS, per-profile success rate and latency are kept after Stop (Debug panel, "Copy report", `sessions.log`).
 - "Stop at 100" chip stops the bot after exactly 100 actions to check the goal (>= 95% verified per profile).
 - `SimulationTest` replays all three games with animation delay, jitter and flicker.
+
+## v0.4.2
+- Swipe Ball: new ball is now placed away from where the previous ball *started* (was compared with the dragged end position), removing ~9% false MISSED_TARGET (ground truth showed score +100, misses 0).
+- A normal Stop no longer logs "MediaProjection stopped by system" as an error.

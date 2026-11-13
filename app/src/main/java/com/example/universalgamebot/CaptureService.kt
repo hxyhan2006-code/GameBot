@@ -24,7 +24,7 @@ class CaptureService : Service() {
     private var reader: ImageReader? = null
     private val handlerThread = HandlerThread("BotVision")
     private lateinit var handler: Handler
-    private var running = false
+    @Volatile private var running = false
 
     private lateinit var profile: GameProfile
     private lateinit var vision: VisionEngine
@@ -107,7 +107,11 @@ class CaptureService : Service() {
             projection = mgr.getMediaProjection(code, data)
             // Android 14+ บังคับ registerCallback ก่อน createVirtualDisplay
             projection?.registerCallback(object : MediaProjection.Callback() {
-                override fun onStop() { DebugMonitor.error("MediaProjection stopped by system"); stopSelf() }
+                override fun onStop() {
+                    // เรียกกลับทุกครั้งที่ projection หยุด รวมถึงตอนเราหยุดเอง: เฉพาะที่ระบบหยุดให้ขณะยังทำงานอยู่จึงนับเป็น error
+                    if (running) DebugMonitor.error("MediaProjection stopped by system") else DebugMonitor.log("MediaProjection stopped (normal shutdown)")
+                    stopSelf()
+                }
             }, handler)
             val (w, h) = realScreenSize()
             val dpi = resources.displayMetrics.densityDpi
