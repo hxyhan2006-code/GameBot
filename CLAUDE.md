@@ -1,6 +1,6 @@
 # Universal Game Bot — คู่มือสำหรับ Claude
 
-แอป Android (Kotlin, ไม่มีเซิร์ฟเวอร์) ของ Han สำหรับทดลองวงจร **Screen Capture → Vision → Decision → Gesture** บนเกมทดสอบที่อยู่ในแอปเอง (วงกลมสีเขียว) · ทดสอบจริงบน Xiaomi 15T Pro (HyperOS / Android 16) · Build ด้วย GitHub Actions แล้วปล่อย APK ที่หน้า Releases · ไฟล์นี้สรุปจาก CLAUDE.md ของ repo อื่นของ Han (vaultet, My-twin-life, Onepiece-Vault, Meowrin-*) · repo นี้แยกจากโปรเจกต์อื่น **ห้ามแก้ repo อื่นจากที่นี่โดยไม่ถามก่อน**
+แอป Android (Kotlin, ไม่มีเซิร์ฟเวอร์) ของ Han สำหรับทดลองวงจร **Screen Capture → Vision → Decision → Gesture** บนเกมทดสอบที่อยู่ในแอปเอง (มี 3 โปรไฟล์: จุดเขียว/เป้าวงกลมซ้อน/ปัดลูกบอล) · ทดสอบจริงบน Xiaomi 15T Pro (HyperOS / Android 16) · Build ด้วย GitHub Actions แล้วปล่อย APK ที่หน้า Releases · ไฟล์นี้สรุปจาก CLAUDE.md ของ repo อื่นของ Han (vaultet, My-twin-life, Onepiece-Vault, Meowrin-*) · repo นี้แยกจากโปรเจกต์อื่น **ห้ามแก้ repo อื่นจากที่นี่โดยไม่ถามก่อน**
 
 ## วิธีคุยกับ Han (สำคัญที่สุด)
 - Han ไม่ใช่สายเทคนิค: **ตอบเป็นภาษาไทยเสมอ** สั้น กระชับ เป็นกันเอง อ่านบนมือถือได้ เลี่ยงศัพท์เทคนิค ถ้าจำเป็นให้อธิบายด้วยคำง่าย ๆ ในประโยคเดียวกัน (เช่น "Accessibility = สิทธิ์ให้แอปแตะจอแทนมือ") · ยกเว้นโค้ด ชื่อไฟล์ ชื่อเทคนิค
@@ -30,24 +30,25 @@
 ## ข้อห้ามเฉพาะโปรเจกต์นี้
 - **บอทคุมได้เฉพาะเกมทดสอบในแอปนี้เท่านั้น** ห้ามทำให้ควบคุมเกมหรือแอปอื่น ห้ามเปิดการทำงานในเกมออนไลน์ของคนอื่น · ห้ามลบมาตรการจำกัดขอบเขตโดยไม่มีของมาแทน (ตอนนี้ = `ArenaGate`: แตะได้ต่อเมื่อหน้าเกมของแอปอยู่หน้าสุด และแตะได้เฉพาะจุดในกรอบ arena + ถ้าอ่าน package ของหน้าต่าง active ได้ ต้องเป็นแอปนี้)
 - **ห้ามเปลี่ยนหรือลบ `keystore/debug.keystore`** ไม่งั้นติดตั้งทับเวอร์ชันเก่าไม่ได้ · `versionCode` = เลขรอบ GitHub Actions (เพิ่มเองทุกรอบ)
-- สีเขียวสด (g>190, r<95, b<110) ใช้ได้เฉพาะวงกลมเป้าหมาย ห้ามใช้กับ UI อื่น (ดู `Palette` ใน `UiKit.kt`) ไม่งั้นบอทเห็นเป็นเป้า
+- สีเขียวสด / เหลือง / ฟ้า ที่ตัวตรวจใช้ ห้ามใช้กับของอื่นใน arena (ดู `Palette` ใน `UiKit.kt`) · กรอบ overlay ใช้สีม่วง วาดห่างวัตถุ 5dp
 - ไม่บันทึก/อัปโหลดภาพหน้าจอ ไม่มีการเรียกเครือข่าย ไม่มี analytics
 - ข้อความบนหน้าจอต้องมีทั้งไทยและอังกฤษ (`values/strings.xml` + `values-th/strings.xml` เพิ่มคู่กันเสมอ) · แผง Debug เป็นข้อความเทคนิคภาษาอังกฤษได้
 - ข้อสันนิษฐานที่ยังไม่ยืนยันบนเครื่อง Han: ที่ `rootInActiveWindow` เป็น null เพราะขาด `canRetrieveWindowContent` (แก้ใน v0.3 รอ Han ยืนยัน) · หลังอัปเดตแอปต้องปิด/เปิดบริการ Accessibility ใหม่เพื่อให้สิทธิ์ใหม่มีผล
 
 ## โครงสร้างไฟล์ (`app/src/main/java/com/example/universalgamebot/`)
-- `MainActivity.kt` — หน้าจอหลัก, เกมทดสอบ (arena + เป้า), ปุ่ม, ส่งตำแหน่ง arena ให้บอท
-- `CaptureService.kt` — MediaProjection + ImageReader, แปลงพิกัดภาพ → จอจริง, ตัดสินใจแตะ (ticker ทุก 120 ms)
-- `VisionDetector.kt` — หาจุดสีเขียวใน buffer (ล้วน ๆ ไม่ผูกกับ Android)
-- `BotAccessibilityService.kt` — `tap()` ผ่าน `dispatchGesture` พร้อมตรวจผลจาก callback
-- `BotState.kt` — สถานะบอท + `ArenaInfo`/`ArenaGate` (มาตรการความปลอดภัย)
-- `DebugMonitor.kt` / `DebugPanel.kt` — ข้อมูล Debug real-time + ข้อความที่แสดงบนจอ (logcat tag `GameBot`)
-- `UiKit.kt`, `LocaleHelper.kt` — สี/วิดเจ็ต, สลับภาษา TH/EN
-- ปุ่ม "ทดสอบแตะ" แตะกลางเป้าผ่าน Accessibility โดยไม่ใช้ภาพ ไว้แยกปัญหา Vision กับ Accessibility
+- ระบบหลัก (ไม่รู้จักเกมใด): `CaptureService.kt` (ท่อ Capture→Vision→Decision), `DecisionEngine.kt` (State Machine), `GestureExecutor.kt` (ด่านความปลอดภัย + ส่ง gesture), `BotAccessibilityService.kt` (`tap`/`swipe` + ตรวจผลจาก callback), `BotState.kt` (`ArenaGate`)
+- Vision: `Detector.kt` (interface + `VisionEngine` + `ModelDetector` สำหรับ TFLite), `ColorDetector.kt`, `TemplateDetector.kt`, `SampledFrame.kt`, `Model.kt`
+- โปรไฟล์เกม (ทุกอย่างเฉพาะเกมอยู่ที่นี่): `GameProfile.kt` (interface + รายการ), `ProfileGreenDot.kt`, `ProfileBullseye.kt` (+ `TargetArt.kt`), `ProfileSwipeBall.kt`, `Strategy.kt` (สมอง Tap/Swipe)
+- หน้าจอ: `ProfileSelectActivity.kt` (หน้าแรก เลือกโปรไฟล์), `MainActivity.kt` (หน้าเกม), `DetectionOverlayView.kt` (กรอบวัตถุ), `DebugPanel.kt`, `UiKit.kt`, `LocaleHelper.kt`
+- Debug/ความปลอดภัย: `DebugMonitor.kt`, `PerfMonitor.kt` (FPS/CPU/RAM/แบต), `ErrorLog.kt` (ไฟล์ log), `EmergencyStop.kt`, `OverlayState.kt`, `CloudVision.kt` (interface เตรียมไว้ ปิดอยู่)
+- ไฟล์ที่ **ห้ามผูกกับ Android** (เทสต์บน JVM ได้): Model, SampledFrame, Detector, ColorDetector, TemplateDetector, TargetArt, Strategy, DecisionEngine · เทสต์อยู่ที่ `app/src/test/`
+- ปุ่ม "ทดสอบ Gesture" ส่งคำสั่งที่ถูกต้องตามตำแหน่งจริงของเป้าผ่าน Accessibility โดยไม่ใช้ภาพ (ใช้ได้กับทุกโปรไฟล์) ไว้แยกปัญหา Vision กับ Accessibility
+- **เพิ่มเกมใหม่** = เขียนโปรไฟล์ใหม่ 1 ไฟล์ (surface + detectors + strategy) แล้วเพิ่มใน `GameProfiles.all` ห้ามแก้ระบบหลักเพื่อเกมเดียว
 
 ## ทดสอบและ Build
 - เครื่อง cloud คอมไพล์ Android ไม่ได้ (ไม่มี SDK) → ใช้ **GitHub Actions** (`.github/workflows/build-apk.yml`) เป็นตัวเช็กว่าคอมไพล์ผ่าน แล้วดูผลทุกครั้ง ถ้าล้มให้อ่าน log แก้ แล้วรันใหม่ · workflow รันได้ด้วย `workflow_dispatch` กับ branch ที่ระบุ และปล่อย APK ที่ Releases (`build-N`) อัตโนมัติเมื่อผ่าน
-- เพิ่มเวอร์ชันทุกครั้งที่ปล่อย: `versionName` ใน `app/build.gradle.kts` (ตอนนี้ 0.3) + อัปเดต README
+- เพิ่มเวอร์ชันทุกครั้งที่ปล่อย: `versionName` ใน `app/build.gradle.kts` (ตอนนี้ 0.4) + อัปเดต README
+- เขียนเทสต์ JVM ให้ตรรกะล้วน (Vision/Decision) และรัน `gradle testDebugUnitTest` ใน Actions ก่อน build · ตรวจเร็วในเครื่อง cloud ได้ด้วยโปรเจกต์ Gradle JVM เล็ก ๆ ที่ลิงก์ไฟล์ pure เหล่านั้น (ไม่ต้องมี Android SDK)
 - หลังปล่อย บอก Han: เลข build, เปลี่ยนอะไร, ขั้นตอนทดสอบบนมือถือ, อ่านค่าอะไรในแผง Debug, ถ้ายังไม่ได้ผลให้ส่งภาพแผง Debug (Last skip / Last error / Skip reasons)
 
 ## ดีไซน์ (ที่ Han ชอบ)
@@ -73,5 +74,5 @@
 - หลัง push รายงาน: เลข build/เวอร์ชัน → เปลี่ยนอะไร → ทดสอบแล้ว/ยังไม่ได้ทดสอบ → ให้ Han ลองอะไรบนมือถือ → ย้อนได้ด้วยคำว่า "ย้อน"
 
 ## ค้างอยู่ / ควรรู้
-- v0.3 (Build 8) แก้สาเหตุหลักตามหลักฐานจากโค้ดแล้ว แต่ **ยังไม่มีผลยืนยันบน Xiaomi 15T Pro** รอ Han ทดสอบและส่งภาพแผง Debug
+- v0.3 (Build 8) Han ยืนยันบน Xiaomi 15T Pro แล้ว: Accessibility ทำงาน บอทแตะเป้าเขียนถึงคะแนน 40 · v0.4 เป็นสถาปัตยกรรมใหม่ **ยังไม่มีผลยืนยันบนเครื่อง** (โดยเฉพาะ Bullseye/Swipe และตัวเลข CPU/แบต)
 - ยังเป็นตัวตรวจจับสีแบบง่าย ไม่ใช่โมเดล AI · ยังไม่รองรับการทำงานเบื้องหลังหรือเกมอื่น (ตั้งใจ)

@@ -1,4 +1,4 @@
-# Universal Game Bot v0.3 (local proof of concept)
+# Universal Game Bot v0.4 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -41,3 +41,13 @@ Add a `GameProfile` abstraction, a foreground-only calibrated coordinate mapper,
 - Root cause of "bot never taps" in v0.2: the Accessibility config lacked `canRetrieveWindowContent`, so `rootInActiveWindow` was always null and every frame was skipped by the package check. Fixed, and the safety check no longer depends on it (tap only while this app's game screen is in the foreground and only inside the arena rectangle).
 - Built-in **Debug Monitor** panel shows capture state, frames, green pixels, target coordinates, gesture result, last error and skip reasons. Logcat tag: `GameBot`.
 - **Test gesture** button taps the target via Accessibility without vision: if Score rises, Accessibility works; the remaining problem would be vision.
+
+## v0.4 architecture
+Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine) → Gesture executor**, all game-specific logic lives in a `GameProfile`.
+- **Game profiles** (`GameProfile.kt`, `Profile*.kt`): Green Dot (color + tap, the original test game), Bullseye Match (template matching vs. decoys + tap), Swipe Ball (two color detectors + swipe). Pick one on the first screen.
+- **Vision** (`Detector.kt`, `ColorDetector.kt`, `TemplateDetector.kt`): color blobs with bounding boxes, SAD template matching, confidence per object, `ModelDetector` interface reserved for TFLite. Boxes are drawn over the arena (toggle "Boxes").
+- **Decision** (`DecisionEngine.kt`, `Strategy.kt`): SCANNING → DECIDING → ACTING → VERIFYING → COOLDOWN. Actions: Tap, Swipe, Wait, Stop. Every action is verified from a new frame; one action in flight; duplicate-tap suppression; auto-stop after repeated failures or 2000 actions.
+- **Safety**: only the in-app test game is controlled (`ArenaGate` + `GestureExecutor`); big red **EMERGENCY STOP** button, volume-down key, and the notification Stop action.
+- **Debug & performance**: FPS, confidence, state/decision, action history, CPU/RAM/battery, error log file (`files/errors.log`), "Copy report" button.
+- **Hybrid AI**: `CloudVisionClient` interface only. There is no INTERNET permission in the manifest, so no screenshot can leave the phone.
+- Unit tests (JVM, no device): `gradle testDebugUnitTest`.
