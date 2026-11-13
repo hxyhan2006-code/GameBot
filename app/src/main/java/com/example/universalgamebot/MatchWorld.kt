@@ -86,15 +86,6 @@ class AgentInput {
 class AgentSnap(val id: Int, val team: Team, val keeper: Boolean, val x: Float, val y: Float, val fx: Float, val fy: Float, val r: Float)
 class MatchSnapshot(val agents: List<AgentSnap>, val bx: Float, val by: Float, val controlledId: Int, val finished: Boolean)
 
-/** ตัวเลขจริงของเกม (ความจริงฝั่งเกม): ไว้เทียบกับสิ่งที่บอทเห็นในรุ่นหลัง · บอทห้ามอ่าน */
-class MatchTruth {
-    val shots = IntArray(2); val passes = IntArray(2); val passesOk = IntArray(2)
-    val tacklesWon = IntArray(2); val tacklesLost = IntArray(2)
-    val saves = IntArray(2); val turnovers = IntArray(2)
-    fun line() = "truth shots H${shots[0]}/A${shots[1]} passes H${passesOk[0]}of${passes[0]}/A${passesOk[1]}of${passes[1]} " +
-        "tackles H${tacklesWon[0]}w${tacklesLost[0]}l/A${tacklesWon[1]}w${tacklesLost[1]}l saves H${saves[0]}/A${saves[1]} turnovers H${turnovers[0]}/A${turnovers[1]}"
-}
-
 /**
  * สนามแข่งฟุตบอล 3v3 จำลอง (ไม่ผูก Android): ทีมละ นักเตะ 2 + ผู้รักษาประตู 1 (id 0-2 = HOME, 3-5 = AWAY)
  * - ครองบอล: ลูกติดเท้าเมื่อเข้าใกล้ · ยิง/ส่ง = เตะไปทิศของจอย (ส่งมีตัวช่วยล็อกเพื่อนในมุม 25 องศา) · แย่ง = ต้องอยู่ใกล้คนถือบอล สำเร็จแบบสุ่ม ล้มเหลวแล้วติดสตัน
@@ -171,6 +162,7 @@ class MatchWorld(val p: MatchParams, seed: Long = 1L, val level: AiLevel = AiLev
     fun update(dt: Float, human: AgentInput) {
         if (!started || finished) return
         if (goalFreeze > 0f) { goalFreeze -= dt; if (goalFreeze <= 0f) kickoff(); return }
+        truth.recordPossession(carrier?.team, dt.coerceIn(0f, timeLeft))
         timeLeft -= dt
         if (timeLeft <= 0f) { timeLeft = 0f; finished = true; carrier = null; onFinish?.invoke(); return }
         for (a in agents) { a.kickCd = max(0f, a.kickCd - dt); a.tackleCd = max(0f, a.tackleCd - dt); a.stun = max(0f, a.stun - dt); a.noPickup = max(0f, a.noPickup - dt) }

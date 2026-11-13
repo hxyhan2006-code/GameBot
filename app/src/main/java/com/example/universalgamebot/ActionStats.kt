@@ -60,6 +60,10 @@ class ActionStats {
         else -> "FAIL"
     }
 
+    fun matchSummary(): String = "$attempts shots, $verified goals (${"%.1f".format(successRate() * 100)}% conversion), " +
+        "shot misses=${failures(FailureKind.MISSED_TARGET)} unknown=${failures(FailureKind.DETECTION_ERROR) + failures(FailureKind.TIMEOUT)} | " +
+        "command failures=${failures(FailureKind.GESTURE_FAILED)} rejected=${failures(FailureKind.REJECTED)}"
+
     fun summary(): String =
         "$attempts actions, ${"%.1f".format(successRate() * 100)}% verified, avg ${avgLatencyMs()} ms (gesture ${avgGestureMs()} + verify ${avgVerifyMs()}), max $maxLatencyMs ms"
 

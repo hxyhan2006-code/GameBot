@@ -41,6 +41,9 @@ interface ControlStrategy {
     fun statsLine(): String = ""
     /** คำอธิบายการยิงล่าสุด (จุดเล็ง ตำแหน่งผู้รักษาประตู ฯลฯ) ไว้ลงบันทึกการยิง */
     fun shotNote(): String = ""
+    /** Successful shoot: outcome key uses completion time; probes use dispatch time. */
+    fun onShotStarted(atMs: Long, dispatchedAtMs: Long) {}
+    fun shotDiagnostic(atMs: Long): String = ""
     /** ตัดสินผลการยิงจากภาพ (Vision) ไม่ใช้คะแนนจริงของเกม */
     fun shotOutcome(obs: Observation, nowMs: Long, shotAtMs: Long): ShotOutcome
 }

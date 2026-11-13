@@ -23,7 +23,7 @@ class GestureStatsTest {
         ControlGestureStats.record("new", -1, false, 100)
         ControlGestureStats.record("cont+tap", 1, true, 30)
         val line = ControlGestureStats.line()
-        assertTrue(line, line.contains("cont ok=2/cancel=0") && line.contains("new ok=0/cancel=1") && line.contains("35ms:1/0"))
+        assertTrue(line, line.contains("cont ok=2/cancel=0") && line.contains("new ok=0/cancel=1") && line.contains("50ms:1/0"))
         assertTrue(line, line.contains("ok 30ms") && line.contains("cancelled 100ms"))
         assertEquals(4, ControlGestureStats.total())
         ControlGestureStats.reset()

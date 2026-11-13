@@ -17,7 +17,7 @@ class MatchSimulationTest {
     private class Event(val at: Long, val run: () -> Unit)
 
     private inner class Sim(seed: Long, level: AiLevel, val obsDelayMs: Long = 120, val gestureStartMs: Long = 40, val segMs: Long = 120,
-                           val cancelKickProb: Double = 0.0, val cancelPlainProb: Double = 0.0) : ControlExecutor {
+                           val cancelKickProb: Double = 0.0, val cancelPlainProb: Double = 0.0, val originY: Float = 0f) : ControlExecutor {
         val p = MatchParams.forArena(arenaW, arenaH, d)
         val pad = PadLayout(p.w, MatchParams.padHeightPx(d), d)
         val world = MatchWorld(p, seed, level, true).also { it.started = true }
@@ -46,7 +46,12 @@ class MatchSimulationTest {
             return vx to vy
         }
 
-        override fun send(cmd: ControlCommand, onDone: (Boolean, String) -> Unit): String? {
+        override fun send(screenCmd: ControlCommand, onDone: (Boolean, String) -> Unit): String? {
+            val cmd = screenCmd.copy(
+                stickFrom = screenCmd.stickFrom?.let { it.first to it.second - originY },
+                stickTo = screenCmd.stickTo?.let { it.first to it.second - originY },
+                taps = screenCmd.taps.map { it.copy(y = it.y - originY) }
+            )
             val startT = now + gestureStartMs
             if (rnd.nextDouble() < (if (cmd.taps.isNotEmpty()) cancelKickProb else cancelPlainProb)) {
                 cancelled++
@@ -86,7 +91,8 @@ class MatchSimulationTest {
             for (h in history) if (h.first <= target) pick = h else break
             val thumb = pick.third?.let { (pad.stickCx + it.first * pad.stickR) to (pad.stickCy + it.second * pad.stickR) }
             val frame = MatchRaster.sample(pick.second, p, pad, thumb, MatchVision.STEP)
-            return Observation(++seq, now, vision.process(frame).objects, Box(0f, 0f, arenaW, arenaH))
+            val objects = vision.process(frame).objects.map { o -> o.copy(box = o.box.let { Box(it.left,it.top+originY,it.right,it.bottom+originY) }) }
+            return Observation(++seq, now, objects, Box(0f, originY, arenaW, arenaH+originY))
         }
 
         private val input = AgentInput()
@@ -112,9 +118,10 @@ class MatchSimulationTest {
 
     private class Result(val sim: Sim?, val engine: RealtimeEngine, val l: L, val brain: MatchBrain)
 
-    private fun playMatch(seed: Long, level: AiLevel, cancelKick: Double = 0.0, cancelPlain: Double = 0.0, obsEveryMs: Long = 50): Result {
-        val sim = Sim(seed, level, cancelKickProb = cancelKick, cancelPlainProb = cancelPlain)
-        val brain = MatchBrain(d)
+    private fun playMatch(seed: Long, level: AiLevel, cancelKick: Double = 0.0, cancelPlain: Double = 0.0, obsEveryMs: Long = 50, experiment: Boolean = false): Result {
+        val sim = Sim(seed, level, cancelKickProb = cancelKick, cancelPlainProb = cancelPlain, originY = if (experiment) 540f else 0f)
+        // Synthetic frames use arena-local Y, unlike the Xiaomi screen-space experiment.
+        val brain = MatchBrain(d, MatchBrainConfig(restrictShotY = experiment))
         val l = L()
         val engine = RealtimeEngine(brain, RealtimeConfig(), sim, l) { sim.now }
         var lastObs = -100L
@@ -125,7 +132,7 @@ class MatchSimulationTest {
         return Result(sim, engine, l, brain)
     }
 
-    private fun describe(r: Result) = "t=${r.sim!!.now / 1000}s stop=${r.l.stopped} game ${r.sim.world.homeGoals}:${r.sim.world.awayGoals} | ${r.brain.stats.line()} | ${r.l.last?.control?.line()} | ${r.sim.world.truth.line()}"
+    private fun describe(r: Result) = "t=${r.sim!!.now / 1000}s stop=${r.l.stopped} game ${r.sim.world.homeGoals}:${r.sim.world.awayGoals} | ${r.brain.stats.line()} | ${r.l.last?.control?.line()} | ${r.sim.world.truth.line()} | ${r.sim.world.truth.defenseLine(r.sim.world.awayGoals)}"
 
     @Test fun botCompletesAMatchAndStopsOnTheFullTimeBanner() {
         val r = playMatch(1, AiLevel.EASY)
@@ -157,12 +164,25 @@ class MatchSimulationTest {
         assertTrue(describe(r), r.sim!!.cancelled > 0)
     }
 
+    @Test fun restrictedScreenSpaceExperimentCompletesAndCollectsDiagnostics() {
+        val r = playMatch(1, AiLevel.EASY, experiment = true)
+        println("MATCHSIM restricted: " + describe(r))
+        assertTrue(describe(r), r.sim!!.world.finished)
+        assertFalse(describe(r), r.l.error)
+        assertTrue(describe(r), r.brain.stats.defense.homeMs > 0)
+        val truth = r.sim.world.truth
+        assertEquals(120.0, truth.possessionSeconds(Team.HOME) + truth.possessionSeconds(Team.AWAY) + truth.possessionSeconds(null), 0.05)
+        assertEquals(0, r.brain.stats.shotsOutside)
+        assertTrue(describe(r), r.brain.stats.shotsInside > 0)
+        assertTrue(r.brain.statsLine(), r.brain.statsLine().contains("+600ms actual="))
+    }
+
     @Test fun brainNeverReadsTheGameInternals() {
         val candidates = listOf("src/main/java/com/example/universalgamebot/MatchBrain.kt", "app/src/main/java/com/example/universalgamebot/MatchBrain.kt", "src/main/kotlin/MatchBrain.kt")
         val f = candidates.map { File(it) }.firstOrNull { it.exists() }
         assertNotNull("MatchBrain.kt not found from ${File(".").absolutePath}", f)
         val code = f!!.readLines().filterNot { it.trim().startsWith("*") || it.trim().startsWith("/*") || it.trim().startsWith("//") }.joinToString("\n")
-        for (forbidden in listOf("MatchWorld", "MatchAi", "MatchTruth", "TeamAi", "AgentInput", "Agent("))
+        for (forbidden in listOf("MatchWorld", "MatchAi", "MatchTruth", "TeamAi", "AgentInput", "Agent(", "DebugMonitor"))
             assertFalse("MatchBrain must not use $forbidden (bot sees only the Observation)", code.contains(forbidden))
     }
 }

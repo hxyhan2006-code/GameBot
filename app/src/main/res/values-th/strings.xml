@@ -100,4 +100,5 @@
     <string name="match_bot_pass_fmt">บอท (%1$s): ผ่านเกณฑ์ ชนะ %2$d จาก %3$d แมตช์ (%4$d%%)</string>
     <string name="pill_waiting_frames">รอภาพจากหน้าจอ</string>
     <string name="pill_capture_error">จับภาพหน้าจอล้มเหลว</string>
+    <string name="stat_match_goals_shots">ประตู / ยิง</string>
 </resources>

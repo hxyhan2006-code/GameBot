@@ -35,6 +35,7 @@ interface EngineListener {
     fun onSnapshot(snapshot: EngineSnapshot) {}
     fun onStop(reason: String, isError: Boolean) {}
     fun onLog(message: String) {}
+    fun onShotStarted(atMs: Long) {}
 }
 
 class EngineSnapshot(

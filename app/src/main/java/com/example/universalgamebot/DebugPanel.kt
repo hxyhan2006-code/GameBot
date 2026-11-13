@@ -34,9 +34,10 @@ object DebugPanel {
             appendLine("State      : ${e?.phase ?: "-"}")
             appendLine("Decision   : ${e?.decision ?: "-"}")
             val st = e?.stats
-            appendLine("Actions    : ${st?.attempts ?: 0} done, ${st?.verified ?: 0} verified (${"%.1f".format((st?.successRate() ?: 0f) * 100)}%), dup=${st?.suppressed ?: 0} staleSkip=${st?.staleSkips ?: 0}")
+            if (d.profileName == "match") appendLine("Match      : ${st?.matchSummary() ?: "no shots"}") else appendLine("Actions    : ${st?.attempts ?: 0} done, ${st?.verified ?: 0} verified (${"%.1f".format((st?.successRate() ?: 0f) * 100)}%), dup=${st?.suppressed ?: 0} staleSkip=${st?.staleSkips ?: 0}")
             appendLine("Failures   : ${st?.failureLine() ?: "-"}")
             appendLine("Latency    : avg ${st?.avgLatencyMs() ?: 0} ms (gesture ${st?.avgGestureMs() ?: 0} + verify ${st?.avgVerifyMs() ?: 0}), max ${st?.maxLatencyMs ?: 0} ms")
+            if (d.profileName == "match") appendLine("Game defense: ${d.matchGameReport.ifEmpty { "not available yet" }}")
             if (!e?.extra.isNullOrEmpty()) appendLine("Strategy   : ${e?.extra}")
             val ctl = e?.control
             if (ctl != null) {
@@ -56,14 +57,15 @@ object DebugPanel {
                 appendLine("Frame drops: ${sess.dropAnalysis()}")
             }
             appendLine("Game truth : ${GroundTruth.line()} (score ${GroundTruth.score}, misses ${GroundTruth.mistakes})")
-            appendLine("Per-profile stats (all runs, goal: >=95% of >=100 actions):")
+            appendLine("Per-profile stats (match uses match goals; other action profiles >=95% of >=100):")
             for (gp in GameProfiles.all) {
                 val total = StatsStore.load(context, gp.id)
                 if (e != null && d.profileName == gp.id && d.session?.isRunning == true) total.plusAssign(e.stats)
-                appendLine("  ${gp.id}: ${total.summary()}")
+                appendLine("  ${gp.id}: ${if (gp.id == "match") total.matchSummary() else total.summary()}")
                 val sg = gp.config.streakGoal
                 val verdict = gp.resultLine(context)?.first?.replace("\n", " / ") ?: if (sg > 0) (if (total.bestStreak >= sg) "PASS ($sg goals in a row reached)" else "NOT YET (best streak ${total.bestStreak}/$sg)") else total.goalLine()
-                if (total.attempts > 0) appendLine("    fails ${total.failureLine()} -> $verdict")
+                if (gp.id == "match") appendLine("    Match results: $verdict")
+                else if (total.attempts > 0) appendLine("    fails ${total.failureLine()} -> $verdict")
             }
             if (d.lastSessionLine != "-") appendLine("Last run   : ${d.lastSessionLine}")
             appendLine("Cloud AI   : ${if (CloudVisionPolicy.mayUpload()) "ON" else "OFF (nothing leaves this phone)"}")
@@ -92,6 +94,7 @@ object DebugPanel {
         appendLine()
         val shots = DebugMonitor.engine?.shotLog ?: emptyList()
         if (shots.isNotEmpty()) { appendLine("=== shot log (this run) ==="); shots.forEach { appendLine(it) }; appendLine() }
+        appendLine(MatchProbeFrameStore.report(context))
         appendLine("=== recent runs (sessions.log) ===")
         appendLine(StatsStore.recentSessions(context, 20))
         appendLine()

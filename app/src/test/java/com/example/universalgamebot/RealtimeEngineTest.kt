@@ -180,4 +180,18 @@ class RealtimeEngineTest {
         now += 5000; e.onObservation(Observation(++seq, now, emptyList(), arena))
         assertEquals(1, l.last!!.stats.failures(FailureKind.TIMEOUT))
     }
+    @Test fun timeoutStopsInsteadOfOverlappingAnUnknownGestureAndIgnoresLateCallback() {
+        val b = Brain(move(200f, 800f)); val ex = Exec(); ex.auto = false
+        val l = L(); val e = engine(b, ex, l)
+        tick(e)
+        val callback = ex.pending!!
+        tick(e, 2600)
+        assertTrue(e.isFinished)
+        assertTrue(l.error)
+        callback(true, "late completion")
+        tick(e)
+        assertEquals(1, ex.sent.size)
+        assertEquals(0, l.last!!.control!!.commands)
+    }
+
 }

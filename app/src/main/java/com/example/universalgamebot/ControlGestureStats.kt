@@ -3,10 +3,10 @@ package com.example.universalgamebot
 /**
  * สถิติของ gesture ควบคุมต่อเนื่อง แยกตามชนิด (เริ่มเส้นใหม่ / ลากต่อเนื่อง / ปล่อย / มีการกดปุ่มรวม) และช่วงว่างระหว่าง gesture
  * ใช้ 2 อย่าง: (1) แสดงในรายงานว่า gesture แบบไหนถูกระบบยกเลิก (2) เลือกจังหวะกดปุ่มในท่าเดียวกับจอยที่ได้ผลจริงบนเครื่องนั้น
- * (ลองหน่วงการกดปุ่ม 0 / 35 / 70 ms แล้วเลือกแบบที่ไม่ถูกยกเลิกบ่อยที่สุด) ไม่ผูกกับ Android
+ * (ลองหน่วงการกดปุ่ม 35 / 50 / 70 ms แล้วเลือกแบบที่ไม่ถูกยกเลิกบ่อยที่สุด) ไม่ผูกกับ Android
  */
 object ControlGestureStats {
-    val TAP_DELAYS = longArrayOf(0, 35, 70)
+    val TAP_DELAYS = longArrayOf(35, 50, 70)
     private val kinds = LinkedHashMap<String, IntArray>()
     private val variantOk = IntArray(TAP_DELAYS.size)
     private val variantBad = IntArray(TAP_DELAYS.size)

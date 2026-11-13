@@ -22,9 +22,9 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
     @Volatile private var closing = false
     @Volatile private var lastDoneAt = 0L
 
-    override fun send(cmd: ControlCommand, onDone: (Boolean, String) -> Unit): String? {
+    @Synchronized override fun send(cmd: ControlCommand, onDone: (Boolean, String) -> Unit): String? {
         if (EmergencyStop.triggered) return "emergency stop active"
-        closing = false
+        if (closing) return "executor closing"
         val arena = ArenaGate.info ?: run { held = null; return "game screen not in foreground" }
         val svc = BotAccessibilityService.instance ?: return "accessibility service not connected"
         val pkg = svc.activePackage()
@@ -55,7 +55,7 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
             val path = Path().apply { moveTo(lastX, lastY); lineTo(lastX + 0.5f, lastY) }
             builder.addStroke(prev.continueStroke(path, 0, TAP_MS, false)); strokes++
         }
-        // จังหวะกดปุ่มในท่าเดียวกับจอย: เลือกแบบหน่วง (0/35/70 ms) ที่ได้ผลที่สุดบนเครื่องนี้ (ดู ControlGestureStats)
+        // จังหวะกดปุ่มในท่าเดียวกับจอย: เลือกแบบหน่วง (35/50/70 ms) ที่ได้ผลที่สุดบนเครื่องนี้ (ดู ControlGestureStats)
         val tapVariant = if (cmd.taps.isNotEmpty()) ControlGestureStats.pickTapVariant() else -1
         val tapDelay = if (tapVariant >= 0) ControlGestureStats.TAP_DELAYS[tapVariant] else 0L
         for (t in cmd.taps) {
@@ -78,25 +78,27 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
         DebugMonitor.gesturesSent.incrementAndGet()
         DebugMonitor.gestureState = "Dispatched"
         svc.postMain(Runnable {
-            fun failed(why: String) {
+            fun failed(why: String) = synchronized(this@ContinuousGestureExecutor) {
                 inFlight = false; held = null
                 lastDoneAt = SystemClock.elapsedRealtime()
                 ControlGestureStats.record(kind, tapVariant, false, gapMs)
                 DebugMonitor.gesturesFailed.incrementAndGet()
                 DebugMonitor.gestureState = "Failed ($why)"
                 DebugMonitor.error("continuous gesture failed: $why [${cmd.describe()}]")
-                onDone(false, why)
+                post(Runnable { onDone(false, why) })
             }
             try {
                 val accepted = svc.dispatchGesture(gesture, object : AccessibilityService.GestureResultCallback() {
                     override fun onCompleted(g: GestureDescription?) {
-                        inFlight = false
-                        lastDoneAt = SystemClock.elapsedRealtime()
-                        ControlGestureStats.record(kind, tapVariant, true, gapMs)
-                        if (releasing) held = null else { held = sentHeld; lastX = ex; lastY = ey; if (closing) liftNow() }
-                        DebugMonitor.gesturesOk.incrementAndGet()
-                        DebugMonitor.gestureState = "Success"
-                        onDone(true, "completed")
+                        synchronized(this@ContinuousGestureExecutor) {
+                            inFlight = false
+                            lastDoneAt = SystemClock.elapsedRealtime()
+                            ControlGestureStats.record(kind, tapVariant, true, gapMs)
+                            if (releasing) held = null else { held = sentHeld; lastX = ex; lastY = ey; if (closing) liftNow() }
+                            DebugMonitor.gesturesOk.incrementAndGet()
+                            DebugMonitor.gestureState = "Success"
+                            post(Runnable { onDone(true, "completed") })
+                        }
                     }
                     override fun onCancelled(g: GestureDescription?) { failed("cancelled by system") }
                 }, null)
@@ -107,7 +109,7 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
     }
 
     /** ปล่อยนิ้วจอยที่ค้างอยู่ (ถ้าหน้าเกมของเรายังอยู่หน้าสุด) ไม่งั้นแค่ลืมสถานะ ไม่ยิง gesture ไปโดนแอปอื่น */
-    private fun liftNow() {
+    @Synchronized private fun liftNow() {
         val prev = held ?: return
         held = null
         if (ArenaGate.info == null) return
@@ -115,14 +117,21 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
         try {
             val path = Path().apply { moveTo(lastX, lastY); lineTo(lastX + 0.5f, lastY) }
             val g = GestureDescription.Builder().addStroke(prev.continueStroke(path, 0, TAP_MS, false)).build()
+            inFlight = true
             svc.postMain(Runnable {
-                try { svc.dispatchGesture(g, null, null) } catch (e: Exception) { DebugMonitor.error("release gesture failed: ${e.message}", e) }
+                try {
+                    val accepted = svc.dispatchGesture(g, object : AccessibilityService.GestureResultCallback() {
+                        override fun onCompleted(g: GestureDescription?) { inFlight = false }
+                        override fun onCancelled(g: GestureDescription?) { inFlight = false }
+                    }, null)
+                    if (!accepted) inFlight = false
+                } catch (e: Exception) { inFlight = false; DebugMonitor.error("release gesture failed: ${e.message}", e) }
             })
         } catch (e: Exception) { DebugMonitor.error("release gesture build failed: ${e.message}", e) }
     }
 
     /** หยุดทั้งหมด: ถ้ายังมี gesture ค้างอยู่ จะยกนิ้วทันทีที่มันจบ (กันนิ้วจอยค้างหลังกดหยุดฉุกเฉิน) */
-    override fun releaseAll() {
+    @Synchronized override fun releaseAll() {
         closing = true
         if (!inFlight) liftNow()
     }

@@ -230,7 +230,7 @@ class MainActivity : Activity() {
         idleGroup.addView(tools, lp(6))
 
         runGroup = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
-        val s1 = statBox("FPS"); val s2 = statBox(getString(R.string.stat_gesture)); val s3 = statBox(getString(R.string.stat_verified))
+        val s1 = statBox("FPS"); val s2 = statBox(getString(R.string.stat_gesture)); val s3 = statBox(if (profile.id == "match") getString(R.string.stat_match_goals_shots) else getString(R.string.stat_verified))
         statFps = s1.second; statGesture = s2.second; statVerified = s3.second
         val stats = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for ((i, b) in listOf(s1, s2, s3).withIndex()) stats.addView(b.first, LinearLayout.LayoutParams(0, -2, 1f).apply { if (i > 0) leftMargin = dp(8) })

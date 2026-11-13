@@ -5,32 +5,6 @@ import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 
-class MatchBrainConfig(
-    val leadMs: Long = 250,            // ภาพเก่า + หน่วงของ gesture: ทำนายตำแหน่งล่วงหน้าเท่านี้
-    val aimMs: Long = 150,             // ต้องชี้จอยไปทางเป้านิ่ง ๆ อย่างน้อยเท่านี้ก่อนยิง/ส่ง (ให้จอยพร้อมก่อนกดปุ่ม)
-    val shootRangeDp: Float = 105f,    // ยิงเมื่อห่างเส้นประตูไม่เกินนี้
-    val passPressureDp: Float = 60f,   // คู่แข่งเข้าใกล้ขนาดนี้ = ถูกกดดัน
-    val followMs: Long = 400,          // หลังยิง/ส่ง ปล่อยจอยรอดูผลเท่านี้
-    val cornerFrac: Float = 0.5f,      // จุดเล็งอยู่ห่างกลางประตู = สัดส่วนนี้ของครึ่งปากประตู
-    val passCooldownMs: Long = 2200,   // ส่งแบบ "ดันบอลขึ้น" ได้ไม่ถี่กว่านี้
-    val maxMatchMs: Long = 360_000     // เพดานความปลอดภัย: ไม่เห็นแถบหมดเวลาก็หยุดเอง
-)
-
-enum class MatchDecision { CHASE, PRESS, SUPPORT, DRIBBLE, AIM, SHOOT, PASS, HOLD }
-
-/** สถิติการตัดสินใจของบอท (ทั้งหมดมาจากภาพ ไม่มีข้อมูลภายในเกม) */
-class MatchDecisionStats {
-    val episodes = IntArray(MatchDecision.values().size)   // จำนวนครั้งที่เริ่มตัดสินใจแบบนั้น (นับตอนเปลี่ยนแบบ)
-    var shotsGoal = 0; var shotsNoGoal = 0; var shotsLost = 0
-    var passOk = 0; var passIntercepted = 0; var passLost = 0
-    var visionGoalsFor = 0; var visionGoalsAgainst = 0
-    var kicksCancelled = 0
-
-    fun line() = "decisions " + MatchDecision.values().joinToString(" ") { "${it.name.lowercase()}=${episodes[it.ordinal]}" } +
-        " | shots goal=$shotsGoal noGoal=$shotsNoGoal lost=$shotsLost | passes ok=$passOk intercepted=$passIntercepted lost=$passLost" +
-        " | vision score $visionGoalsFor:$visionGoalsAgainst | kicks cancelled=$kicksCancelled"
-}
-
 /** ติดตามก้อนสีเดียวกันหลายก้อน (จับคู่กับตำแหน่งเดิมที่ใกล้สุด) เพื่อประมาณความเร็วของแต่ละตัว */
 private class BlobTracker {
     class T(var x: Float, var y: Float, var vx: Float, var vy: Float, var at: Long)
@@ -96,6 +70,9 @@ class MatchBrain(private val density: Float, private val cfg: MatchBrainConfig =
     private var lastShotNote = ""
     private var goalLatchFor = false; private var goalLatchAgainst = false
     private var resolvedShotAt = -1L
+    private var lastShotInside = false
+    private var activeShotAt = -1L
+    private val shotEvidence = MatchShotDiagnostics(density)
     private var pendingPassAt = -1L
     private var pendingPassFrom: Pair<Float, Float>? = null
 
@@ -140,6 +117,15 @@ class MatchBrain(private val density: Float, private val cfg: MatchBrainConfig =
         val s = Scene(obs.timeMs, marker, ball, mate, homes, opps, oppKeeper, ownKeeper, over)
         scene = s
         trackGoals(s)
+        val possession = if (marker != null && ball != null) possessor(s, marker, ball) else Poss.NONE
+        val inNet = ball != null && ((leftGoal?.let { ball.cx <= it.box.right } == true) || (rightGoal?.let { ball.cx >= it.box.left } == true))
+        stats.defense.observe(obs.timeMs, when {
+            over || inNet || marker == null || ball == null -> MatchPossession.UNKNOWN
+            possession in listOf(Poss.ME, Poss.MATE, Poss.OWN_KEEPER) -> MatchPossession.HOME
+            possession in listOf(Poss.OPP, Poss.OPP_KEEPER) -> MatchPossession.AWAY
+            else -> MatchPossession.LOOSE
+        })
+        shotEvidence.observe(obs, opps, oppKeeper, ball)
         evalPass(s)
         return s
     }
@@ -175,7 +161,9 @@ class MatchBrain(private val density: Float, private val cfg: MatchBrainConfig =
 
     override fun onObservation(obs: Observation) { feed(obs) }
     override fun shotNote() = lastShotNote
-    override fun statsLine() = stats.line()
+    override fun statsLine() = stats.line() + " | shot window enabled=${cfg.restrictShotY} screenY=${cfg.shotMinY}-${cfg.shotMaxY}\n" + shotEvidence.report()
+    override fun onShotStarted(atMs: Long, dispatchedAtMs: Long) { activeShotAt = atMs; shotEvidence.start(atMs, dispatchedAtMs) }
+    override fun shotDiagnostic(atMs: Long) = shotEvidence.resultNote(atMs)
 
     /** คำสั่งที่ถูกระบบยกเลิก = ยังไม่ได้เตะจริง: เริ่มเล็งใหม่ ไม่ต้องรอ follow-through */
     override fun onCommandResult(cmd: ControlCommand, ok: Boolean) {
@@ -184,6 +172,9 @@ class MatchBrain(private val density: Float, private val cfg: MatchBrainConfig =
         val kick = cmd.taps.any { it.label == "shoot" || it.label == "pass" }
         if (!kick) return
         if (!ok) { stats.kicksCancelled++; followUntil = 0; return }
+        if (cmd.taps.any { it.label == "shoot" }) {
+            if (lastShotInside) stats.shotsInside++ else stats.shotsOutside++
+        }
         if (cmd.taps.any { it.label == "pass" }) { pendingPassAt = lastObsAt; pendingPassFrom = lastMe }
     }
 
@@ -257,16 +248,25 @@ class MatchBrain(private val density: Float, private val cfg: MatchBrainConfig =
         val inRange = !shotTime.isNaN() && dxGoal <= d(cfg.shootRangeDp) && dxGoal >= (pr + br) * 2f
         val tooClose = dxGoal < (pr + br) * 2f
         val clearEnough = clear >= br + kr + d(8f)
-        val shotReady = inRange && clearEnough && !blocked
+        val insideBand = ball.cy in cfg.shotMinY..cfg.shotMaxY
+        val bandReady = !cfg.restrictShotY || insideBand
+        val shotReady = s.ball != null && activeShotAt < 0 && inRange && clearEnough && !blocked && bandReady
 
         // ส่งให้เพื่อน: ถูกกดดัน (และเพื่อนไม่ได้อยู่ข้างหลังไกล) หรือเพื่อนอยู่หน้าเรามากตอนที่ยังไกลประตู
         val mate = s.mate
         val nearOpp = s.opps.minByOrNull { dist(it.cx, it.cy, me.cx, me.cy) }
         val pressured = nearOpp != null && dist(nearOpp.cx, nearOpp.cy, me.cx, me.cy) < d(cfg.passPressureDp)
-        val mateOpen = mate != null && s.opps.none { dist(it.cx, it.cy, mate.cx, mate.cy) < d(45f) } &&
-            s.opps.none { distToSegment(it.cx, it.cy, me.cx, me.cy, mate.cx, mate.cy) < d(20f) } &&
+        val passObstacles = s.opps + listOfNotNull(s.oppKeeper)
+        val mateOpen = mate != null && passObstacles.none { dist(it.cx, it.cy, mate.cx, mate.cy) < d(45f) } &&
+            passObstacles.none { o ->
+                val track = if (o.label == MatchLabels.AWAY_KEEPER) null else oppTracker.ts.minByOrNull { dist(it.x, it.y, o.cx, o.cy) }
+                val t = cfg.passLookAheadMs / 1000f
+                val margin = max(k.playerR, o.box.width / 2f) + k.ballR + d(cfg.passLaneMarginDp)
+                distToSegment(o.cx, o.cy, ball.cx, ball.cy, mate.cx, mate.cy) < margin ||
+                    (track != null && distToSegment(o.cx + track.vx * t, o.cy + track.vy * t, ball.cx, ball.cy, mate.cx, mate.cy) < margin)
+            } &&
             dist(me.cx, me.cy, mate.cx, mate.cy) in d(40f)..d(300f)
-        val wantPass = mate != null && mateOpen && !shotReady && nowMs - lastPassAt > cfg.passCooldownMs &&
+        val wantPass = s.ball != null && mate != null && mateOpen && !shotReady && nowMs - lastPassAt > cfg.passCooldownMs &&
             ((pressured && mate.cx > me.cx - d(40f)) || (mate.cx > me.cx + d(50f) && dxGoal > d(cfg.shootRangeDp) * 1.2f))
 
         val aimDir: Pair<Float, Float> = if (shotReady || !wantPass) shotDir else {
@@ -278,7 +278,8 @@ class MatchBrain(private val density: Float, private val cfg: MatchBrainConfig =
 
         if (shotReady && stickHeld && aimedMs >= cfg.aimMs) {
             followUntil = nowMs + cfg.followMs; aimedMs = 0; count(MatchDecision.SHOOT)
-            lastShotNote = "ball=(${ball.cx.toInt()},${ball.cy.toInt()}) toGoal=${dxGoal.toInt()}px aimY=${targetY.toInt()} keeperNow=${if (s.oppKeeper == null) -1 else kNow.toInt()} keeperPred=${kPred.toInt()} clear=${clear.toInt()}px"
+            lastShotInside = insideBand
+            lastShotNote = "band=${if (insideBand) "inside" else "outside"} ball=(${ball.cx.toInt()},${ball.cy.toInt()}) toGoal=${dxGoal.toInt()}px aimY=${targetY.toInt()} keeperNow=${if (s.oppKeeper == null) -1 else kNow.toInt()} keeperPred=${kPred.toInt()} clear=${clear.toInt()}px"
             return ControlDecision.Move(ControlCommand(from, stickTo(shotDir.first, shotDir.second, 1f), listOf(TapPoint(shoot.box.centerX, shoot.box.centerY, "shoot"))),
                 "SHOOT at ${if (cornerSide == 1) "lower" else "upper"} corner (clearance ${clear.toInt()} px)")
         }
@@ -286,6 +287,16 @@ class MatchBrain(private val density: Float, private val cfg: MatchBrainConfig =
             followUntil = nowMs + cfg.followMs; aimedMs = 0; lastPassAt = nowMs; count(MatchDecision.PASS)
             return ControlDecision.Move(ControlCommand(from, stickTo(aimDir.first, aimDir.second, 1f), listOf(TapPoint(passB.box.centerX, passB.box.centerY, "pass"))),
                 "PASS to teammate (${if (pressured) "pressured" else "advance the ball"})")
+        }
+        // Move the BALL into the experimental screen-space band before aiming; do not creep toward goal forever.
+        if (!bandReady && !wantPass) {
+            aimedMs = 0; lastDir = null
+            val bandY = (cfg.shotMinY + cfg.shotMaxY) / 2f
+            val dx = if (tooClose) -d(40f) else if (inRange) 0f else d(40f)
+            val dy = bandY - ball.cy
+            val n = max(hypot(dx, dy), 0.001f)
+            count(MatchDecision.DRIBBLE)
+            return ControlDecision.Move(ControlCommand(from, stickTo(dx / n, dy / n, 0.7f)), "dribbling into shot Y band ${cfg.shotMinY.toInt()}-${cfg.shotMaxY.toInt()}")
         }
         // ได้ระยะยิงแล้วแต่ยังไม่พร้อม (เล็งไม่นิ่ง/ช่องไม่พอ/มีคนบัง) หรือกำลังเล็งส่ง: ชี้จอยไปทางเป้าแบบคลานช้า ๆ
         if ((inRange && !shotReady) || (shotReady && !(stickHeld && aimedMs >= cfg.aimMs)) || wantPass) {
@@ -338,7 +349,8 @@ class MatchBrain(private val density: Float, private val cfg: MatchBrainConfig =
         }
         if (out != ShotOutcome.PENDING && resolvedShotAt != shotAtMs) {
             resolvedShotAt = shotAtMs
-            when (out) { ShotOutcome.GOAL -> stats.shotsGoal++; ShotOutcome.MISSED -> stats.shotsNoGoal++; else -> stats.shotsLost++ }
+            if (activeShotAt == shotAtMs) activeShotAt = -1L
+            when (out) { ShotOutcome.GOAL -> { stats.shotsGoal++; if (lastShotInside) stats.goalsInside++ else stats.goalsOutside++ }; ShotOutcome.MISSED -> stats.shotsNoGoal++; else -> stats.shotsLost++ }
         }
         return out
     }

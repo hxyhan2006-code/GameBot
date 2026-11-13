@@ -33,6 +33,7 @@ class RealtimeEngine(
     private var streak = 0
     private var best = 0
     private var obs: Observation? = null
+    private var commandId = 0L
     private var inFlight = false
     private var sentAt = 0L
     private var lastSendAt = 0L
@@ -61,7 +62,7 @@ class RealtimeEngine(
         judgeShot(now)
         if (isFinished) return
         if (inFlight) {
-            if (now - sentAt > cfg.sendTimeoutMs) { inFlight = false; held = false; gestureFailed("send timeout") }
+            if (now - sentAt > cfg.sendTimeoutMs) { commandId++; inFlight = false; held = false; stop("send timeout: gesture state unknown", true) }
             return
         }
         if (now - lastSendAt < cfg.tickMs || now < holdOffUntil) return
@@ -85,6 +86,7 @@ class RealtimeEngine(
 
     fun stop(reason: String, isError: Boolean = false) {
         if (isFinished) return
+        commandId++; inFlight = false
         try { executor.releaseAll() } catch (_: Exception) {}
         held = false
         decision = reason
@@ -95,7 +97,7 @@ class RealtimeEngine(
     }
 
     override fun emergencyStop() = stop("EMERGENCY STOP")
-    override fun release() { try { executor.releaseAll() } catch (_: Exception) {}; held = false }
+    override fun release() { commandId++; inFlight = false; try { executor.releaseAll() } catch (_: Exception) {}; held = false }
 
     private fun note(text: String) { if (text != decision) { decision = text; publish() } }
 
@@ -103,7 +105,8 @@ class RealtimeEngine(
         inFlight = true; sentAt = now; lastSendAt = now
         decision = why
         val wasHeld = held
-        val reject = executor.send(cmd) { ok, detail -> onResult(cmd, wasHeld, ok, detail) }
+        val id = ++commandId
+        val reject = executor.send(cmd) { ok, detail -> if (id == commandId && !isFinished) onResult(cmd, wasHeld, ok, detail) }
         if (reject != null && inFlight && sentAt == now) {
             inFlight = false
             tel = tel.copy(rejected = tel.rejected + 1)
@@ -151,6 +154,8 @@ class RealtimeEngine(
             if (cmd.taps.any { it.label == "shoot" }) {
                 if (pendingShotAt >= 0) shotFailed(FailureKind.MISSED_TARGET, "previous shot never scored before the next one", now - pendingShotAt, now)
                 stats.recordAttempt(); pendingShotAt = now; shotSendMs = ms
+                strategy.onShotStarted(now, sentAt)
+                listener.onShotStarted(sentAt)
                 pendingNote = try { strategy.shotNote() } catch (_: Exception) { "" }
             }
         }
@@ -168,6 +173,7 @@ class RealtimeEngine(
     private fun judgeShot(now: Long) {
         if (pendingShotAt < 0) return
         val o = obs ?: return
+        if (o.timeMs < pendingShotAt) return
         val since = now - pendingShotAt
         val out = strategy.shotOutcome(o, now, pendingShotAt)
         when {
@@ -191,10 +197,11 @@ class RealtimeEngine(
     }
 
     private fun shotFailed(kind: FailureKind, detail: String, since: Long, now: Long) {
+        val evidence = strategy.shotDiagnostic(pendingShotAt).takeIf { it.isNotEmpty() }?.let { " | $it" } ?: ""
         stats.recordFailure(kind)
         streak = 0
-        record(ActionOutcome.FAILED, kind, "Shoot", detail, now, since)
-        logShot("${kind.name} after $since ms: $detail")
+        record(ActionOutcome.FAILED, kind, "Shoot", detail + evidence, now, since)
+        logShot("${kind.name} after $since ms: $detail$evidence")
         pendingShotAt = -1
     }
 

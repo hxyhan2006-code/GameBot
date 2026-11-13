@@ -24,6 +24,7 @@ class MatchFieldView(
     private val d = resources.displayMetrics.density
     var world: MatchWorld? = null; private set
     private var last = 0L
+    private var lastReportAt = 0L
     private val input = AgentInput()
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = rgb(MatchColors.LINE); strokeWidth = 2f * d }
@@ -45,9 +46,11 @@ class MatchFieldView(
     private fun newWorld(w: Float, h: Float, start: Boolean) {
         val wd = MatchWorld(MatchParams(w, h, d), SystemClock.uptimeMillis(), level, true)
         wd.onGoal = { onScore(wd.homeGoals, wd.awayGoals) }
-        wd.onFinish = { onFinish(wd.homeGoals, wd.awayGoals) }
+        wd.onFinish = { if (BotState.running) DebugMonitor.matchGameReport = wd.truth.defenseLine(wd.awayGoals); onFinish(wd.homeGoals, wd.awayGoals) }
         wd.started = start
         world = wd
+        DebugMonitor.matchGameReport = wd.truth.defenseLine(wd.awayGoals)
+        lastReportAt = 0L
         last = 0L
         onScore(0, 0)
     }
@@ -63,6 +66,7 @@ class MatchFieldView(
         input.mx = pad.stickX; input.my = pad.stickY
         input.shoot = pad.takeShoot(); input.pass = pad.takePass(); input.tackle = pad.takeTackle()
         wd.update(dt, input)
+        if (BotState.running && now - lastReportAt >= 250) { DebugMonitor.matchGameReport = wd.truth.defenseLine(wd.awayGoals); lastReportAt = now }
         val p = wd.p
         fill.style = Paint.Style.FILL
         var x = 0f; var i = 0

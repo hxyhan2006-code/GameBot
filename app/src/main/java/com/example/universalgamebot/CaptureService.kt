@@ -72,6 +72,8 @@ class CaptureService : Service() {
         }
     }
 
+    private var shotFrames: MatchProbeFrameStore? = null
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "STOP") { EmergencyStop.trigger("stop from notification"); stopSelf(); return START_NOT_STICKY }
         if (running) return START_NOT_STICKY
@@ -91,7 +93,8 @@ class CaptureService : Service() {
         val code = intent?.getIntExtra("code", Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
         profile = GameProfiles.byId(intent?.getStringExtra("profile"))
         DebugMonitor.profileName = profile.id
-        val limit = intent?.getIntExtra("limit", 0) ?: 0 // 0 = ไม่จำกัด, N = หยุดเองหลัง N action (โหมดทดสอบ)
+        if (profile.id == "match") shotFrames = MatchProbeFrameStore(this)
+        val limit = if (profile.id == "match") 0 else intent?.getIntExtra("limit", 0) ?: 0 // 0 = ไม่จำกัด, N = หยุดเองหลัง N action (โหมดทดสอบ)
         val startedAt = SystemClock.elapsedRealtime()
         session = SessionStats(profile.id, startedAt, profile.config.visionIntervalMs).also { DebugMonitor.session = it }
         lastFpsAt = startedAt; lastFpsCount = 0; finished = false
@@ -103,6 +106,7 @@ class CaptureService : Service() {
                     if (isError) DebugMonitor.error("bot stopped: $reason") else DebugMonitor.log("bot stopped: $reason")
                     stopSelf()
                 }
+                override fun onShotStarted(atMs: Long) { shotFrames?.arm(atMs) }
                 override fun onLog(message: String) { DebugMonitor.log(message) }
             }
             val control = profile.createControlStrategy(this)
@@ -129,9 +133,13 @@ class CaptureService : Service() {
             }, handler)
             val (w, h) = realScreenSize()
             val dpi = resources.displayMetrics.densityDpi
+            // Arm capture before registering the listener/creating the display. Otherwise a fast
+            // first callback can discard the only startup frame, then counters are reset after it.
+            imageCallbacks = 0; nullImages = 0; noFrameReported = false; drainTried = false
+            captureStartedAt = SystemClock.elapsedRealtime(); running = true
             reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 3)
             // ต้องตั้งตัวรับภาพ "ก่อน" สร้างจอเสมือน: ถ้าภาพมาก่อนมีตัวรับ ถังภาพ (3 ช่อง) จะเต็มโดยไม่มีใครหยิบ แล้วระบบไม่เรียกตัวรับอีกเลย (เจอจริง: imageCallbacks=0)
-            // ระหว่างที่ running ยังเป็น false ตัวรับจะหยิบภาพทิ้งเพื่อเคลียร์ถัง
+            // running และตัวนับพร้อมแล้วก่อน callback แรก จึงไม่ทิ้งเฟรมเริ่มต้น
             reader?.setOnImageAvailableListener({ source -> onImage(source) }, handler)
             display = projection?.createVirtualDisplay("GameBotCapture", w, h, dpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader?.surface, null, handler)
             if (display == null) { fail("createVirtualDisplay returned null"); return START_NOT_STICKY }
@@ -141,8 +149,6 @@ class CaptureService : Service() {
             fail("setup failed: ${e.javaClass.simpleName}: ${e.message}", e)
             return START_NOT_STICKY
         }
-        running = true
-        imageCallbacks = 0; nullImages = 0; noFrameReported = false; drainTried = false; captureStartedAt = SystemClock.elapsedRealtime()
         DebugMonitor.captureState = "Active"
         BotState.set(true)
         handler.postDelayed(ticker, 40)
@@ -215,6 +221,7 @@ class CaptureService : Service() {
         OverlayState.publish(objects, now)
         val bounds = Box(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat())
         engine?.onObservation(Observation(++seq, now, objects, bounds))
+        shotFrames?.onFrame(sampled, now, seq)
     }
 
     private val ticker = object : Runnable {
@@ -277,22 +284,22 @@ class CaptureService : Service() {
         val stats = eng.statsCopy()
         StatsStore.addSession(this, profile.id, stats)
         val sg = profile.config.streakGoal
-        val goalTxt = if (sg > 0) (if (stats.bestStreak >= sg) "PASS ($sg in a row)" else "NOT YET (best ${stats.bestStreak}/$sg)") else stats.goalLine()
+        val goalTxt = if (profile.id == "match") "normal: concede <=3 per match (evaluate from vision score); hard: observation only" else if (sg > 0) (if (stats.bestStreak >= sg) "PASS ($sg in a row)" else "NOT YET (best ${stats.bestStreak}/$sg)") else stats.goalLine()
         val streak = if (stats.bestStreak > 0) " | best streak ${stats.bestStreak}" else ""
         val pad = (if (ControlInputStats.used) " | ${ControlInputStats.line()}" else "") + (if (ControlGestureStats.total() > 0) " | gestures: ${ControlGestureStats.line()}" else "")
         val extra = DebugMonitor.engine?.extra?.takeIf { it.isNotEmpty() }?.let { " | $it" } ?: ""
-        val line = "${profile.id}: ${stats.summary()} | fails: ${stats.failureLine()} | ${s.fpsLine(now)} | ${GroundTruth.line()}$streak$pad$extra | goal $goalTxt"
+        val line = "${profile.id}: ${if (profile.id == "match") stats.matchSummary() else stats.summary()} | fails: ${stats.failureLine()} | ${s.fpsLine(now)} | ${GroundTruth.line()}$streak$pad$extra | goal $goalTxt"
         DebugMonitor.lastSessionLine = line
         DebugMonitor.sessionProfile = profile.id
         DebugMonitor.sessionActions = stats
         StatsStore.appendSession(this, line)
         StatsStore.appendSession(this, "  frames: ${s.dropAnalysis()}")
+        if (profile.id == "match") StatsStore.appendSession(this, "  Game defense: ${DebugMonitor.matchGameReport}")
+        DebugMonitor.engine?.shotLog?.forEach { StatsStore.appendSession(this, "  shot: $it") }
         DebugMonitor.log("session finished: $line")
     }
 
     override fun onDestroy() {
-        engine?.release() // ปล่อยนิ้วจอยที่ค้าง (ถ้ามี) ก่อนปิดบริการ
-        finishSession()
         running = false
         BotState.set(false)
         if (DebugMonitor.captureState != "Error") DebugMonitor.captureState = "Idle"
@@ -302,6 +309,9 @@ class CaptureService : Service() {
         val d = display; val r = reader; val p = projection; val ht = handlerThread
         // ปิดทรัพยากรจับภาพบน thread เดียวกับที่อ่านเฟรม กันชนกัน (เคยเกิด "buffer is inaccessible" ตอนหยุดบอท)
         handler.post {
+            engine?.release()
+            finishSession()
+            shotFrames?.close()
             try { d?.release(); r?.close(); p?.stop() } catch (e: Exception) { DebugMonitor.log("capture shutdown: ${e.message}") }
             ht.quitSafely()
         }

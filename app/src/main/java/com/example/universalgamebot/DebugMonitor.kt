@@ -11,6 +11,7 @@ object DebugMonitor {
     const val TAG = "GameBot"
 
     @Volatile var profileName = "-"
+    @Volatile var matchGameReport = "" // Report only; never read by the bot strategy.
     @Volatile var captureState = "Idle"          // Idle / Starting / Active / Error
     @Volatile var captureSize = ""               // ขนาด buffer ที่จับได้ เช่น 1220x2712
     @Volatile var lastFrameAt = 0L
@@ -47,6 +48,7 @@ object DebugMonitor {
         framesReceived.set(0); framesProcessed.set(0); framesSkipped.set(0); framesThrottled.set(0)
         gesturesSent.set(0); gesturesOk.set(0); gesturesFailed.set(0)
         synchronized(this) { skipCounts.clear() }
+        matchGameReport = ""
         objectCount = 0; bestConfidence = 0f; bestLabel = "-"
         imageX = Float.NaN; imageY = Float.NaN; screenX = Float.NaN; screenY = Float.NaN
         gestureState = "None"; lastSkipReason = "-"; avgBrightness = -1; lastFrameAt = 0L; engine = null

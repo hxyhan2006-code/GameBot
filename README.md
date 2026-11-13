@@ -106,3 +106,12 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 
 ## v0.7.1c (screen capture start-up race fix, to be confirmed on the device)
 - The image listener is now registered before the virtual display is created, so early frames can no longer fill the 3-slot image queue unnoticed. If no frame callback has arrived after 1.5 s the service tries to drain a queued image once and logs whether it found one (`recovered: ...` or `no queued image to drain ...`). After 4 s without any frame it still stops with diagnostics.
+
+## v0.7.2 match diagnostics (phone validation pending)
+
+- Adds actual simulator conceded goals, turnovers and time-weighted possession to debug/session reports, alongside the bot's visual estimates. Actual metrics are report-only; the bot continues to read only Vision observations.
+- Retains +300/+600 ms detected-frame evidence and local sampled arena PNGs after successful shoot gestures, including actual sample times. Contact labels are candidates; ambiguous cases remain unknown.
+- Configurable experiment in `MatchConfig.kt`: shoot only at absolute screen Y 1250–1310; dribble there first. Reports shots/goals inside and outside the band. These coordinates require calibration on other devices/layouts.
+- Pass lanes use the ball origin, collision margins and predicted defenders. Match reports shot conversion separately from command failures and ignores the 100-action/95% criterion.
+- Serializes gesture results on the engine thread, guards stop/release, stops on unknown gesture timeout, and uses nonzero tap delays (35/50/70 ms). Capture initialization no longer resets counters after early callbacks.
+- Mobile test steps and metric definitions: [MATCH_TEST_GUIDE.md](MATCH_TEST_GUIDE.md). Normal's target remains <=3 conceded per match; no Hard win target is claimed.
