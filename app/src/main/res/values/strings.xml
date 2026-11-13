@@ -42,4 +42,8 @@
     <string name="profile_bullseye_desc">Find the bullseye among look-alike decoys using template matching, then tap it.</string>
     <string name="profile_swipe_name">Swipe Ball (Swipe)</string>
     <string name="profile_swipe_desc">Detect the yellow ball and the blue goal zone, then swipe the ball into the zone.</string>
+    <string name="chip_limit_on">Stop at 100: ON</string>
+    <string name="chip_limit_off">Stop at 100: OFF</string>
+    <string name="chip_reset_stats">Reset stats</string>
+    <string name="toast_stats_reset">Stats reset</string>
 </resources>

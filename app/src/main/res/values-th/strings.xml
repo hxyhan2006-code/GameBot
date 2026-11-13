@@ -42,4 +42,8 @@
     <string name="profile_bullseye_desc">หาเป้าวงกลมซ้อนท่ามกลางตัวหลอกหน้าตาคล้ายกันด้วย Template Matching แล้วแตะ</string>
     <string name="profile_swipe_name">ปัดลูกบอล (ปัด)</string>
     <string name="profile_swipe_desc">ตรวจจับลูกบอลสีเหลืองกับโซนสีฟ้า แล้วปัดลูกบอลเข้าโซน</string>
+    <string name="chip_limit_on">หยุดที่ 100: เปิด</string>
+    <string name="chip_limit_off">หยุดที่ 100: ปิด</string>
+    <string name="chip_reset_stats">ล้างสถิติ</string>
+    <string name="toast_stats_reset">ล้างสถิติแล้ว</string>
 </resources>

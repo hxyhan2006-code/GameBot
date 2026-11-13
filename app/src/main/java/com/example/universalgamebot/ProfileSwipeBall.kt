@@ -26,7 +26,7 @@ object SwipeBallProfile : GameProfile {
         ColorDetector("color:cyan", "goal", CYAN, minCells = 60, maxObjects = 1)
     )
 
-    override fun createStrategy(context: Context): Strategy = SwipeToGoalStrategy("ball", "goal", movedPx = context.dp(40).toFloat())
+    override fun createStrategy(context: Context): Strategy = SwipeToGoalStrategy("ball", "goal", samePlacePx = context.dp(20).toFloat())
     override fun createSurface(context: Context, onScore: (Int, Int) -> Unit): GameSurface = Surface(context, onScore)
 
     private class Surface(private val ctx: Context, private val onScore: (Int, Int) -> Unit) : GameSurface {
@@ -39,6 +39,7 @@ object SwipeBallProfile : GameProfile {
         override var score = 0; private set
         override var mistakes = 0; private set
         override val view: View get() = arena
+        private var placed = false
         private var downX = 0f; private var downY = 0f; private var startX = 0f; private var startY = 0f
 
         init {
@@ -63,12 +64,20 @@ object SwipeBallProfile : GameProfile {
 
         override fun restoreScore(score: Int) { this.score = score }
 
+        /** ลูกบอลใหม่ต้องเกิดห่างจากลูกเดิมอย่างน้อย 1.2 เท่าของขนาด (arena เตี้ย แกน y ขยับได้น้อย จึงต้องกันแกน x) */
         override fun relayout() {
-            val minY = goalTop + goalHeight + ctx.dp(40)
+            val minY = goalTop + goalHeight + ctx.dp(12)
             val maxY = arena.height - ballSize - ctx.dp(8)
             if (arena.width <= ballSize || maxY <= minY) return
-            ball.x = Random.nextInt(arena.width - ballSize).toFloat()
-            ball.y = (minY + Random.nextInt((maxY - minY).coerceAtLeast(1))).toFloat()
+            val ox = ball.x; val oy = ball.y
+            var nx = 0f; var ny = 0f
+            for (attempt in 0 until 50) {
+                nx = Random.nextInt(arena.width - ballSize).toFloat()
+                ny = (minY + Random.nextInt((maxY - minY).coerceAtLeast(1))).toFloat()
+                if (!placed || Math.hypot((nx - ox).toDouble(), (ny - oy).toDouble()) >= ballSize * 1.2) break
+            }
+            ball.x = nx; ball.y = ny
+            placed = true
         }
 
         override fun groundTruthAction(): BotAction? {

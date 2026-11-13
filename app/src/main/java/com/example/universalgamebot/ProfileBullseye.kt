@@ -30,7 +30,7 @@ object BullseyeProfile : GameProfile {
         return listOf(TemplateDetector("template:bullseye", "target", tpl, threshold = 0.85f))
     }
 
-    override fun createStrategy(context: Context): Strategy = TapTargetStrategy("target", minConfidence = 0.85f, movedPx = context.dp(30).toFloat())
+    override fun createStrategy(context: Context): Strategy = TapTargetStrategy("target", minConfidence = 0.85f, samePlacePx = context.dp(16).toFloat())
     override fun createSurface(context: Context, onScore: (Int, Int) -> Unit): GameSurface = Surface(context, onScore)
 
     /** วาด bitmap 1:1 พิกเซล (ไม่ย่อ/ขยาย) เพื่อให้ตรงกับแม่แบบ */
@@ -46,6 +46,7 @@ object BullseyeProfile : GameProfile {
         override var score = 0; private set
         override var mistakes = 0; private set
         override val view: View get() = arena
+        private var placedOnce = false
 
         init {
             arena.addView(TextView(ctx).apply { text = ctx.getString(R.string.arena_hint_bullseye); textSize = 13f; setTextColor(Palette.MUTED); setPadding(ctx.dp(12), ctx.dp(10), ctx.dp(12), ctx.dp(10)) })
@@ -72,15 +73,20 @@ object BullseyeProfile : GameProfile {
             if (arena.width <= size || arena.height <= size) return
             val top = ctx.dp(36)
             val placed = ArrayList<Pair<Int, Int>>()
+            val prev = Pair(target.translationX.toInt(), target.translationY.toInt())
             for (v in listOf(target) + decoys) {
                 var pos = Pair(0, top)
                 for (attempt in 0 until 60) {
                     pos = Pair(Random.nextInt((arena.width - size).coerceAtLeast(1)), top + Random.nextInt((arena.height - size - top).coerceAtLeast(1)))
-                    if (placed.none { Math.hypot((it.first - pos.first).toDouble(), (it.second - pos.second).toDouble()) < size * 1.15 }) break
+                    val apart = placed.none { Math.hypot((it.first - pos.first).toDouble(), (it.second - pos.second).toDouble()) < size * 1.15 }
+                    // เป้าจริงต้องไม่เกิดซ้อนจุดเดิม (ไม่ให้ตรวจผลสับสน)
+                    val movedEnough = v !== target || !placedOnce || Math.hypot((prev.first - pos.first).toDouble(), (prev.second - pos.second).toDouble()) >= size * 1.2
+                    if (apart && movedEnough) break
                 }
                 placed += pos
                 v.translationX = pos.first.toFloat(); v.translationY = pos.second.toFloat()
             }
+            placedOnce = true
         }
 
         override fun groundTruthAction(): BotAction? {

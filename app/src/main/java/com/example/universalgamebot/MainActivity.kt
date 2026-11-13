@@ -36,6 +36,8 @@ class MainActivity : Activity() {
     private lateinit var botChip: StatusChip
     private lateinit var boxChip: StatusChip
     private lateinit var debugChip: StatusChip
+    private lateinit var limitChip: StatusChip
+    private var limit100 = false
     private lateinit var debugScroll: ScrollView
     private lateinit var debugText: TextView
     private val ui = Handler(Looper.getMainLooper())
@@ -59,8 +61,10 @@ class MainActivity : Activity() {
         ErrorLog.init(this)
         profile = GameProfiles.byId(intent.getStringExtra("profile"))
         pendingScore = savedInstanceState?.getInt("score") ?: 0
+        limit100 = getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("limit100", false)
         setContentView(buildScreen())
         surface.restoreScore(pendingScore)
+        GroundTruth.update(surface.score, surface.mistakes)
         updateScore()
         refreshChips()
         holder.post { surface.relayout() }
@@ -160,7 +164,7 @@ class MainActivity : Activity() {
         root.addView(header, lp())
 
         // ป้ายสถานะ
-        accChip = StatusChip(this); botChip = StatusChip(this); boxChip = StatusChip(this); debugChip = StatusChip(this)
+        accChip = StatusChip(this); botChip = StatusChip(this); boxChip = StatusChip(this); debugChip = StatusChip(this); limitChip = StatusChip(this)
         val chips = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         chips.addView(accChip, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(6) })
         chips.addView(botChip, LinearLayout.LayoutParams(-2, -2))
@@ -172,6 +176,15 @@ class MainActivity : Activity() {
         chips2.addView(debugChip, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(6) })
         chips2.addView(StatusChip(this).also { it.show(getString(R.string.chip_copy), false); it.setOnClickListener { copyReport() } }, LinearLayout.LayoutParams(-2, -2))
         root.addView(chips2, lp(6))
+        val chips3 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        limitChip.setOnClickListener {
+            limit100 = !limit100
+            getSharedPreferences("settings", Context.MODE_PRIVATE).edit().putBoolean("limit100", limit100).apply()
+            refreshChips()
+        }
+        chips3.addView(limitChip, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(6) })
+        chips3.addView(StatusChip(this).also { it.show(getString(R.string.chip_reset_stats), false); it.setOnClickListener { StatsStore.reset(this); Toast.makeText(this, R.string.toast_stats_reset, Toast.LENGTH_SHORT).show() } }, LinearLayout.LayoutParams(-2, -2))
+        root.addView(chips3, lp(6))
 
         // คะแนน
         scoreText = TextView(this).apply {
@@ -198,10 +211,10 @@ class MainActivity : Activity() {
         // แผง Debug
         debugText = TextView(this).apply { textSize = 10.5f; typeface = Typeface.MONOSPACE; setTextColor(Palette.MUTED); setPadding(dp(10), dp(8), dp(10), dp(8)) }
         debugScroll = ScrollView(this).apply { addView(debugText); background = roundRect(Palette.CARD, 12) }
-        root.addView(debugScroll, LinearLayout.LayoutParams(-1, dp(150)).apply { topMargin = dp(8) })
+        root.addView(debugScroll, LinearLayout.LayoutParams(-1, dp(120)).apply { topMargin = dp(8) })
 
         // arena = เกมของโปรไฟล์ + ชั้นกรอบ Vision
-        surface = profile.createSurface(this) { _, _ -> runOnUiThread { updateScore() } }
+        surface = profile.createSurface(this) { sc, mi -> GroundTruth.update(sc, mi); runOnUiThread { updateScore() } }
         overlay = DetectionOverlayView(this)
         holder = FrameLayout(this)
         holder.addView(surface.view, FrameLayout.LayoutParams(-1, -1))
@@ -229,6 +242,7 @@ class MainActivity : Activity() {
         botChip.show(getString(if (BotState.running) R.string.chip_bot_on else R.string.chip_bot_off), BotState.running)
         boxChip.show(getString(if (OverlayState.showBoxes) R.string.chip_boxes_on else R.string.chip_boxes_off), OverlayState.showBoxes)
         debugChip.show(getString(if (debugScroll.visibility == View.VISIBLE) R.string.chip_debug_on else R.string.chip_debug_off), debugScroll.visibility == View.VISIBLE)
+        limitChip.show(getString(if (limit100) R.string.chip_limit_on else R.string.chip_limit_off), limit100)
     }
 
     /** บอกบอทว่า arena อยู่ตรงไหนบนหน้าจอจริง (พิกัดหน้าจอ) เพื่อใช้ทั้งสแกนสีและจำกัดการแตะ */
@@ -277,7 +291,9 @@ class MainActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == requestCodeCapture && resultCode == RESULT_OK && data != null) {
-            val intent = Intent(this, CaptureService::class.java).apply { putExtra("code", resultCode); putExtra("data", data); putExtra("profile", profile.id) }
+            GroundTruth.update(surface.score, surface.mistakes)
+            GroundTruth.begin()
+            val intent = Intent(this, CaptureService::class.java).apply { putExtra("code", resultCode); putExtra("data", data); putExtra("profile", profile.id); putExtra("limit", if (limit100) 100 else 0) }
             startForegroundService(intent)
         }
     }

@@ -1,4 +1,4 @@
-# Universal Game Bot v0.4 (local proof of concept)
+# Universal Game Bot v0.4.1 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -51,3 +51,10 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - **Debug & performance**: FPS, confidence, state/decision, action history, CPU/RAM/battery, error log file (`files/errors.log`), "Copy report" button.
 - **Hybrid AI**: `CloudVisionClient` interface only. There is no INTERNET permission in the manifest, so no screenshot can leave the phone.
 - Unit tests (JVM, no device): `gradle testDebugUnitTest`.
+
+## v0.4.1 verification & stats
+- Verification now watches every new frame for up to `verifyTimeoutMs` after a gesture (handles animation delay) and classifies failures: MISSED_TARGET, TIMEOUT, STALE_FRAME, DETECTION_ERROR (plus GESTURE_FAILED / REJECTED).
+- Root cause of the 8-19% false failures in v0.4: a new target often spawned within the old target's tolerance radius. Fixed by a small `samePlacePx` and by spawning new targets away from the old position.
+- Frame drops are split into intentional throttling vs. superseded frames (backpressure); average FPS, per-profile success rate and latency are kept after Stop (Debug panel, "Copy report", `sessions.log`).
+- "Stop at 100" chip stops the bot after exactly 100 actions to check the goal (>= 95% verified per profile).
+- `SimulationTest` replays all three games with animation delay, jitter and flicker.

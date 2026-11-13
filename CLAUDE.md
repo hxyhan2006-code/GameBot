@@ -41,13 +41,14 @@
 - โปรไฟล์เกม (ทุกอย่างเฉพาะเกมอยู่ที่นี่): `GameProfile.kt` (interface + รายการ), `ProfileGreenDot.kt`, `ProfileBullseye.kt` (+ `TargetArt.kt`), `ProfileSwipeBall.kt`, `Strategy.kt` (สมอง Tap/Swipe)
 - หน้าจอ: `ProfileSelectActivity.kt` (หน้าแรก เลือกโปรไฟล์), `MainActivity.kt` (หน้าเกม), `DetectionOverlayView.kt` (กรอบวัตถุ), `DebugPanel.kt`, `UiKit.kt`, `LocaleHelper.kt`
 - Debug/ความปลอดภัย: `DebugMonitor.kt`, `PerfMonitor.kt` (FPS/CPU/RAM/แบต), `ErrorLog.kt` (ไฟล์ log), `EmergencyStop.kt`, `OverlayState.kt`, `CloudVision.kt` (interface เตรียมไว้ ปิดอยู่)
-- ไฟล์ที่ **ห้ามผูกกับ Android** (เทสต์บน JVM ได้): Model, SampledFrame, Detector, ColorDetector, TemplateDetector, TargetArt, Strategy, DecisionEngine · เทสต์อยู่ที่ `app/src/test/`
+- สถิติ: `ActionStats.kt` (อัตราสำเร็จ/latency/ประเภทความล้มเหลว), `SessionStats.kt` (FPS เฉลี่ย + วิเคราะห์เฟรมที่หาย), `StatsStore.kt` (เก็บสะสมต่อโปรไฟล์ + `sessions.log` + `GroundTruth` = คะแนนจริงของเกม)
+- ไฟล์ที่ **ห้ามผูกกับ Android** (เทสต์บน JVM ได้): Model, SampledFrame, Detector, ColorDetector, TemplateDetector, TargetArt, Strategy, DecisionEngine, ActionStats, SessionStats · มี `SimulationTest` จำลองเกมทั้ง 3 แบบ (แอนิเมชันช้า/ตำแหน่งสั่น/เป้ากะพริบ) ต้องได้ verified >= 95% และตรงกับคะแนนจริง · เทสต์อยู่ที่ `app/src/test/`
 - ปุ่ม "ทดสอบ Gesture" ส่งคำสั่งที่ถูกต้องตามตำแหน่งจริงของเป้าผ่าน Accessibility โดยไม่ใช้ภาพ (ใช้ได้กับทุกโปรไฟล์) ไว้แยกปัญหา Vision กับ Accessibility
 - **เพิ่มเกมใหม่** = เขียนโปรไฟล์ใหม่ 1 ไฟล์ (surface + detectors + strategy) แล้วเพิ่มใน `GameProfiles.all` ห้ามแก้ระบบหลักเพื่อเกมเดียว
 
 ## ทดสอบและ Build
 - เครื่อง cloud คอมไพล์ Android ไม่ได้ (ไม่มี SDK) → ใช้ **GitHub Actions** (`.github/workflows/build-apk.yml`) เป็นตัวเช็กว่าคอมไพล์ผ่าน แล้วดูผลทุกครั้ง ถ้าล้มให้อ่าน log แก้ แล้วรันใหม่ · workflow รันได้ด้วย `workflow_dispatch` กับ branch ที่ระบุ และปล่อย APK ที่ Releases (`build-N`) อัตโนมัติเมื่อผ่าน
-- เพิ่มเวอร์ชันทุกครั้งที่ปล่อย: `versionName` ใน `app/build.gradle.kts` (ตอนนี้ 0.4) + อัปเดต README
+- เพิ่มเวอร์ชันทุกครั้งที่ปล่อย: `versionName` ใน `app/build.gradle.kts` (ตอนนี้ 0.4.1) + อัปเดต README
 - เขียนเทสต์ JVM ให้ตรรกะล้วน (Vision/Decision) และรัน `gradle testDebugUnitTest` ใน Actions ก่อน build · ตรวจเร็วในเครื่อง cloud ได้ด้วยโปรเจกต์ Gradle JVM เล็ก ๆ ที่ลิงก์ไฟล์ pure เหล่านั้น (ไม่ต้องมี Android SDK)
 - หลังปล่อย บอก Han: เลข build, เปลี่ยนอะไร, ขั้นตอนทดสอบบนมือถือ, อ่านค่าอะไรในแผง Debug, ถ้ายังไม่ได้ผลให้ส่งภาพแผง Debug (Last skip / Last error / Skip reasons)
 
@@ -74,5 +75,8 @@
 - หลัง push รายงาน: เลข build/เวอร์ชัน → เปลี่ยนอะไร → ทดสอบแล้ว/ยังไม่ได้ทดสอบ → ให้ Han ลองอะไรบนมือถือ → ย้อนได้ด้วยคำว่า "ย้อน"
 
 ## ค้างอยู่ / ควรรู้
+- ตรวจผล (verify) ทำงานเป็นช่วงเวลา: ดูทุกเฟรมใหม่หลัง gesture จบจนกว่าจะยืนยัน (รองรับแอนิเมชันช้า) แล้วจัดประเภทล้มเหลว: MISSED_TARGET / TIMEOUT / STALE_FRAME / DETECTION_ERROR (+ GESTURE_FAILED, REJECTED) · รัศมี "จุดเดิม" (`samePlacePx`) ต้องเล็ก และเกมทดสอบต้องไม่ให้เป้าใหม่เกิดซ้อนจุดเดิม (บทเรียน v0.4: verify ล้มเทียม ~8–19% เพราะเป้าใหม่เกิดใกล้จุดเก่า)
+- เป้าหมายคุณภาพ: ทุกโปรไฟล์ verified >= 95% จาก >= 100 action (ใช้ชิป "Stop at 100" แล้วดู `goal PASS/FAIL` ในแผง Debug) และ verified ต้องตรงกับคะแนนจริงของเกม
+- v0.4 (Build 9) Han ทดสอบแล้ว 3 โปรไฟล์ทำงาน: Green 10/12, Bullseye 37/40, Swipe 25/32, gesture ไม่ล้มเลย, confidence 0.94–1.00, ไม่มี error log
 - v0.3 (Build 8) Han ยืนยันบน Xiaomi 15T Pro แล้ว: Accessibility ทำงาน บอทแตะเป้าเขียนถึงคะแนน 40 · v0.4 เป็นสถาปัตยกรรมใหม่ **ยังไม่มีผลยืนยันบนเครื่อง** (โดยเฉพาะ Bullseye/Swipe และตัวเลข CPU/แบต)
 - ยังเป็นตัวตรวจจับสีแบบง่าย ไม่ใช่โมเดล AI · ยังไม่รองรับการทำงานเบื้องหลังหรือเกมอื่น (ตั้งใจ)

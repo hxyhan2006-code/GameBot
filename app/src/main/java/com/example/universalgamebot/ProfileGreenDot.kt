@@ -19,12 +19,13 @@ object GreenDotProfile : GameProfile {
     private val GREEN = ColorRule { r, g, b -> g > 190 && r < 95 && b < 110 }
 
     override fun createDetectors(context: Context): List<Detector> = listOf(ColorDetector("color:green", "target", GREEN, minCells = 40))
-    override fun createStrategy(context: Context): Strategy = TapTargetStrategy("target", movedPx = context.dp(30).toFloat())
+    override fun createStrategy(context: Context): Strategy = TapTargetStrategy("target", samePlacePx = context.dp(16).toFloat())
     override fun createSurface(context: Context, onScore: (Int, Int) -> Unit): GameSurface = Surface(context, onScore)
 
     private class Surface(private val ctx: Context, private val onScore: (Int, Int) -> Unit) : GameSurface {
         private val arena = FrameLayout(ctx).apply { background = ctx.roundRect(Palette.ARENA, 18); clipToOutline = true }
         private val target = View(ctx)
+        private var placed = false
         override var score = 0; private set
         override val mistakes = 0
         override val view: View get() = arena
@@ -38,11 +39,18 @@ object GreenDotProfile : GameProfile {
 
         override fun restoreScore(score: Int) { this.score = score }
 
+        /** เป้าใหม่ต้องเกิดห่างจากเป้าเดิมอย่างน้อย 1.2 เท่าของขนาด (ไม่ให้เกิดซ้อนจุดเดิมจนตรวจผลสับสน) */
         override fun relayout() {
             val maxX = (arena.width - target.width).coerceAtLeast(1)
             val maxY = (arena.height - target.height).coerceAtLeast(1)
-            target.x = Random.nextInt(maxX).toFloat()
-            target.y = Random.nextInt(maxY).toFloat()
+            val ox = target.x; val oy = target.y
+            var nx = 0f; var ny = 0f
+            for (attempt in 0 until 50) {
+                nx = Random.nextInt(maxX).toFloat(); ny = Random.nextInt(maxY).toFloat()
+                if (!placed || Math.hypot((nx - ox).toDouble(), (ny - oy).toDouble()) >= ctx.dp(80) * 1.2) break
+            }
+            target.x = nx; target.y = ny
+            placed = true
         }
 
         override fun groundTruthAction(): BotAction? {

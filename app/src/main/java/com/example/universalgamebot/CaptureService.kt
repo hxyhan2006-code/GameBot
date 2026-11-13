@@ -32,6 +32,10 @@ class CaptureService : Service() {
     private val sampled = SampledFrame()
     private var seq = 0L
     private var lastProcessAt = 0L
+    private var session: SessionStats? = null
+    private var lastFpsAt = 0L
+    private var lastFpsCount = 0L
+    private var finished = false
 
     override fun onBind(intent: Intent?) = null
     override fun attachBaseContext(base: android.content.Context) { super.attachBaseContext(LocaleHelper.wrap(base)) }
@@ -80,10 +84,14 @@ class CaptureService : Service() {
         val code = intent?.getIntExtra("code", Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
         profile = GameProfiles.byId(intent?.getStringExtra("profile"))
         DebugMonitor.profileName = profile.id
+        val limit = intent?.getIntExtra("limit", 0) ?: 0 // 0 = ไม่จำกัด, N = หยุดเองหลัง N action (โหมดทดสอบ)
+        val startedAt = SystemClock.elapsedRealtime()
+        session = SessionStats(profile.id, startedAt, profile.config.visionIntervalMs).also { DebugMonitor.session = it }
+        lastFpsAt = startedAt; lastFpsCount = 0; finished = false
         try {
             vision = VisionEngine(profile.createDetectors(this)) { msg, t -> DebugMonitor.error(msg, t) }
             engine = DecisionEngine(
-                profile.createStrategy(this), profile.config.engine,
+                profile.createStrategy(this), profile.config.engine.let { if (limit > 0) it.copy(maxActions = limit) else it },
                 GestureExecutor(packageName) { handler.post(it) },
                 object : EngineListener {
                     override fun onSnapshot(snapshot: EngineSnapshot) { DebugMonitor.engine = snapshot }
@@ -116,8 +124,12 @@ class CaptureService : Service() {
         DebugMonitor.captureState = "Active"
         BotState.set(true)
         reader?.setOnImageAvailableListener({ source ->
-            val img: Image? = try { source.acquireLatestImage() } catch (e: Exception) { DebugMonitor.error("acquireLatestImage: ${e.message}", e); null }
-            if (img == null) return@setOnImageAvailableListener
+            var acquireFailed = false
+            val img: Image? = try { source.acquireLatestImage() } catch (e: Exception) { acquireFailed = true; session?.onAcquireError(); DebugMonitor.error("acquireLatestImage: ${e.message}", e); null }
+            // null โดยไม่มี error = เฟรมนี้ถูกดึงไปพร้อมเฟรมที่ใหม่กว่าแล้ว (acquireLatest ทิ้งเฟรมเก่า) = เรายังประมวลผลไม่ทัน (backpressure)
+            if (img == null) { if (!acquireFailed) session?.onSuperseded(); return@setOnImageAvailableListener }
+            session?.onReceived()
+            engine?.onFrameReceived(SystemClock.elapsedRealtime())
             try { processFrame(img) } catch (e: Exception) { DebugMonitor.error("frame error: ${e.javaClass.simpleName}: ${e.message}", e) } finally { img.close() }
         }, handler)
         handler.postDelayed(ticker, 40)
@@ -136,7 +148,7 @@ class CaptureService : Service() {
         PerfMonitor.onFrameReceived()
         val now = SystemClock.elapsedRealtime()
         DebugMonitor.lastFrameAt = now
-        if (now - lastProcessAt < profile.config.visionIntervalMs) { DebugMonitor.framesThrottled.incrementAndGet(); return }
+        if (now - lastProcessAt < profile.config.visionIntervalMs) { DebugMonitor.framesThrottled.incrementAndGet(); session?.onThrottled(); return }
         val arena = ArenaGate.info
         if (arena == null) { DebugMonitor.skip("game screen not in foreground (MainActivity paused)"); return }
         val scaleX = img.width / arena.screenW.toFloat(); val scaleY = img.height / arena.screenH.toFloat()
@@ -150,7 +162,9 @@ class CaptureService : Service() {
         if (!ok) { DebugMonitor.skip("arena region empty"); return }
         val t0 = System.nanoTime()
         val result = vision.process(sampled)
-        PerfMonitor.onFrameProcessed((System.nanoTime() - t0) / 1_000_000f)
+        val procMs = (System.nanoTime() - t0) / 1_000_000f
+        PerfMonitor.onFrameProcessed(procMs)
+        session?.onProcessed(procMs)
         DebugMonitor.framesProcessed.incrementAndGet()
         DebugMonitor.avgBrightness = sampled.avgBrightness
         // ภาพ → จอจริง
@@ -182,11 +196,42 @@ class CaptureService : Service() {
                 return
             }
             engine?.step()
+            sampleFps()
             handler.postDelayed(this, 40)
         }
     }
 
+    /** ทุก 1 วินาที เก็บ FPS ของ Vision ขณะบอททำงานจริง (ไว้หา min/max/เฉลี่ยหลังหยุด) */
+    private fun sampleFps() {
+        val s = session ?: return
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastFpsAt < 1000) return
+        val processed = s.processed
+        s.sampleFps((processed - lastFpsCount) * 1000f / (now - lastFpsAt))
+        lastFpsAt = now; lastFpsCount = processed
+    }
+
+    /** สรุปรอบนี้ลงสถิติสะสมของโปรไฟล์ + ไฟล์ sessions.log + แผง Debug (คงอยู่หลังหยุด) */
+    private fun finishSession() {
+        if (finished) return
+        val s = session ?: return
+        val eng = engine ?: return
+        finished = true
+        val now = SystemClock.elapsedRealtime()
+        s.end(now)
+        val stats = eng.statsCopy()
+        StatsStore.addSession(this, profile.id, stats)
+        val line = "${profile.id}: ${stats.summary()} | fails: ${stats.failureLine()} | ${s.fpsLine(now)} | ${GroundTruth.line()} | goal ${stats.goalLine()}"
+        DebugMonitor.lastSessionLine = line
+        DebugMonitor.sessionProfile = profile.id
+        DebugMonitor.sessionActions = stats
+        StatsStore.appendSession(this, line)
+        StatsStore.appendSession(this, "  frames: ${s.dropAnalysis()}")
+        DebugMonitor.log("session finished: $line")
+    }
+
     override fun onDestroy() {
+        finishSession()
         running = false
         BotState.set(false)
         if (DebugMonitor.captureState != "Error") DebugMonitor.captureState = "Idle"

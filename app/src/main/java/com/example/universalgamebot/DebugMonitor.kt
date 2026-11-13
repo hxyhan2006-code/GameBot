@@ -27,6 +27,10 @@ object DebugMonitor {
     @Volatile var lastSkipReason = "-"
     @Volatile var accessibilityRootPkg = "?"     // package ที่ rootInActiveWindow เห็น (null = ไม่ได้สิทธิ์อ่านหน้าต่าง)
     @Volatile var engine: EngineSnapshot? = null // สถานะ State Machine ล่าสุด
+    @Volatile var session: SessionStats? = null  // สถิติรอบปัจจุบัน/รอบล่าสุด (คงอยู่หลังหยุด)
+    @Volatile var lastSessionLine = "-"          // สรุปรอบล่าสุดหลังหยุด
+    @Volatile var sessionProfile = "-"
+    @Volatile var sessionActions: ActionStats? = null
 
     val framesReceived = AtomicLong()
     val framesProcessed = AtomicLong()

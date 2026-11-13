@@ -33,18 +33,37 @@ object DebugPanel {
             appendLine("Best (scr) : ${xy(d.screenX, d.screenY)}  img ${xy(d.imageX, d.imageY)}")
             appendLine("State      : ${e?.phase ?: "-"}")
             appendLine("Decision   : ${e?.decision ?: "-"}")
-            appendLine("Actions    : total=${e?.actions ?: 0} ok=${e?.succeeded ?: 0} gestFail=${e?.failedGesture ?: 0} verifyFail=${e?.failedVerify ?: 0} rej=${e?.rejected ?: 0} dup=${e?.suppressed ?: 0}")
+            val st = e?.stats
+            appendLine("Actions    : ${st?.attempts ?: 0} done, ${st?.verified ?: 0} verified (${"%.1f".format((st?.successRate() ?: 0f) * 100)}%), dup=${st?.suppressed ?: 0} staleSkip=${st?.staleSkips ?: 0}")
+            appendLine("Failures   : ${st?.failureLine() ?: "-"}")
+            appendLine("Latency    : avg ${st?.avgLatencyMs() ?: 0} ms (gesture ${st?.avgGestureMs() ?: 0} + verify ${st?.avgVerifyMs() ?: 0}), max ${st?.maxLatencyMs ?: 0} ms")
             appendLine("Gesture    : ${d.gestureState}  sent=${d.gesturesSent.get()} ok=${d.gesturesOk.get()} fail=${d.gesturesFailed.get()}")
             appendLine("CPU / RAM  : cpu ${"%.0f".format(p.cpuPercent)}% of 1 core, pss ${p.pssMb} MB, heap ${p.heapMb} MB, native ${p.nativeMb} MB")
             val cur = p.currentMa?.let { "$it mA" } ?: "n/a"
             appendLine("Battery    : ${p.batteryPct}% ${"%.1f".format(p.batteryTempC)}C ${if (p.charging) "charging" else "discharging"} draw $cur (start ${p.batteryStartPct}%, run ${"%.1f".format(p.runMinutes)} min)")
+            val sess = d.session
+            val nowMs = SystemClock.elapsedRealtime()
+            if (sess != null) {
+                appendLine(if (sess.isRunning) "Session FPS: ${sess.fpsLine(nowMs)}" else "Last FPS   : ${sess.fpsLine(nowMs)}")
+                appendLine("Frame drops: ${sess.dropAnalysis()}")
+            }
+            appendLine("Game truth : ${GroundTruth.line()} (score ${GroundTruth.score}, misses ${GroundTruth.mistakes})")
+            appendLine("Per-profile stats (all runs, goal: >=95% of >=100 actions):")
+            for (gp in GameProfiles.all) {
+                val total = StatsStore.load(context, gp.id)
+                if (e != null && d.profileName == gp.id && d.session?.isRunning == true) total.plusAssign(e.stats)
+                appendLine("  ${gp.id}: ${total.summary()}")
+                if (total.attempts > 0) appendLine("    fails ${total.failureLine()} -> ${total.goalLine()}")
+            }
+            if (d.lastSessionLine != "-") appendLine("Last run   : ${d.lastSessionLine}")
             appendLine("Cloud AI   : ${if (CloudVisionPolicy.mayUpload()) "ON" else "OFF (nothing leaves this phone)"}")
             appendLine("Last skip  : ${d.lastSkipReason}")
             appendLine("Last error : ${d.lastError}")
             appendLine("Action history (latest last):")
             val h = e?.history ?: emptyList()
             if (h.isEmpty()) appendLine("  -") else h.takeLast(6).forEach {
-                appendLine("  ${timeFmt.format(Date(System.currentTimeMillis() - (SystemClock.elapsedRealtime() - it.timeMs)))} ${it.outcome.name} ${it.description} conf=${"%.2f".format(it.confidence)} ${it.latencyMs}ms")
+                appendLine("  ${timeFmt.format(Date(System.currentTimeMillis() - (SystemClock.elapsedRealtime() - it.timeMs)))} ${it.outcome.name}${if (it.failure != null) "/" + it.failure.name else ""} ${it.description} conf=${"%.2f".format(it.confidence)} ${it.totalMs}ms (g${it.gestureMs}+v${it.verifyMs})")
+                if (it.outcome != ActionOutcome.VERIFIED) appendLine("      ${it.detail}")
             }
             appendLine("Skip reasons:")
             appendLine(d.skipSummary())
@@ -60,6 +79,9 @@ object DebugPanel {
         appendLine("Universal Game Bot debug report")
         appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
         appendLine(render(context))
+        appendLine()
+        appendLine("=== recent runs (sessions.log) ===")
+        appendLine(StatsStore.recentSessions(context, 20))
         appendLine()
         appendLine("=== error log file ===")
         append(ErrorLog.readAll())
