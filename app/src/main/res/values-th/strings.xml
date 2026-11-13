@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Universal Game Bot</string>
+    <string name="service_label">Game Bot Touch Controller</string>
+    <string name="accessibility_description">ใช้แตะหน้าจอให้เกมทดสอบในแอปนี้เท่านั้น เปิดเฉพาะตอนทดสอบ</string>
+
+    <string name="subtitle">เกมทดสอบในเครื่อง (คุมได้แค่ตัวมันเอง)</string>
+    <string name="lang_switch">EN</string>
+    <string name="chip_acc_on">การช่วยเหลือพิเศษ: เปิด</string>
+    <string name="chip_acc_off">การช่วยเหลือพิเศษ: ปิด</string>
+    <string name="chip_bot_on">บอท: กำลังทำงาน</string>
+    <string name="chip_bot_off">บอท: หยุดอยู่</string>
+    <string name="score_fmt">คะแนน: %d</string>
+    <string name="btn_accessibility">1. เปิดการช่วยเหลือพิเศษ (Accessibility)</string>
+    <string name="btn_start">2. เริ่มจับหน้าจอ + บอท</string>
+    <string name="btn_stop">หยุดบอท</string>
+    <string name="hint_accessibility">ในรายการ หา \"Game Bot Touch Controller\" แล้วกดเปิด</string>
+    <string name="arena_hint">แตะจุดสีเขียว (หรือปล่อยให้บอททำ)</string>
+    <string name="toast_need_accessibility">เปิดการช่วยเหลือพิเศษก่อน (ปุ่ม 1)</string>
+    <string name="version_fmt">เวอร์ชัน %1$s (บิลด์ %2$d)</string>
+    <string name="notif_channel">Game Bot</string>
+    <string name="notif_title">Game Bot กำลังทำงาน</string>
+    <string name="notif_text">ทดสอบเฉพาะจุดสีเขียวในแอปนี้</string>
+    <string name="notif_stop">หยุด</string>
+</resources>

@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,7 +23,26 @@ jobs:
         with:
           gradle-version: 8.10.2
       - run: gradle assembleDebug --no-daemon
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk "UniversalGameBot-build${{ github.run_number }}.apk"
+      - name: Verify signature matches keystore/debug.keystore
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          APK="UniversalGameBot-build${{ github.run_number }}.apk"
+          "$BT/aapt" dump badging "$APK" | grep -i "^package:"
+          WANT=$(keytool -list -v -keystore keystore/debug.keystore -storepass android 2>/dev/null | grep "SHA256:" | sed 's/.*SHA256: //' | tr -d ':' | tr 'A-F' 'a-f')
+          GOT=$("$BT/apksigner" verify --print-certs "$APK" | grep "SHA-256 digest" | head -1 | sed 's/.*: //')
+          echo "want=$WANT"; echo "got =$GOT"
+          [ "$WANT" = "$GOT" ] || { echo "APK signature does not match keystore"; exit 1; }
       - uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: UniversalGameBot-build${{ github.run_number }}.apk
+      - name: Publish release (download the APK directly from the Releases page)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${{ github.run_number }}" "UniversalGameBot-build${{ github.run_number }}.apk" \
+            --title "Build ${{ github.run_number }}" \
+            --notes "Install over the previous version to update (same signing key). Commit: ${{ github.sha }}" \
+            --target "${{ github.sha }}"

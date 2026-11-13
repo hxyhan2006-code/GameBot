@@ -21,14 +21,15 @@ class CaptureService : Service() {
     private var lastTap = 0L
     private var running = false
     override fun onBind(intent: Intent?) = null
+    override fun attachBaseContext(base: android.content.Context) { super.attachBaseContext(LocaleHelper.wrap(base)) }
     override fun onCreate() {
         super.onCreate()
         handlerThread.start()
         handler = Handler(handlerThread.looper)
-        val channel = NotificationChannel("bot", "Game Bot", NotificationManager.IMPORTANCE_LOW)
+        val channel = NotificationChannel("bot", getString(R.string.notif_channel), NotificationManager.IMPORTANCE_LOW)
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         val stopIntent = PendingIntent.getService(this, 0, Intent(this, CaptureService::class.java).setAction("STOP"), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val notification = Notification.Builder(this, "bot").setContentTitle("Game Bot active").setContentText("Local green-target test only").setSmallIcon(android.R.drawable.ic_media_play).addAction(android.R.drawable.ic_delete, "Stop", stopIntent).build()
+        val notification = Notification.Builder(this, "bot").setContentTitle(getString(R.string.notif_title)).setContentText(getString(R.string.notif_text)).setSmallIcon(android.R.drawable.ic_media_play).addAction(android.R.drawable.ic_delete, getString(R.string.notif_stop), stopIntent).build()
         if (Build.VERSION.SDK_INT >= 29) startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
         else startForeground(1, notification)
     }
@@ -51,6 +52,7 @@ class CaptureService : Service() {
         reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 2)
         display = projection?.createVirtualDisplay("GameBotCapture", w, h, metrics.densityDpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader?.surface, null, handler)
         running = true
+        BotState.set(true)
         reader?.setOnImageAvailableListener({ source ->
             val img = source.acquireLatestImage() ?: return@setOnImageAvailableListener
             try {
@@ -82,6 +84,7 @@ class CaptureService : Service() {
     }
     override fun onDestroy() {
         running = false
+        BotState.set(false)
         reader?.setOnImageAvailableListener(null, null)
         display?.release(); reader?.close(); projection?.stop()
         handlerThread.quitSafely()

@@ -2,7 +2,7 @@
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
-**Quick start:** Actions tab > Build APK > Run workflow > download `app-debug-apk` artifact.
+**Quick start:** open the **Releases** page, download the newest `UniversalGameBot-buildN.apk` and install it.
 
 An Android Kotlin project for a single Xiaomi 15T Pro or another Android 10+ phone. This is **not a compiled APK**. It demonstrates a complete local observe → decide → tap loop in a built-in green-target game. No API key, internet, root, or PC is needed to **run** the resulting APK; a build environment is needed to **compile** it.
 
@@ -19,6 +19,12 @@ An Android Kotlin project for a single Xiaomi 15T Pro or another Android 10+ pho
 2. Open the **Actions** tab > **Build APK** > **Run workflow** (it also runs on every push to `main`).
 3. When it turns green, open the run and download the **app-debug-apk** artifact (contains `app-debug.apk`).
 4. Install on the phone, then follow steps 4-6 of the Android Studio section above.
+
+## Install & update
+- Every push to `main` (or Actions > Build APK > Run workflow) builds an APK and publishes it on the **Releases** page. No unzip needed.
+- Updating: just install the newer APK over the old one. All builds use the same signing key (`keystore/debug.keystore`, **do not change or delete it**) and the build number (`versionCode`) goes up every run, so Android treats it as an update.
+- First time only: if you installed an earlier APK (from the first test build), uninstall it once, because it was signed with a different key.
+- The app has a TH/EN language button at the top right.
 
 ## Limitations
 - Local color detector, not a trained AI model. This is the deterministic on-device part of the proposed Hybrid system. Online AI inference is deliberately **not implemented** in v0.1.

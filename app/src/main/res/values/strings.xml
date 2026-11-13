@@ -1,1 +1,24 @@
-<resources><string name="accessibility_description">Controls taps for the user-started local test game. Enable only while testing.</string></resources>
+<resources>
+    <string name="app_name">Universal Game Bot</string>
+    <string name="service_label">Game Bot Touch Controller</string>
+    <string name="accessibility_description">Controls taps for the user-started local test game. Enable only while testing.</string>
+
+    <string name="subtitle">Local test game (controls only itself)</string>
+    <string name="lang_switch">ไทย</string>
+    <string name="chip_acc_on">Accessibility: ON</string>
+    <string name="chip_acc_off">Accessibility: OFF</string>
+    <string name="chip_bot_on">Bot: RUNNING</string>
+    <string name="chip_bot_off">Bot: STOPPED</string>
+    <string name="score_fmt">Score: %d</string>
+    <string name="btn_accessibility">1. Enable Accessibility</string>
+    <string name="btn_start">2. Start screen capture + bot</string>
+    <string name="btn_stop">Stop bot</string>
+    <string name="hint_accessibility">In the list, find \"Game Bot Touch Controller\" and turn it on.</string>
+    <string name="arena_hint">Tap the green dot (or let the bot do it)</string>
+    <string name="toast_need_accessibility">Enable Accessibility first (button 1)</string>
+    <string name="version_fmt">Version %1$s (build %2$d)</string>
+    <string name="notif_channel">Game Bot</string>
+    <string name="notif_title">Game Bot is running</string>
+    <string name="notif_text">Local green-target test only</string>
+    <string name="notif_stop">Stop</string>
+</resources>

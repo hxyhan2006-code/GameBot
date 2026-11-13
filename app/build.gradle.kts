@@ -3,6 +3,9 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// เลขบิลด์ = เลขรอบที่ GitHub รัน (เพิ่มขึ้นทุกครั้ง) → Android ยอมให้ติดตั้งทับเวอร์ชันเก่า
+val buildNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+
 android {
     namespace = "com.example.universalgamebot"
     compileSdk = 35
@@ -11,8 +14,18 @@ android {
         applicationId = "com.example.universalgamebot"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = buildNumber
+        versionName = "0.2"
+    }
+
+    // กุญแจเซ็นชุดเดียวทุกครั้ง (keystore/debug.keystore) ห้ามเปลี่ยน/ลบ ไม่งั้นติดตั้งทับไม่ได้
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     compileOptions {
