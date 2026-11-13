@@ -52,4 +52,10 @@
     <string name="toast_acc_off">Accessibility turned off. Re-enable it in Settings when you test again.</string>
     <string name="toast_acc_already_off">Accessibility is already off</string>
     <string name="acc_hint">Banking/finance apps may refuse to open while it is on</string>
+    <string name="acc_bar_on">Accessibility: ON - bot is ready</string>
+    <string name="acc_bar_off">Accessibility: OFF - bot cannot tap</string>
+    <string name="acc_bar_tap">Tap to turn on / off</string>
+    <string name="btn_open_acc">Turn on (open Settings)</string>
+    <string name="btn_turn_off_short">Turn off</string>
+    <string name="acc_panel_hint">Banking/finance apps may refuse to open while this is on, so turn it off after testing. Turn on only opens Settings: Android requires you to switch it on yourself.</string>
 </resources>

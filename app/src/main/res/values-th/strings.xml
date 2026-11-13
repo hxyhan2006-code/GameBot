@@ -52,4 +52,10 @@
     <string name="toast_acc_off">ปิดบริการ Accessibility แล้ว ถ้าจะทดสอบอีกให้เปิดใหม่ในหน้าตั้งค่า</string>
     <string name="toast_acc_already_off">Accessibility ปิดอยู่แล้ว</string>
     <string name="acc_hint">แอปธนาคาร/การเงินอาจไม่ยอมให้เข้าใช้ถ้ายังเปิดอยู่</string>
+    <string name="acc_bar_on">Accessibility: เปิดอยู่ (บอทพร้อมใช้)</string>
+    <string name="acc_bar_off">Accessibility: ปิดอยู่ (บอทแตะไม่ได้)</string>
+    <string name="acc_bar_tap">แตะเพื่อเปิด / ปิด</string>
+    <string name="btn_open_acc">เปิด (ไปหน้าตั้งค่า)</string>
+    <string name="btn_turn_off_short">ปิดบริการ</string>
+    <string name="acc_panel_hint">แอปธนาคาร/การเงินอาจไม่ยอมให้เข้าใช้ถ้ายังเปิดอยู่ จึงควรปิดหลังทดสอบเสร็จ ปุ่มเปิดจะพาไปหน้าตั้งค่าเท่านั้น ระบบ Android ไม่ให้แอปเปิดเอง ต้องแตะเปิดเองหนึ่งครั้ง</string>
 </resources>

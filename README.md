@@ -1,4 +1,4 @@
-# Universal Game Bot v0.5.2 (local proof of concept)
+# Universal Game Bot v0.5.3 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -79,3 +79,6 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 
 ## v0.5.2
 - New button on the profile screen: **Turn off Accessibility**. Banking/finance apps (e.g. Dime) refuse to run while a sideloaded app's accessibility service is enabled. The button stops the bot and disables the service; re-enable it in Settings before the next test.
+
+## v0.5.3
+- The Accessibility controls moved into a status bar at the top of the profile screen: green = on, red = off. Tapping it expands **Turn on (open Settings)** and **Turn off**. Android does not let an app enable its own accessibility service, so "Turn on" only opens the Settings page.
