@@ -1,4 +1,4 @@
-# Universal Game Bot v0.1 (local proof of concept)
+# Universal Game Bot v0.3 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -36,3 +36,8 @@ An Android Kotlin project for a single Xiaomi 15T Pro or another Android 10+ pho
 
 ## Next steps
 Add a `GameProfile` abstraction, a foreground-only calibrated coordinate mapper, an on-device object detector (e.g., TFLite), optional cloud vision with explicit opt-in and screenshot redaction, and a debug overlay. Avoid automating online games against their terms of service.
+
+## v0.3 debugging notes
+- Root cause of "bot never taps" in v0.2: the Accessibility config lacked `canRetrieveWindowContent`, so `rootInActiveWindow` was always null and every frame was skipped by the package check. Fixed, and the safety check no longer depends on it (tap only while this app's game screen is in the foreground and only inside the arena rectangle).
+- Built-in **Debug Monitor** panel shows capture state, frames, green pixels, target coordinates, gesture result, last error and skip reasons. Logcat tag: `GameBot`.
+- **Test gesture** button taps the target via Accessibility without vision: if Score rises, Accessibility works; the remaining problem would be vision.

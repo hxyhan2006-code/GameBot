@@ -12,6 +12,7 @@
     <string name="score_fmt">Score: %d</string>
     <string name="btn_accessibility">1. Enable Accessibility</string>
     <string name="btn_start">2. Start screen capture + bot</string>
+    <string name="btn_test_gesture">2b. Test gesture (no vision)</string>
     <string name="btn_stop">Stop bot</string>
     <string name="hint_accessibility">In the list, find \"Game Bot Touch Controller\" and turn it on.</string>
     <string name="arena_hint">Tap the green dot (or let the bot do it)</string>

@@ -3,7 +3,13 @@ package com.example.universalgamebot
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.graphics.Typeface
+import android.os.Handler
+import android.os.Looper
+import android.util.DisplayMetrics
+import android.view.WindowManager
+import android.widget.ScrollView
 import android.graphics.drawable.GradientDrawable
 import android.media.projection.MediaProjectionManager
 import android.os.Build
@@ -25,6 +31,11 @@ class MainActivity : Activity() {
     private lateinit var accChip: StatusChip
     private lateinit var botChip: StatusChip
     private var score = 0
+    private lateinit var debugText: TextView
+    private val ui = Handler(Looper.getMainLooper())
+    private val debugTick = object : Runnable {
+        override fun run() { publishArena(); debugText.text = DebugPanel.render(); ui.postDelayed(this, 400) }
+    }
     private val requestCodeCapture = 101
 
     override fun attachBaseContext(base: Context) {
@@ -53,6 +64,38 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         refreshChips() // กลับมาจากหน้าตั้งค่า Accessibility
+        arena.post { publishArena() }
+        ui.post(debugTick)
+    }
+
+    override fun onPause() {
+        ui.removeCallbacks(debugTick)
+        ArenaGate.info = null // ออกจากหน้าเกม = บอทห้ามแตะ
+        super.onPause()
+    }
+
+    /** บอกบอทว่า arena อยู่ตรงไหนบนหน้าจอจริง (พิกัดหน้าจอ) เพื่อใช้ทั้งสแกนสีและจำกัดการแตะ */
+    private fun publishArena() {
+        if (!::arena.isInitialized || arena.width == 0) return
+        val loc = IntArray(2)
+        arena.getLocationOnScreen(loc)
+        val m = DisplayMetrics()
+        val wm = getSystemService(WINDOW_SERVICE) as WindowManager
+        @Suppress("DEPRECATION") wm.defaultDisplay.getRealMetrics(m)
+        ArenaGate.info = ArenaInfo(Rect(loc[0], loc[1], loc[0] + arena.width, loc[1] + arena.height), m.widthPixels, m.heightPixels)
+    }
+
+    /** ปุ่มทดสอบ: แตะกลางเป้าหมายผ่าน Accessibility โดยไม่ผ่าน Vision ถ้าคะแนนขึ้น = Accessibility ใช้ได้ */
+    private fun testGesture() {
+        val svc = BotAccessibilityService.instance
+        if (svc == null) { Toast.makeText(this, R.string.toast_need_accessibility, Toast.LENGTH_LONG).show(); return }
+        publishArena()
+        val loc = IntArray(2)
+        target.getLocationOnScreen(loc)
+        val x = loc[0] + target.width / 2f; val y = loc[1] + target.height / 2f
+        DebugMonitor.log("TEST gesture -> (${x.toInt()},${y.toInt()}) score before=$score")
+        svc.tap(x, y, "test")
+        ui.postDelayed({ DebugMonitor.log("TEST result: score now=$score, gesture=${DebugMonitor.gestureState}") }, 800)
     }
 
     override fun onStop() {
@@ -121,6 +164,12 @@ class MainActivity : Activity() {
         root.addView(actionButton(getString(R.string.btn_stop), Palette.DANGER, Palette.TEXT) {
             stopService(Intent(this, CaptureService::class.java))
         }, lp(8))
+
+        root.addView(actionButton(getString(R.string.btn_test_gesture), Palette.CARD, Palette.TEXT) { testGesture() }, lp(8))
+
+        // Debug Monitor
+        debugText = TextView(this).apply { textSize = 11f; typeface = Typeface.MONOSPACE; setTextColor(Palette.MUTED); setPadding(dp(10), dp(8), dp(10), dp(8)); background = roundRect(Palette.CARD, 12) }
+        root.addView(ScrollView(this).apply { addView(debugText) }, LinearLayout.LayoutParams(-1, dp(190)).apply { topMargin = dp(8) })
 
         // พื้นที่เกม
         arena = FrameLayout(this).apply {

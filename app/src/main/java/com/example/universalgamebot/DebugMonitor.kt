@@ -1,0 +1,70 @@
+package com.example.universalgamebot
+
+import android.util.Log
+import java.util.concurrent.atomic.AtomicLong
+
+/**
+ * ตัวเก็บข้อมูล Debug แบบ real-time ของวงจร Capture → Vision → Decision → Gesture
+ * เขียนจากหลาย thread (vision / accessibility) อ่านจากหน้าจอหลัก
+ */
+object DebugMonitor {
+    const val TAG = "GameBot"
+
+    @Volatile var captureState = "Idle"          // Idle / Starting / Active / Error
+    @Volatile var captureSize = ""               // ขนาด buffer ที่จับได้ เช่น 1220x2712
+    @Volatile var lastFrameAt = 0L
+    @Volatile var avgBrightness = -1             // 0-255 ถ้าใกล้ 0 ตลอด = ภาพดำ (จับภาพไม่ได้จริง)
+    @Volatile var greenPixels = 0                // จำนวน pixel เขียวที่สุ่มเจอในเฟรมล่าสุด
+    @Volatile var imageX = Float.NaN
+    @Volatile var imageY = Float.NaN
+    @Volatile var screenX = Float.NaN
+    @Volatile var screenY = Float.NaN
+    @Volatile var gestureState = "None"          // None / Dispatched / Success / Failed / Rejected
+    @Volatile var lastError = "-"
+    @Volatile var lastSkipReason = "-"
+    @Volatile var accessibilityRootPkg = "?"     // package ที่ rootInActiveWindow เห็น (null = ไม่ได้สิทธิ์อ่านหน้าต่าง)
+
+    val framesReceived = AtomicLong()
+    val framesProcessed = AtomicLong()
+    val framesSkipped = AtomicLong()
+    val gesturesSent = AtomicLong()
+    val gesturesOk = AtomicLong()
+    val gesturesFailed = AtomicLong()
+
+    private val skipCounts = HashMap<String, Long>()
+    private val events = ArrayDeque<String>()
+
+    fun resetCounters() {
+        framesReceived.set(0); framesProcessed.set(0); framesSkipped.set(0)
+        gesturesSent.set(0); gesturesOk.set(0); gesturesFailed.set(0)
+        synchronized(this) { skipCounts.clear() }
+        greenPixels = 0; imageX = Float.NaN; imageY = Float.NaN; screenX = Float.NaN; screenY = Float.NaN
+        gestureState = "None"; lastSkipReason = "-"; avgBrightness = -1; lastFrameAt = 0L
+    }
+
+    fun skip(reason: String) {
+        framesSkipped.incrementAndGet()
+        lastSkipReason = reason
+        synchronized(this) { skipCounts[reason] = (skipCounts[reason] ?: 0L) + 1 }
+    }
+
+    fun skipSummary(): String = synchronized(this) {
+        if (skipCounts.isEmpty()) "-" else skipCounts.entries.sortedByDescending { it.value }.joinToString("\n") { "  ${it.key} x${it.value}" }
+    }
+
+    fun error(msg: String, t: Throwable? = null) {
+        lastError = msg
+        Log.e(TAG, msg, t)
+        log("ERROR $msg")
+    }
+
+    fun log(msg: String) {
+        Log.i(TAG, msg)
+        synchronized(this) {
+            events.addLast(msg)
+            while (events.size > 8) events.removeFirst()
+        }
+    }
+
+    fun recentEvents(): String = synchronized(this) { events.joinToString("\n") }
+}

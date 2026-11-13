@@ -12,6 +12,7 @@
     <string name="score_fmt">คะแนน: %d</string>
     <string name="btn_accessibility">1. เปิดการช่วยเหลือพิเศษ (Accessibility)</string>
     <string name="btn_start">2. เริ่มจับหน้าจอ + บอท</string>
+    <string name="btn_test_gesture">ทดสอบแตะ (ไม่ใช้ภาพ)</string>
     <string name="btn_stop">หยุดบอท</string>
     <string name="hint_accessibility">ในรายการ หา \"Game Bot Touch Controller\" แล้วกดเปิด</string>
     <string name="arena_hint">แตะจุดสีเขียว (หรือปล่อยให้บอททำ)</string>
