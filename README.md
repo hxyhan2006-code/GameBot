@@ -1,4 +1,4 @@
-# Universal Game Bot v0.5.0 (local proof of concept)
+# Universal Game Bot v0.5.1 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -71,3 +71,8 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Auto-stop chip: Tap/Swipe profiles stop at 100 actions, football stops at 10 goals in a row (or 100 shots).
 - **Test button** in the football profile replays: stick right -> up without lifting -> shoot with stick -> pass with stick -> release, and the report shows what the game actually received (`pad touches:`).
 - Unit tests simulate the whole loop on the JVM (world -> pixels -> vision -> brain -> engine -> simulated Accessibility with latency).
+
+## v0.5.1
+- Report from Build 13: the system cancelled 20% of continuous gestures (about 4 of 5 gestures that include the SHOOT press), which lifted the joystick finger. Root cause unknown; v0.5.1 adds a self-tuning tap delay (0/35/70 ms), a short back-off after a cancel, and a `Gest. mix` line in the report that breaks cancellations down by gesture kind.
+- Bot fixes found by simulating cancellations: never shoot in a command that has just put the finger down (the stick is still centered, so the game kicks in the old facing direction); a cancelled gesture no longer resets the goal streak; goals seen by vision now use the same rule as the game; keeper speed is learned (median) instead of regressed across bounces.
+- Less hesitation: shorter aim/follow-through waits and an immediate retry after a cancelled shot. Field redraw capped at ~60 fps (CPU was 78% of a core). Per-shot log (aim, keeper position, prediction, result) in the report. Capture shutdown race fixed.

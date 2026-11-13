@@ -7,9 +7,9 @@ import kotlin.math.min
 
 class FootballBrainConfig(
     val leadMs: Long = 250,            // ภาพเก่า + หน่วงของ gesture: ทำนายตำแหน่งล่วงหน้าเท่านี้
-    val aimMs: Long = 250,             // ต้องชี้จอยไปทางเป้านิ่ง ๆ อย่างน้อยเท่านี้ก่อนยิง (ให้จอยพร้อมก่อนกดปุ่ม)
+    val aimMs: Long = 150,             // ต้องชี้จอยไปทางเป้านิ่ง ๆ อย่างน้อยเท่านี้ก่อนยิง (ให้จอยพร้อมก่อนกดปุ่ม)
     val shootRangeFrac: Float = 0.40f, // ยิงเมื่อห่างเส้นประตูไม่เกินสัดส่วนนี้ของความกว้างสนาม
-    val followMs: Long = 600,          // หลังยิง ปล่อยจอยรอดูผลเท่านี้
+    val followMs: Long = 450,          // หลังยิง ปล่อยจอยรอดูผลเท่านี้
     val cornerFrac: Float = 0.62f      // จุดเล็งอยู่ห่างกลางประตู = สัดส่วนนี้ของครึ่งความสูงประตู
 )
 
@@ -23,6 +23,14 @@ private class Track {
         if (n > 0 && time <= t[n - 1]) return
         if (n == t.size) { for (i in 1 until n) { t[i - 1] = t[i]; x[i - 1] = x[i]; y[i - 1] = y[i] }; n-- }
         t[n] = time; x[n] = px; y[n] = py; n++; lastAt = time
+    }
+
+    /** ระยะที่เปลี่ยนไปจากตัวอย่างที่เก่ากว่าตัวล่าสุดอย่างน้อย minSpanMs (ใช้ดู "ทิศ" ล่าสุดโดยไม่ถูกบดบังด้วยการเด้งกลับในหน้าต่างยาว) */
+    fun recentDelta(minSpanMs: Long = 80): Float {
+        if (n < 2) return 0f
+        var i = n - 2
+        while (i > 0 && t[n - 1] - t[i] < minSpanMs) i--
+        return if (t[n - 1] - t[i] < minSpanMs / 2) 0f else y[n - 1] - y[i]
     }
 
     /** ความเร็ว px/s (0 ถ้าข้อมูลน้อยเกินไป) */
@@ -65,6 +73,10 @@ class FootballBrain(private val g: FootballParams, private val cfg: FootballBrai
     private var aimedMs = 0L
     private var lastDecideAt = 0L
     private var cornerSide = 0 // -1 บน, +1 ล่าง, 0 ยังไม่เลือก
+    private var lastShotNote = ""
+    private var keeperSpeedEst = 0f // ความเร็วที่ผู้รักษาประตูเดินจริง (เรียนรู้จากภาพ ไม่ได้ใส่ค่าไว้ตายตัว)
+    private val keeperSpeedSamples = ArrayList<Float>()
+    private var stickHeld = false // นิ้วจอยค้างอยู่ในระบบตอนนี้ไหม (ถ้าไม่ค้าง การเตะจะใช้ทิศเดิมที่หันอยู่ ไม่ใช่ทิศที่เล็ง)
 
     private fun area(o: DetectedObject) = o.box.width * o.box.height
     private fun keepLargest(old: DetectedObject?, new: DetectedObject?) = if (new == null) old else if (old == null || area(new) >= area(old)) new else old
@@ -91,6 +103,15 @@ class FootballBrain(private val g: FootballParams, private val cfg: FootballBrai
 
     override fun onObservation(obs: Observation) = feed(obs)
 
+    override fun shotNote() = lastShotNote
+
+    /** คำสั่งยิงที่ถูกระบบยกเลิก = ยังไม่ได้ยิงจริง: กลับไปพร้อมยิงใหม่ทันที ไม่ต้องรอ follow-through */
+    override fun onCommandResult(cmd: ControlCommand, ok: Boolean) {
+        stickHeld = ok && cmd.stickTo != null
+        if (!stickHeld) { aimedMs = 0; lastDir = null } // นิ้วหลุดแล้วต้องเริ่มเล็งใหม่: ห้ามยิงในคำสั่งที่เพิ่งวางนิ้วจอย (จอยยังอยู่กลางฐาน = ไม่มีทิศ)
+        if (!ok && phase == Phase.FOLLOW_THROUGH && cmd.taps.any { it.label == "shoot" }) { phase = Phase.DRIBBLE; shotAt = -100_000L }
+    }
+
     override fun decide(obs: Observation, nowMs: Long): ControlDecision {
         feed(obs)
         val dtMs = if (lastDecideAt == 0L) 0L else nowMs - lastDecideAt
@@ -105,7 +126,17 @@ class FootballBrain(private val g: FootballParams, private val cfg: FootballBrai
         val from = cx to cy
         val lead = cfg.leadMs / 1000f
         val pr = pl.box.width / 2f; val br = ballObj.box.width / 2f
-        val kv = keeperTrack.velocity(200)
+        val kvReg = keeperTrack.velocity(200)
+        // ผู้รักษาประตูเดินด้วยความเร็วคงที่แล้วเด้งที่ขอบ: ใช้ "ความเร็วที่เรียนรู้ (มัธยฐาน กันค่าผิดปกติตอนถูกบอล/นักเตะบังจนกรอบกระโดด)" × "ทิศล่าสุด"
+        // แทนความเร็วถดถอย ซึ่งตกลงมากเมื่อหน้าต่างคร่อมจุดเด้ง
+        if (abs(kvReg.second) > 100f) {
+            keeperSpeedSamples.add(abs(kvReg.second))
+            if (keeperSpeedSamples.size > 15) keeperSpeedSamples.removeAt(0)
+            keeperSpeedEst = keeperSpeedSamples.sorted()[keeperSpeedSamples.size / 2]
+        }
+        val kDelta = keeperTrack.recentDelta()
+        val plausible = abs(kDelta) in 3f..(keeperSpeedEst * 0.35f + 10f)
+        val kv = if (keeperSpeedEst > 100f && plausible) 0f to (if (kDelta > 0) keeperSpeedEst else -keeperSpeedEst) else kvReg
         val pv = playerTrack.velocity(); val bv = ballTrack.velocity()
 
         // ลูกบอลอยู่ในตาข่ายหลังยิง = ทำประตูแล้ว รอเกมรีเซ็ต (ถ้าเลี้ยงไปติดเส้นประตูเองโดยไม่ได้ยิง ไม่ถือว่าประตู: ต้องถอยออกมายิง)
@@ -152,9 +183,10 @@ class FootballBrain(private val g: FootballParams, private val cfg: FootballBrai
         lastDir = dir
         val inRange = !shotTime.isNaN() && dxGoal <= cfg.shootRangeFrac * obs.bounds.width && dxGoal >= (pr + br) * 2f
         val tooClose = dxGoal < (pr + br) * 2f
-        val clearEnough = clear >= br + kr + 21f * g.density // ช่องว่างพอรับความคลาดเคลื่อนของการทำนายผู้รักษาประตู
-        if (inRange && clearEnough && aimedMs >= cfg.aimMs) {
+        val clearEnough = clear >= br + kr + 26f * g.density // ช่องว่างพอรับความคลาดเคลื่อนของการทำนายผู้รักษาประตู
+        if (inRange && clearEnough && stickHeld && aimedMs >= cfg.aimMs) {
             phase = Phase.FOLLOW_THROUGH; shotAt = nowMs; aimedMs = 0
+            lastShotNote = "ball=(${ballObj.cx.toInt()},${ballObj.cy.toInt()}) toGoal=${dxGoal.toInt()}px aimY=${targetY.toInt()} keeperNow=${if (kNow.isNaN()) -1 else kNow.toInt()} keeperPred=${kPred.toInt()} keeperV=${kv.second.toInt()}px/s clear=${clear.toInt()}px"
             return ControlDecision.Move(
                 ControlCommand(from, stickTo(dir.first, dir.second, 1f), listOf(TapPoint(shoot.box.centerX, shoot.box.centerY, "shoot"))),
                 "SHOOT at ${if (cornerSide == 1) "lower" else "upper"} corner (clearance ${clear.toInt()} px)"
@@ -167,7 +199,7 @@ class FootballBrain(private val g: FootballParams, private val cfg: FootballBrai
             return ControlDecision.Move(ControlCommand(from, stickTo(bdx / n, bdy / n, 0.8f)), "too close to the goal line: backing off")
         }
         // ได้ระยะแล้วแต่ยังเล็งไม่นิ่ง/ช่องยังไม่พอ: คลานช้า ๆ โดยชี้จอยไปทางเป้า (ไม่วิ่งต่อจนชนเส้นประตู)
-        val creep = inRange && (!clearEnough || aimedMs < cfg.aimMs)
+        val creep = inRange && (!clearEnough || !stickHeld || aimedMs < cfg.aimMs)
         return ControlDecision.Move(ControlCommand(from, stickTo(dir.first, dir.second, if (creep) 0.17f else 1f)), if (creep) "aiming / waiting for a gap past the keeper" else "dribbling toward the ${if (cornerSide == 1) "lower" else "upper"} corner")
     }
 
@@ -176,7 +208,8 @@ class FootballBrain(private val g: FootballParams, private val cfg: FootballBrai
         val since = nowMs - shotAtMs
         val gl = goal
         val ball = obs.best("ball")
-        if (ball != null && gl != null && (gl.box.contains(ball.cx, ball.cy) || ball.cx > gl.box.left + ball.box.width / 2f) && ball.cy in (gl.box.top - ball.box.height)..(gl.box.bottom + ball.box.height)) return ShotOutcome.GOAL
+        // ประตู = จุดกึ่งกลางลูกบอลข้ามเส้นประตูโดยอยู่ในช่วงปากประตู (เหมือนกติกาในเกม) เผื่อความคลาดเคลื่อนของภาพ 4 px · ลูกที่ชนเสา/กำแพงนอกปากประตูไม่นับ
+        if (ball != null && gl != null && ball.cx >= gl.box.left && ball.cy >= gl.box.top - 4f && ball.cy <= gl.box.bottom + 4f) return ShotOutcome.GOAL
         if (since < 700) return ShotOutcome.PENDING
         if (ball == null) return if (since > 1500) ShotOutcome.LOST else ShotOutcome.PENDING
         val pl = obs.best("player")

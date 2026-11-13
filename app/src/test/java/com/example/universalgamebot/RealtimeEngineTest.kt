@@ -143,6 +143,36 @@ class RealtimeEngineTest {
         assertEquals(0, ex.sent.size)
     }
 
+    @Test fun cancelledGestureBacksOffBeforeTheNextStroke() {
+        val b = Brain(move(200f, 800f)); val ex = Exec(); ex.result = false; val l = L(); val e = engine(b, ex, l, RealtimeConfig(failureBackoffMs = 300, maxConsecutiveFailures = 50))
+        tick(e)                       // ส่ง → ถูกยกเลิก
+        val sent = ex.sent.size
+        tick(e, 150)                  // ยังอยู่ในช่วงพัก
+        assertEquals(sent, ex.sent.size)
+        tick(e, 200)                  // พ้นช่วงพักแล้ว
+        assertEquals(sent + 1, ex.sent.size)
+    }
+
+    @Test fun strategyIsToldWhenACommandFailsAndShotsAreLogged() {
+        var told = 0
+        val b = object : ControlStrategy {
+            var cmd: ControlDecision = move(200f, 800f, TapPoint(900f, 900f, "shoot"))
+            var outcome = ShotOutcome.PENDING
+            override fun decide(obs: Observation, nowMs: Long) = cmd
+            override fun onCommandResult(cmd: ControlCommand, ok: Boolean) { if (!ok) told++ }
+            override fun shotNote() = "aimY=123 keeper=45"
+            override fun shotOutcome(obs: Observation, nowMs: Long, shotAtMs: Long) = outcome
+        }
+        val ex = Exec(); val l = L(); val e = RealtimeEngine(b, cfg(), ex, l) { now }
+        ex.result = false; tick(e)
+        assertEquals(1, told)
+        ex.result = true; tick(e, 400)            // ยิงสำเร็จ
+        b.cmd = move(200f, 800f); b.outcome = ShotOutcome.GOAL; tick(e, 200)
+        val log = l.last!!.shotLog
+        assertEquals(1, log.size)
+        assertTrue(log[0], log[0].contains("GOAL") && log[0].contains("aimY=123"))
+    }
+
     @Test fun noResultWithinTimeoutIsTimeoutFailure() {
         val b = Brain(move(200f, 800f, TapPoint(900f, 900f, "shoot"))); val ex = Exec(); val l = L(); val e = engine(b, ex, l)
         tick(e)

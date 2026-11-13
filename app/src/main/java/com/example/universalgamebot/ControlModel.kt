@@ -35,6 +35,10 @@ interface ControlStrategy {
     /** เรียกทุกเฟรมที่ Vision ประมวลผล (ถี่กว่า decide) ไว้ติดตามความเร็วของวัตถุ */
     fun onObservation(obs: Observation) {}
     fun decide(obs: Observation, nowMs: Long): ControlDecision
+    /** ผลของคำสั่งที่ส่งไป (ok=false = ระบบยกเลิก/ไม่ทำ) ให้สมองรู้ว่าการยิงที่สั่งไปไม่ได้เกิดขึ้นจริง */
+    fun onCommandResult(cmd: ControlCommand, ok: Boolean) {}
+    /** คำอธิบายการยิงล่าสุด (จุดเล็ง ตำแหน่งผู้รักษาประตู ฯลฯ) ไว้ลงบันทึกการยิง */
+    fun shotNote(): String = ""
     /** ตัดสินผลการยิงจากภาพ (Vision) ไม่ใช้คะแนนจริงของเกม */
     fun shotOutcome(obs: Observation, nowMs: Long, shotAtMs: Long): ShotOutcome
 }

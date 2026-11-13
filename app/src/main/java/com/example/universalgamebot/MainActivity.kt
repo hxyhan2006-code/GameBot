@@ -282,9 +282,10 @@ class MainActivity : Activity() {
         if (controlTest?.isRunning == true) return
         EmergencyStop.reset()
         ControlInputStats.reset()
+        ControlGestureStats.reset()
         DebugMonitor.log("TEST control: stick right -> up (no lift) -> shoot with stick -> pass with stick -> release")
         val runner = ControlTestRunner(ContinuousGestureExecutor(packageName) { ui.post(it) }, ui) { msg ->
-            DebugMonitor.log("TEST control $msg: ${ControlInputStats.line()}")
+            DebugMonitor.log("TEST control $msg: ${ControlInputStats.line()} | ${ControlGestureStats.line()}")
         }
         controlTest = runner
         runner.start(plan)

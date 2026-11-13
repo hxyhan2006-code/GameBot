@@ -9,7 +9,8 @@ data class RealtimeConfig(
     val maxConsecutiveFailures: Int = 8, // gesture ล้มติดกันเกินนี้ = หยุดเอง
     val stopAtStreak: Int = 0,           // หยุดเมื่อทำประตูติดกันครบ N (0 = ไม่หยุด)
     val maxShots: Int = 2000,            // เพดานความปลอดภัยต่อรอบ
-    val outcomeTimeoutMs: Long = 4500    // ยิงแล้วตัดสินผลไม่ได้ภายในเวลานี้ = TIMEOUT
+    val outcomeTimeoutMs: Long = 4500,   // ยิงแล้วตัดสินผลไม่ได้ภายในเวลานี้ = TIMEOUT
+    val failureBackoffMs: Long = 200     // พักหลัง gesture ถูกยกเลิก ก่อนเริ่มเส้นใหม่ (ให้ระบบเคลียร์สถานะนิ้วที่ค้าง)
 )
 
 /**
@@ -41,6 +42,9 @@ class RealtimeEngine(
     private var shotSendMs = 0L
     private var consecutiveFailures = 0
     private var lastRejectReason = ""
+    private var holdOffUntil = 0L
+    private var pendingNote = ""
+    private val shotLog = ArrayDeque<String>()
 
     override val isFinished get() = phase == BotPhase.STOPPED || phase == BotPhase.ERROR
     override fun statsCopy(): ActionStats = stats.copy()
@@ -60,7 +64,7 @@ class RealtimeEngine(
             if (now - sentAt > cfg.sendTimeoutMs) { inFlight = false; held = false; gestureFailed("send timeout") }
             return
         }
-        if (now - lastSendAt < cfg.tickMs) return
+        if (now - lastSendAt < cfg.tickMs || now < holdOffUntil) return
         val o = obs
         if (o == null) { note("waiting for first frame"); return }
         if (now - o.timeMs > cfg.maxObsAgeMs) {
@@ -115,9 +119,11 @@ class RealtimeEngine(
         inFlight = false
         val now = clock()
         val ms = now - sentAt
+        try { strategy.onCommandResult(cmd, ok) } catch (_: Exception) {}
         tel = tel.copy(commands = tel.commands + 1, sendMsSum = tel.sendMsSum + ms, maxSendMs = maxOf(tel.maxSendMs, ms))
         if (!ok) {
             held = false; lastDir = null
+            holdOffUntil = now + cfg.failureBackoffMs
             tel = tel.copy(cancelled = tel.cancelled + 1)
             gestureFailed(detail)
             return
@@ -145,14 +151,14 @@ class RealtimeEngine(
             if (cmd.taps.any { it.label == "shoot" }) {
                 if (pendingShotAt >= 0) shotFailed(FailureKind.MISSED_TARGET, "previous shot never scored before the next one", now - pendingShotAt, now)
                 stats.recordAttempt(); pendingShotAt = now; shotSendMs = ms
+                pendingNote = try { strategy.shotNote() } catch (_: Exception) { "" }
             }
         }
         publish()
     }
 
     private fun gestureFailed(detail: String) {
-        stats.recordFailure(FailureKind.GESTURE_FAILED)
-        streak = 0
+        stats.recordFailure(FailureKind.GESTURE_FAILED) // gesture ที่ถูกยกเลิกไม่ใช่การยิงพลาด จึงไม่ตัดสถิติประตูติดกัน
         record(ActionOutcome.FAILED, FailureKind.GESTURE_FAILED, "Control", detail, clock(), 0)
         consecutiveFailures++
         if (consecutiveFailures >= cfg.maxConsecutiveFailures) stop("$consecutiveFailures gesture failures in a row (last: $detail)", true) else publish()
@@ -170,6 +176,7 @@ class RealtimeEngine(
                 streak++; if (streak > best) best = streak
                 stats.recordStreak(best)
                 record(ActionOutcome.VERIFIED, null, "Shoot", "goal seen by vision after $since ms (streak $streak)", now, since)
+                logShot("GOAL after $since ms (streak $streak)")
                 pendingShotAt = -1
             }
             out == ShotOutcome.MISSED -> { shotFailed(FailureKind.MISSED_TARGET, "shot did not score (ball stopped / saved)", since, now) }
@@ -187,7 +194,13 @@ class RealtimeEngine(
         stats.recordFailure(kind)
         streak = 0
         record(ActionOutcome.FAILED, kind, "Shoot", detail, now, since)
+        logShot("${kind.name} after $since ms: $detail")
         pendingShotAt = -1
+    }
+
+    private fun logShot(result: String) {
+        shotLog.addLast("#${stats.attempts} $result | $pendingNote")
+        while (shotLog.size > 30) shotLog.removeFirst()
     }
 
     private fun record(outcome: ActionOutcome, kind: FailureKind?, what: String, detail: String, now: Long, verifyMs: Long) {
@@ -198,6 +211,6 @@ class RealtimeEngine(
 
     private fun publish() {
         if (!isFinished) phase = when { pendingShotAt >= 0 -> BotPhase.VERIFYING; held -> BotPhase.ACTING; else -> BotPhase.SCANNING }
-        listener.onSnapshot(EngineSnapshot(phase, decision, history.toList(), stats.copy(), consecutiveFailures, tel, streak, best))
+        listener.onSnapshot(EngineSnapshot(phase, decision, history.toList(), stats.copy(), consecutiveFailures, tel, streak, best, shotLog.toList()))
     }
 }

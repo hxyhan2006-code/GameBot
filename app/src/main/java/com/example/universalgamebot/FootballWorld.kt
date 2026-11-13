@@ -155,10 +155,9 @@ class FootballWorld(val p: FootballParams, seed: Long = 1L) {
             val sp = max(ballSpeed, 200f * p.density / 3f) * 0.5f
             bvx = dx / len * sp; bvy = dy / len * sp
             bx = p.keeperX + dx / len * (p.keeperR + p.ballR + 1f); by = ky + dy / len * (p.keeperR + p.ballR + 1f)
-            touchedKeeper = true
-            if (pendingShot) { saves++; shotLog.add("$shotNote -> SAVED keeperY=${ky.toInt()}"); shotResolved(false) }
+            touchedKeeper = true // ลูกที่ถูกผู้รักษาประตูปัดยังนับเป็นการยิงเดิมต่อไป: เข้าประตูทีหลังก็คือประตู (ภาพก็เห็นเป็นประตู) ไม่เข้าก็พลาดเมื่อลูกหยุด
         }
-        if (!possessed && !touchedKeeper && bx >= p.goalLineX && by >= p.mouthTop && by <= p.mouthBottom) {
+        if (!possessed && bx >= p.goalLineX && by >= p.mouthTop && by <= p.mouthBottom) {
             goals++; streak++; if (streak > bestStreak) bestStreak = streak
             pendingShot = false
             bx = p.goalLineX + p.goalW * 0.5f; bvx = 0f; bvy = 0f
@@ -168,7 +167,11 @@ class FootballWorld(val p: FootballParams, seed: Long = 1L) {
         } else if (bx > p.w - p.ballR) { bx = p.w - p.ballR; bvx = -abs(bvx) * 0.6f }
         if (pendingShot) {
             shotT += dt
-            if ((shotT > 0.4f && ballSpeed == 0f) || shotT > 3f) { wides++; shotLog.add("$shotNote -> WIDE/STOPPED at (${bx.toInt()},${by.toInt()})"); shotResolved(false) }
+            if ((shotT > 0.4f && ballSpeed == 0f) || shotT > 3f) {
+                if (touchedKeeper) saves++ else wides++
+                shotLog.add("$shotNote -> ${if (touchedKeeper) "SAVED" else "WIDE"}/STOPPED at (${bx.toInt()},${by.toInt()}) keeperY=${ky.toInt()}")
+                shotResolved(false)
+            }
         }
     }
 

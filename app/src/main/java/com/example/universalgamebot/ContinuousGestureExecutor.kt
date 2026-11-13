@@ -3,6 +3,7 @@ package com.example.universalgamebot
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
+import android.os.SystemClock
 import kotlin.math.hypot
 
 /**
@@ -19,6 +20,7 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
     private var lastY = 0f
     @Volatile private var inFlight = false
     @Volatile private var closing = false
+    @Volatile private var lastDoneAt = 0L
 
     override fun send(cmd: ControlCommand, onDone: (Boolean, String) -> Unit): String? {
         if (EmergencyStop.triggered) return "emergency stop active"
@@ -53,14 +55,23 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
             val path = Path().apply { moveTo(lastX, lastY); lineTo(lastX + 0.5f, lastY) }
             builder.addStroke(prev.continueStroke(path, 0, TAP_MS, false)); strokes++
         }
+        // จังหวะกดปุ่มในท่าเดียวกับจอย: เลือกแบบหน่วง (0/35/70 ms) ที่ได้ผลที่สุดบนเครื่องนี้ (ดู ControlGestureStats)
+        val tapVariant = if (cmd.taps.isNotEmpty()) ControlGestureStats.pickTapVariant() else -1
+        val tapDelay = if (tapVariant >= 0) ControlGestureStats.TAP_DELAYS[tapVariant] else 0L
         for (t in cmd.taps) {
             val path = Path().apply { moveTo(t.x, t.y); lineTo(t.x + 0.5f, t.y) }
-            builder.addStroke(GestureDescription.StrokeDescription(path, 0, TAP_MS, false)); strokes++
+            builder.addStroke(GestureDescription.StrokeDescription(path, tapDelay, TAP_MS, false)); strokes++
         }
         if (strokes == 0) { post(Runnable { onDone(true, "nothing to send") }); return null }
 
         val gesture = try { builder.build() } catch (e: Exception) { held = null; return "cannot build gesture: ${e.message}" }
         val releasing = to == null
+        val kind = when {
+            releasing -> "release"
+            prev == null -> if (cmd.taps.isNotEmpty()) "new+tap" else "new"
+            else -> if (cmd.taps.isNotEmpty()) "cont+tap" else "cont"
+        }
+        val gapMs = if (lastDoneAt == 0L || prev == null) 0L else SystemClock.elapsedRealtime() - lastDoneAt
         val sentHeld = next
         val ex = endX; val ey = endY
         inFlight = true
@@ -69,6 +80,8 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
         svc.postMain(Runnable {
             fun failed(why: String) {
                 inFlight = false; held = null
+                lastDoneAt = SystemClock.elapsedRealtime()
+                ControlGestureStats.record(kind, tapVariant, false, gapMs)
                 DebugMonitor.gesturesFailed.incrementAndGet()
                 DebugMonitor.gestureState = "Failed ($why)"
                 DebugMonitor.error("continuous gesture failed: $why [${cmd.describe()}]")
@@ -78,6 +91,8 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
                 val accepted = svc.dispatchGesture(gesture, object : AccessibilityService.GestureResultCallback() {
                     override fun onCompleted(g: GestureDescription?) {
                         inFlight = false
+                        lastDoneAt = SystemClock.elapsedRealtime()
+                        ControlGestureStats.record(kind, tapVariant, true, gapMs)
                         if (releasing) held = null else { held = sentHeld; lastX = ex; lastY = ey; if (closing) liftNow() }
                         DebugMonitor.gesturesOk.incrementAndGet()
                         DebugMonitor.gestureState = "Success"

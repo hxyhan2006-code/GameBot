@@ -153,6 +153,6 @@ class FootballFieldView(context: Context, private val pad: ControlPadView, priva
         fill.color = rgb(FootballColors.BALL); canvas.drawCircle(wd.bx, wd.by, p.ballR, fill)
         canvas.drawText("GOALS ${wd.goals}   STREAK ${wd.streak}   MISS ${wd.misses}", 10f * d, 18f * d, hud)
         if (wd.inNet) canvas.drawText("GOAL!", p.w / 2f, p.h / 2f - 60f * d, banner)
-        postInvalidateOnAnimation()
+        postInvalidateDelayed(15) // ~60 เฟรม/วินาที (จอ 120Hz วาดถี่เกินจำเป็นและทำให้เครื่องหนัก)
     }
 }

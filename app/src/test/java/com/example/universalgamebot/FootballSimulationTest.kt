@@ -12,11 +12,12 @@ import kotlin.math.min
 class FootballSimulationTest {
     private val density = 3.25f
     private val arenaW = 1190f
-    private val arenaH = 1085f
+    private val arenaH = 1009f // ความสูง arena จริงบน Xiaomi 15T Pro ตอนซ่อนแผง Debug (สนามเล็กกว่าที่เคยจำลอง)
 
     private class Event(val at: Long, val run: () -> Unit)
 
-    private inner class Sim(seed: Long, val obsDelayMs: Long = 120, val gestureStartMs: Long = 40, val segMs: Long = 120, val noisePx: Float = 0f) : ControlExecutor {
+    private inner class Sim(seed: Long, val obsDelayMs: Long = 120, val gestureStartMs: Long = 40, val segMs: Long = 120, val noisePx: Float = 0f,
+                           val cancelShootProb: Double = 0.0, val cancelPlainProb: Double = 0.0) : ControlExecutor {
         val p = FootballParams.forArena(arenaW, arenaH, density)
         val pad = PadLayout(p.w, FootballParams.padHeightPx(density), density)
         val world = FootballWorld(p, seed)
@@ -45,8 +46,17 @@ class FootballSimulationTest {
             return vx to vy
         }
 
+        var cancelled = 0
+
         override fun send(cmd: ControlCommand, onDone: (Boolean, String) -> Unit): String? {
             val startT = now + gestureStartMs
+            // จำลองระบบที่ยกเลิก gesture (พบจริงบนเครื่อง: ~80% ของคำสั่งยิง, ~12% ของคำสั่งอื่น): นิ้วจอยหลุด คำสั่งไม่มีผล
+            if (rnd.nextDouble() < (if (cmd.taps.isNotEmpty()) cancelShootProb else cancelPlainProb)) {
+                cancelled++
+                events += Event(startT) { fingerDown = false }
+                events += Event(startT + 60) { onDone(false, "cancelled by system") }
+                return null
+            }
             val release = cmd.stickTo == null
             val endT = startT + if (release) 50 else segMs
             events += Event(startT) {
@@ -155,6 +165,20 @@ class FootballSimulationTest {
         assertTrue(msg, l.last!!.control!!.directionChanges >= 1)                 // เปลี่ยนทิศโดยไม่ปล่อยนิ้ว
     }
 
+    private fun checkWithCancels(seed: Long, delay: Long, shootCancel: Double, plainCancel: Double) {
+        val sim = Sim(seed, obsDelayMs = delay, cancelShootProb = shootCancel, cancelPlainProb = plainCancel)
+        val (e, l) = run(sim, RealtimeConfig(stopAtStreak = 10), 600_000)
+        val msg = "CANCELS seed=$seed delay=$delay shootCancel=$shootCancel plainCancel=$plainCancel cancelledGestures=${sim.cancelled}: ${describe(sim, e, l)} saves=${sim.world.saves} wides=${sim.world.wides}\nWORLD:\n" + sim.world.shotLog.joinToString("\n") + "\nBOT:\n" + (l.last?.shotLog ?: emptyList()).joinToString("\n")
+        println(msg)
+        assertEquals(msg, "goal streak 10 reached", l.stopped)
+        assertFalse(msg, l.error)
+        assertEquals(msg, sim.world.goals, e.statsCopy().verified)
+        assertTrue(msg, sim.now < 200_000) // แม้ถูกยกเลิกบ่อยก็ต้องทำครบ 10 ประตูภายใน ~3 นาทีจำลอง
+    }
+
+    @Test fun tenGoalsWhenSystemCancelsMostShootGestures() = checkWithCancels(41, 150, 0.8, 0.12)
+    @Test fun tenGoalsWhenCancelsAreFrequentAndImageIsSlow() = checkWithCancels(42, 220, 0.6, 0.2)
+
     @Test fun tenGoalsInARowSeed1() = check(1, 120, 120, 0f)
     @Test fun tenGoalsInARowSeed2() = check(2, 120, 120, 0f)
     @Test fun tenGoalsInARowSeed3() = check(3, 120, 120, 0f)
@@ -168,11 +192,12 @@ class FootballSimulationTest {
     @Test fun goalRateOverManyShots() {
         var shots = 0; var verified = 0; var worldGoals = 0
         for (seed in 20L..31L) {
-            val sim = Sim(seed, obsDelayMs = 100L + (seed % 4) * 50, segMs = 120, noisePx = if (seed % 3 == 0L) 3f else 0f)
-            val (e, _) = run(sim, RealtimeConfig(maxShots = 15))
+            val sim = Sim(seed, obsDelayMs = 100L + (seed % 4) * 50, segMs = 120, noisePx = if (seed % 3 == 0L) 3f else 0f, cancelShootProb = if (seed % 2 == 0L) 0.5 else 0.0, cancelPlainProb = if (seed % 2 == 0L) 0.1 else 0.0)
+            val (e, l) = run(sim, RealtimeConfig(maxShots = 15))
             val s = e.statsCopy()
             shots += s.attempts; verified += s.verified; worldGoals += sim.world.goals
             println("seed=$seed delay=${sim.obsDelayMs}: shots=${s.attempts} goals=${sim.world.goals} verified=${s.verified} ${sim.world.shotLog.joinToString(" / ")}")
+            if (sim.world.shotLog.isNotEmpty()) println("   brain notes: " + (l.last?.shotLog ?: emptyList()).filter { !it.contains("GOAL") }.joinToString(" // "))
         }
         val rate = verified.toFloat() / shots
         assertTrue("goal rate $rate ($verified/$shots)", rate >= 0.95f)

@@ -73,6 +73,7 @@ class CaptureService : Service() {
         EmergencyStop.reset()
         OverlayState.clear()
         PerfMonitor.reset(this)
+        ControlGestureStats.reset()
         DebugMonitor.captureState = "Starting"
         val data: Intent? = if (Build.VERSION.SDK_INT >= 33) {
             intent?.getParcelableExtra("data", Intent::class.java)
@@ -135,6 +136,7 @@ class CaptureService : Service() {
         DebugMonitor.captureState = "Active"
         BotState.set(true)
         reader?.setOnImageAvailableListener({ source ->
+            if (!running) { try { source.acquireLatestImage()?.close() } catch (_: Exception) {}; return@setOnImageAvailableListener }
             var acquireFailed = false
             val img: Image? = try { source.acquireLatestImage() } catch (e: Exception) { acquireFailed = true; session?.onAcquireError(); DebugMonitor.error("acquireLatestImage: ${e.message}", e); null }
             // null โดยไม่มี error = เฟรมนี้ถูกดึงไปพร้อมเฟรมที่ใหม่กว่าแล้ว (acquireLatest ทิ้งเฟรมเก่า) = เรายังประมวลผลไม่ทัน (backpressure)
@@ -235,7 +237,7 @@ class CaptureService : Service() {
         val sg = profile.config.streakGoal
         val goalTxt = if (sg > 0) (if (stats.bestStreak >= sg) "PASS ($sg in a row)" else "NOT YET (best ${stats.bestStreak}/$sg)") else stats.goalLine()
         val streak = if (stats.bestStreak > 0) " | best streak ${stats.bestStreak}" else ""
-        val pad = if (ControlInputStats.used) " | ${ControlInputStats.line()}" else ""
+        val pad = (if (ControlInputStats.used) " | ${ControlInputStats.line()}" else "") + (if (ControlGestureStats.total() > 0) " | gestures: ${ControlGestureStats.line()}" else "")
         val line = "${profile.id}: ${stats.summary()} | fails: ${stats.failureLine()} | ${s.fpsLine(now)} | ${GroundTruth.line()}$streak$pad | goal $goalTxt"
         DebugMonitor.lastSessionLine = line
         DebugMonitor.sessionProfile = profile.id
@@ -253,9 +255,13 @@ class CaptureService : Service() {
         if (DebugMonitor.captureState != "Error") DebugMonitor.captureState = "Idle"
         handler.removeCallbacksAndMessages(null)
         reader?.setOnImageAvailableListener(null, null)
-        display?.release(); reader?.close(); projection?.stop()
         OverlayState.clear()
-        handlerThread.quitSafely()
+        val d = display; val r = reader; val p = projection; val ht = handlerThread
+        // ปิดทรัพยากรจับภาพบน thread เดียวกับที่อ่านเฟรม กันชนกัน (เคยเกิด "buffer is inaccessible" ตอนหยุดบอท)
+        handler.post {
+            try { d?.release(); r?.close(); p?.stop() } catch (e: Exception) { DebugMonitor.log("capture shutdown: ${e.message}") }
+            ht.quitSafely()
+        }
         super.onDestroy()
     }
 }

@@ -43,6 +43,7 @@ object DebugPanel {
                 appendLine("Goal streak: current ${e?.streak ?: 0}, best ${e?.bestStreak ?: 0}")
             }
             if (ControlInputStats.used) appendLine("Pad (game) : ${ControlInputStats.line()}")
+            if (ControlGestureStats.total() > 0) appendLine("Gest. mix  : ${ControlGestureStats.line()}")
             appendLine("Gesture    : ${d.gestureState}  sent=${d.gesturesSent.get()} ok=${d.gesturesOk.get()} fail=${d.gesturesFailed.get()}")
             appendLine("CPU / RAM  : cpu ${"%.0f".format(p.cpuPercent)}% of 1 core, pss ${p.pssMb} MB, heap ${p.heapMb} MB, native ${p.nativeMb} MB")
             val cur = p.currentMa?.let { "$it mA" } ?: "n/a"
@@ -88,6 +89,8 @@ object DebugPanel {
         appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
         appendLine(render(context))
         appendLine()
+        val shots = DebugMonitor.engine?.shotLog ?: emptyList()
+        if (shots.isNotEmpty()) { appendLine("=== shot log (this run) ==="); shots.forEach { appendLine(it) }; appendLine() }
         appendLine("=== recent runs (sessions.log) ===")
         appendLine(StatsStore.recentSessions(context, 20))
         appendLine()
