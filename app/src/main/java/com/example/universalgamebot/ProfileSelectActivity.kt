@@ -12,15 +12,40 @@ import android.view.WindowInsets
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 
 /** หน้าแรก: เลือกโปรไฟล์เกม (แต่ละโปรไฟล์ = เกมทดสอบ + วิธีตรวจจับ + วิธีตัดสินใจ ของตัวเอง) */
 class ProfileSelectActivity : Activity() {
+    private lateinit var accChip: StatusChip
+
     override fun attachBaseContext(base: Context) { super.attachBaseContext(LocaleHelper.wrap(base)) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ErrorLog.init(this)
         setContentView(build())
+        refreshAcc()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshAcc()
+    }
+
+    private fun refreshAcc() {
+        if (!::accChip.isInitialized) return
+        val on = BotAccessibilityService.instance != null
+        accChip.show(getString(if (on) R.string.chip_acc_on else R.string.chip_acc_off), on)
+    }
+
+    /** ปิดบริการ Accessibility ของแอป (หยุดบอทก่อน) แล้วต้องเปิดใหม่เองในหน้าตั้งค่าเมื่อจะทดสอบอีก */
+    private fun turnOffAccessibility() {
+        val svc = BotAccessibilityService.instance
+        if (svc == null) { Toast.makeText(this, R.string.toast_acc_already_off, Toast.LENGTH_LONG).show(); refreshAcc(); return }
+        stopService(Intent(this, CaptureService::class.java))
+        svc.turnOff()
+        accChip.show(getString(R.string.chip_acc_off), false)
+        Toast.makeText(this, R.string.toast_acc_off, Toast.LENGTH_LONG).show()
     }
 
     private fun lp(top: Int = 0) = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) }
@@ -74,6 +99,12 @@ class ProfileSelectActivity : Activity() {
         }
         root.addView(ScrollView(this).apply { addView(list) }, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(4) })
 
+        accChip = StatusChip(this)
+        val accRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        accRow.addView(accChip, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = dp(10) })
+        accRow.addView(TextView(this).apply { text = getString(R.string.acc_hint); textSize = 12f; setTextColor(Palette.MUTED) }, LinearLayout.LayoutParams(0, -2, 1f))
+        root.addView(accRow, lp(8))
+        root.addView(actionButton(getString(R.string.btn_disable_acc), Palette.CARD, Palette.TEXT) { turnOffAccessibility() }, lp(8))
         root.addView(TextView(this).apply {
             text = getString(R.string.cloud_status)
             textSize = 12f; setTextColor(Palette.MUTED); gravity = Gravity.CENTER

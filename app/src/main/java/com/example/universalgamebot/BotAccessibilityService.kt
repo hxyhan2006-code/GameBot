@@ -30,6 +30,13 @@ class BotAccessibilityService : AccessibilityService() {
 
     fun postMain(r: Runnable) { main.post(r) }
 
+    /** ปิดบริการตัวเอง (API 24+): ใช้ตอนเลิกทดสอบ เพราะแอปการเงินบางแอป (เช่น Dime) ไม่ยอมให้ใช้งานถ้ามี Accessibility ของแอปนอก Store เปิดอยู่ */
+    fun turnOff() {
+        DebugMonitor.log("Accessibility turned off from the app")
+        instance = null
+        try { disableSelf() } catch (e: Exception) { DebugMonitor.error("disableSelf failed: ${e.message}", e) }
+    }
+
     /** package ของหน้าต่างที่ active (null ถ้าอ่านไม่ได้) ใช้เป็นข้อมูลประกอบ ไม่ใช่เงื่อนไขหลัก */
     fun activePackage(): String? = try { rootInActiveWindow?.packageName?.toString() } catch (e: Exception) { null }
 

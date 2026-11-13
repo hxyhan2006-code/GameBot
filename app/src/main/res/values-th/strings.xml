@@ -48,4 +48,8 @@
     <string name="toast_stats_reset">ล้างสถิติแล้ว</string>
     <string name="profile_football_name">ซ้อมฟุตบอล (จอยเสมือน)</string>
     <string name="profile_football_desc">สนามฟุตบอล 2D มีนักเตะ ลูกบอล ประตู และผู้รักษาประตู บอทลากจอยเสมือนไปพร้อมกดปุ่มยิง (multi-touch) เพื่อทำประตูเอง</string>
+    <string name="btn_disable_acc">ปิดบริการ Accessibility (ก่อนใช้แอปธนาคาร)</string>
+    <string name="toast_acc_off">ปิดบริการ Accessibility แล้ว ถ้าจะทดสอบอีกให้เปิดใหม่ในหน้าตั้งค่า</string>
+    <string name="toast_acc_already_off">Accessibility ปิดอยู่แล้ว</string>
+    <string name="acc_hint">แอปธนาคาร/การเงินอาจไม่ยอมให้เข้าใช้ถ้ายังเปิดอยู่</string>
 </resources>

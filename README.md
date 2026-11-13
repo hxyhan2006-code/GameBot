@@ -1,4 +1,4 @@
-# Universal Game Bot v0.5.1 (local proof of concept)
+# Universal Game Bot v0.5.2 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -76,3 +76,6 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Report from Build 13: the system cancelled 20% of continuous gestures (about 4 of 5 gestures that include the SHOOT press), which lifted the joystick finger. Root cause unknown; v0.5.1 adds a self-tuning tap delay (0/35/70 ms), a short back-off after a cancel, and a `Gest. mix` line in the report that breaks cancellations down by gesture kind.
 - Bot fixes found by simulating cancellations: never shoot in a command that has just put the finger down (the stick is still centered, so the game kicks in the old facing direction); a cancelled gesture no longer resets the goal streak; goals seen by vision now use the same rule as the game; keeper speed is learned (median) instead of regressed across bounces.
 - Less hesitation: shorter aim/follow-through waits and an immediate retry after a cancelled shot. Field redraw capped at ~60 fps (CPU was 78% of a core). Per-shot log (aim, keeper position, prediction, result) in the report. Capture shutdown race fixed.
+
+## v0.5.2
+- New button on the profile screen: **Turn off Accessibility**. Banking/finance apps (e.g. Dime) refuse to run while a sideloaded app's accessibility service is enabled. The button stops the bot and disables the service; re-enable it in Settings before the next test.

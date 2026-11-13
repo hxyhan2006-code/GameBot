@@ -48,4 +48,8 @@
     <string name="toast_stats_reset">Stats reset</string>
     <string name="profile_football_name">Football Training (Joystick)</string>
     <string name="profile_football_desc">2D pitch with a player, ball, goal and keeper. The bot drags a virtual joystick and presses shoot at the same time (multi-touch) to score on its own.</string>
+    <string name="btn_disable_acc">Turn off Accessibility (before using banking apps)</string>
+    <string name="toast_acc_off">Accessibility turned off. Re-enable it in Settings when you test again.</string>
+    <string name="toast_acc_already_off">Accessibility is already off</string>
+    <string name="acc_hint">Banking/finance apps may refuse to open while it is on</string>
 </resources>
