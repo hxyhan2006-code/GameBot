@@ -9,7 +9,6 @@ class ProfileConfig(
     val engine: EngineConfig,
     val realtime: RealtimeConfig = RealtimeConfig(), // ใช้กับโปรไฟล์ควบคุมต่อเนื่อง
     val streakGoal: Int = 0,        // โหมดหยุดอัตโนมัติของโปรไฟล์ควบคุมต่อเนื่อง: ทำประตูติดกันครบ N
-    val debugVisible: Boolean = true, // เปิดแผง Debug ตั้งแต่เข้าหน้า (เกมที่ต้องใช้พื้นที่มากปิดไว้)
     val boxesVisible: Boolean = true  // แสดงกรอบ Vision ตั้งแต่เข้าหน้า
 )
 

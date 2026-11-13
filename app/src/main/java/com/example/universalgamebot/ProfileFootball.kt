@@ -17,7 +17,7 @@ object FootballProfile : GameProfile {
     override val actionTypes = "Joystick + buttons (multi-touch)"
     override val config = ProfileConfig(
         sampleStep = FootballVision.STEP, visionIntervalMs = 30, engine = EngineConfig(),
-        realtime = RealtimeConfig(), streakGoal = 10, debugVisible = false, boxesVisible = false
+        realtime = RealtimeConfig(), streakGoal = 10, boxesVisible = false
     )
 
     override fun createSurface(context: Context, onScore: (Int, Int) -> Unit): GameSurface = Surface(context, onScore)

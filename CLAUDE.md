@@ -39,7 +39,7 @@
 - ระบบหลัก (ไม่รู้จักเกมใด): `CaptureService.kt` (ท่อ Capture→Vision→Decision), `DecisionEngine.kt` (State Machine), `GestureExecutor.kt` (ด่านความปลอดภัย + ส่ง gesture), `BotAccessibilityService.kt` (`tap`/`swipe` + ตรวจผลจาก callback), `BotState.kt` (`ArenaGate`)
 - Vision: `Detector.kt` (interface + `VisionEngine` + `ModelDetector` สำหรับ TFLite), `ColorDetector.kt`, `TemplateDetector.kt`, `SampledFrame.kt`, `Model.kt`
 - โปรไฟล์เกม (ทุกอย่างเฉพาะเกมอยู่ที่นี่): `GameProfile.kt` (interface + รายการ), `ProfileGreenDot.kt`, `ProfileBullseye.kt` (+ `TargetArt.kt`), `ProfileSwipeBall.kt`, `Strategy.kt` (สมอง Tap/Swipe)
-- หน้าจอ: `ProfileSelectActivity.kt` (หน้าแรก เลือกโปรไฟล์), `MainActivity.kt` (หน้าเกม), `DetectionOverlayView.kt` (กรอบวัตถุ), `DebugPanel.kt`, `UiKit.kt`, `LocaleHelper.kt`
+- หน้าจอ (v0.6 รีดีไซน์ตามแบบ A ที่ Han เลือก): `ProfileSelectActivity.kt` (หน้าแรก: ป้ายสถานะ + แถบเมนูล่าง 4 ปุ่ม โปรไฟล์/การเข้าถึง/รายงาน/ตั้งค่า), `MainActivity.kt` (หน้าเกม: ปุ่มเริ่มปุ่มเดียว ตอนทำงานเป็นปุ่มหยุดฉุกเฉินใหญ่ **ขนาด arena ต้องคงที่ทุกสถานะ**), `Sheets.kt` (BottomSheet + แผง Accessibility), `DetectionOverlayView.kt` (กรอบวัตถุ), `DebugPanel.kt`, `UiKit.kt` (Palette + IconView ไอคอนวาดเอง), `LocaleHelper.kt`
 - Debug/ความปลอดภัย: `DebugMonitor.kt`, `PerfMonitor.kt` (FPS/CPU/RAM/แบต), `ErrorLog.kt` (ไฟล์ log), `EmergencyStop.kt`, `OverlayState.kt`, `CloudVision.kt` (interface เตรียมไว้ ปิดอยู่)
 - ควบคุมต่อเนื่อง (v0.5 จอยเสมือน + multi-touch): `ControlModel.kt` (ControlCommand/ControlStrategy/ControlExecutor/BotEngine), `RealtimeEngine.kt` (ส่งคำสั่งทีละรอบ ตัดสินผลยิงจากภาพ ปล่อยจอยเมื่อภาพเก่า/หยุด), `ContinuousGestureExecutor.kt` (จอย = เส้นลากต่อเนื่องไม่ยกนิ้วด้วย `continueStroke` + ปุ่มใน gesture เดียวกัน), `ControlTestRunner.kt` (ปุ่มทดสอบแยก Accessibility จาก Vision), `ControlInputStats.kt` (ตัวเลขฝั่งเกมไว้เทียบกับของบอท)
 - เกมฟุตบอล: `FootballWorld.kt` (ฟิสิกส์+กติกา ไม่ผูก Android), `FootballBrain.kt` (สมองบอท: ติดตามความเร็วจากภาพ ทำนายผู้รักษาประตู เล็งมุมไกลสุด ยิงขณะจับจอย), `FootballLayout.kt` (สีของฉากทั้งหมด + ตัวตรวจ 7 ชนิด + ตำแหน่งจอย/ปุ่ม), `FootballViews.kt` (Canvas สนาม + แถบควบคุมหลายนิ้ว), `ProfileFootball.kt`
@@ -50,7 +50,7 @@
 
 ## ทดสอบและ Build
 - เครื่อง cloud คอมไพล์ Android ไม่ได้ (ไม่มี SDK) → ใช้ **GitHub Actions** (`.github/workflows/build-apk.yml`) เป็นตัวเช็กว่าคอมไพล์ผ่าน แล้วดูผลทุกครั้ง ถ้าล้มให้อ่าน log แก้ แล้วรันใหม่ · workflow รันได้ด้วย `workflow_dispatch` กับ branch ที่ระบุ และปล่อย APK ที่ Releases (`build-N`) อัตโนมัติเมื่อผ่าน
-- เพิ่มเวอร์ชันทุกครั้งที่ปล่อย: `versionName` ใน `app/build.gradle.kts` (ตอนนี้ 0.5.3) + อัปเดต README
+- เพิ่มเวอร์ชันทุกครั้งที่ปล่อย: `versionName` ใน `app/build.gradle.kts` (ตอนนี้ 0.6.0) + อัปเดต README
 - เขียนเทสต์ JVM ให้ตรรกะล้วน (Vision/Decision) และรัน `gradle testDebugUnitTest` ใน Actions ก่อน build · ตรวจเร็วในเครื่อง cloud ได้ด้วยโปรเจกต์ Gradle JVM เล็ก ๆ ที่ลิงก์ไฟล์ pure เหล่านั้น (ไม่ต้องมี Android SDK)
 - หลังปล่อย บอก Han: เลข build, เปลี่ยนอะไร, ขั้นตอนทดสอบบนมือถือ, อ่านค่าอะไรในแผง Debug, ถ้ายังไม่ได้ผลให้ส่งภาพแผง Debug (Last skip / Last error / Skip reasons)
 
@@ -91,3 +91,5 @@
 - v0.4 (Build 9) Han ทดสอบแล้ว 3 โปรไฟล์ทำงาน: Green 10/12, Bullseye 37/40, Swipe 25/32, gesture ไม่ล้มเลย, confidence 0.94–1.00, ไม่มี error log
 - v0.3 (Build 8) Han ยืนยันบน Xiaomi 15T Pro แล้ว: Accessibility ทำงาน บอทแตะเป้าเขียนถึงคะแนน 40 · v0.4 เป็นสถาปัตยกรรมใหม่ **ยังไม่มีผลยืนยันบนเครื่อง** (โดยเฉพาะ Bullseye/Swipe และตัวเลข CPU/แบต)
 - ยังเป็นตัวตรวจจับสีแบบง่าย ไม่ใช่โมเดล AI · ยังไม่รองรับการทำงานเบื้องหลังหรือเกมอื่น (ตั้งใจ)
+
+- **v0.6.0 รีดีไซน์ UI** (Han สั่ง "แบบ 1" = แดชบอร์ด + แถบล่าง, หน้าเกมตามตัวอย่าง): ยังไม่ได้ทดสอบบนมือถือ · ความเสี่ยงที่ต้องดู: ขนาด arena เปลี่ยนจากเดิม (บอทอ่านขนาดจากภาพ แต่ยังไม่เคยลองบนเครื่อง), แผงล่างบนหน้าเกมต้องไม่บัง arena ตอนบอททำงาน (ปุ่ม Debug/ทดสอบซ่อนตอนบอททำงาน)

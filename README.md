@@ -1,4 +1,4 @@
-# Universal Game Bot v0.5.3 (local proof of concept)
+# Universal Game Bot v0.6.0 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -82,3 +82,10 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 
 ## v0.5.3
 - The Accessibility controls moved into a status bar at the top of the profile screen: green = on, red = off. Tapping it expands **Turn on (open Settings)** and **Turn off**. Android does not let an app enable its own accessibility service, so "Turn on" only opens the Settings page.
+
+## v0.6.0 (UI redesign)
+- Home screen rebuilt: bot status pill at the top (tap = Accessibility bottom sheet), bottom navigation (Profiles / Access / Report / Settings), profile cards with the latest saved result.
+- Accessibility controls moved to a bottom sheet (status, turn off, open Settings, steps, banking-app warning).
+- Game screen rebuilt: bigger arena, one main Start button; while the bot runs it becomes a large Emergency stop with FPS / gesture / verified numbers. Test gesture, Boxes, Debug and Copy report are an icon row (hidden while running).
+- Language, auto-stop at 100 actions and reset stats moved to the Settings tab.
+- No change to the bot, vision, decision or safety code. The arena size is now fixed across states.
