@@ -279,8 +279,11 @@ class MainActivity : Activity() {
         val (tint, accent, label) = when {
             running -> {
                 val sec = ((SystemClock.elapsedRealtime() - runStartedAt) / 1000).toInt()
-                Triple(Palette.ACCENT_TINT, Palette.ACCENT, getString(R.string.pill_running_fmt, "%02d:%02d".format(sec / 60, sec % 60)))
+                // บอททำงานแต่ยังไม่เคยได้ภาพ = บอกตรง ๆ ว่ารอภาพ (ห้ามขึ้นว่าทำงานปกติ)
+                if (DebugMonitor.framesReceived.get() == 0L && sec >= 2) Triple(Palette.DANGER_TINT, Palette.DANGER, getString(R.string.pill_waiting_frames))
+                else Triple(Palette.ACCENT_TINT, Palette.ACCENT, getString(R.string.pill_running_fmt, "%02d:%02d".format(sec / 60, sec % 60)))
             }
+            DebugMonitor.captureState == "Error" -> Triple(Palette.DANGER_TINT, Palette.DANGER, getString(R.string.pill_capture_error))
             acc -> Triple(Palette.OK_TINT, Palette.OK, getString(R.string.pill_game_ready))
             else -> Triple(Palette.DANGER_TINT, Palette.DANGER, getString(R.string.pill_not_ready))
         }

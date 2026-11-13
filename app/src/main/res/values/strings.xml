@@ -98,4 +98,6 @@
     <string name="tool_play_manual">Play it yourself</string>
     <string name="match_bot_result_fmt">Bot (%1$s): won %2$d of %3$d matches (%4$d%%), drew %5$d</string>
     <string name="match_bot_pass_fmt">Bot (%1$s): PASSED, won %2$d of %3$d matches (%4$d%%)</string>
+    <string name="pill_waiting_frames">Waiting for screen image</string>
+    <string name="pill_capture_error">Screen capture failed</string>
 </resources>

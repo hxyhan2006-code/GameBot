@@ -1,4 +1,4 @@
-# Universal Game Bot v0.7.1 (local proof of concept)
+# Universal Game Bot v0.7.1b (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -100,3 +100,6 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - The defence is minimal: it only moves toward the opponent who has the ball. Tackling comes in v0.7.2.
 - Play it yourself is still available (icon row). Bot matches are counted separately from yours; the profile card shows the bot win rate at the current level and marks PASSED at 60% or more over 30 matches (easy level).
 - Debug panel and report: a `Strategy` line with decision counts, shot and pass outcomes, and the score the bot counted from the image next to the real game score.
+
+## v0.7.1b (honest status when no screen image arrives)
+- If no screen frame arrives within 4 seconds of starting capture, the bot now stops by itself and records diagnostics (callbacks, null images, reader size, display state) in the debug report. The top pill shows "Waiting for screen image" while it waits and "Screen capture failed" afterwards, instead of "Bot running".

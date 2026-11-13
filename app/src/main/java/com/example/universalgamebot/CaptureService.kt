@@ -36,6 +36,11 @@ class CaptureService : Service() {
     private var lastFpsAt = 0L
     private var lastFpsCount = 0L
     private var finished = false
+    // วินิจฉัยกรณีไม่มีภาพ: นับจำนวนครั้งที่ ImageReader เรียกกลับ และจำนวนที่ดึงภาพไม่ได้
+    @Volatile private var imageCallbacks = 0
+    @Volatile private var nullImages = 0
+    private var captureStartedAt = 0L
+    private var noFrameReported = false
 
     override fun onBind(intent: Intent?) = null
     override fun attachBaseContext(base: android.content.Context) { super.attachBaseContext(LocaleHelper.wrap(base)) }
@@ -127,20 +132,22 @@ class CaptureService : Service() {
             display = projection?.createVirtualDisplay("GameBotCapture", w, h, dpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader?.surface, null, handler)
             if (display == null) { fail("createVirtualDisplay returned null"); return START_NOT_STICKY }
             DebugMonitor.captureSize = "${w}x$h @${dpi}dpi"
-            DebugMonitor.log("capture started ${DebugMonitor.captureSize} profile=${profile.id}")
+            DebugMonitor.log("capture started ${DebugMonitor.captureSize} profile=${profile.id} reader=${reader?.width}x${reader?.height} surfaceValid=${reader?.surface?.isValid} displayState=${display?.display?.state}")
         } catch (e: Exception) {
             fail("setup failed: ${e.javaClass.simpleName}: ${e.message}", e)
             return START_NOT_STICKY
         }
         running = true
+        imageCallbacks = 0; nullImages = 0; noFrameReported = false; captureStartedAt = SystemClock.elapsedRealtime()
         DebugMonitor.captureState = "Active"
         BotState.set(true)
         reader?.setOnImageAvailableListener({ source ->
             if (!running) { try { source.acquireLatestImage()?.close() } catch (_: Exception) {}; return@setOnImageAvailableListener }
+            imageCallbacks++
             var acquireFailed = false
             val img: Image? = try { source.acquireLatestImage() } catch (e: Exception) { acquireFailed = true; session?.onAcquireError(); DebugMonitor.error("acquireLatestImage: ${e.message}", e); null }
             // null โดยไม่มี error = เฟรมนี้ถูกดึงไปพร้อมเฟรมที่ใหม่กว่าแล้ว (acquireLatest ทิ้งเฟรมเก่า) = เรายังประมวลผลไม่ทัน (backpressure)
-            if (img == null) { if (!acquireFailed) session?.onSuperseded(); return@setOnImageAvailableListener }
+            if (img == null) { nullImages++; if (!acquireFailed) session?.onSuperseded(); return@setOnImageAvailableListener }
             session?.onReceived()
             engine?.onFrameReceived(SystemClock.elapsedRealtime())
             try { processFrame(img) } catch (e: Exception) { DebugMonitor.error("frame error: ${e.javaClass.simpleName}: ${e.message}", e) } finally { img.close() }
@@ -157,7 +164,7 @@ class CaptureService : Service() {
 
     /** Vision: สุ่มพิกเซลเฉพาะ arena → ตรวจจับ → แปลงพิกัดภาพเป็นพิกัดหน้าจอจริง → ส่งให้ Decision Engine */
     private fun processFrame(img: Image) {
-        DebugMonitor.framesReceived.incrementAndGet()
+        if (DebugMonitor.framesReceived.incrementAndGet() == 1L) DebugMonitor.log("first frame ${SystemClock.elapsedRealtime() - captureStartedAt} ms after capture start")
         PerfMonitor.onFrameReceived()
         val now = SystemClock.elapsedRealtime()
         DebugMonitor.lastFrameAt = now
@@ -208,10 +215,27 @@ class CaptureService : Service() {
                 stopSelf()
                 return
             }
+            if (checkNoFrames()) return
             engine?.step()
             sampleFps()
             handler.postDelayed(this, 40)
         }
+    }
+
+    /**
+     * ไม่มีภาพเข้ามาเลยหลังเริ่มจับภาพ 4 วินาที = บอทตาบอด (ไม่มีทางทำอะไรได้) → บันทึกข้อมูลวินิจฉัย แล้วหยุดพร้อมบอกว่าจับภาพล้มเหลว
+     * ไม่ปล่อยให้หน้าจอขึ้น "บอททำงาน" ทั้งที่ไม่เห็นอะไร · คืน true ถ้าหยุดแล้ว
+     */
+    private fun checkNoFrames(): Boolean {
+        if (noFrameReported || DebugMonitor.framesReceived.get() > 0L) return false
+        val since = SystemClock.elapsedRealtime() - captureStartedAt
+        if (since < 4000) return false
+        noFrameReported = true
+        DebugMonitor.error("no frames ${since} ms after capture start: imageCallbacks=$imageCallbacks nullImages=$nullImages reader=${reader?.width}x${reader?.height} surfaceValid=${reader?.surface?.isValid} displayState=${display?.display?.state}")
+        DebugMonitor.captureState = "Error"
+        engine?.release()
+        stopSelf()
+        return true
     }
 
     /** ทุก 1 วินาที เก็บ FPS ของ Vision ขณะบอททำงานจริง (ไว้หา min/max/เฉลี่ยหลังหยุด) */
