@@ -10,7 +10,7 @@ import android.view.Gravity
 import android.widget.Button
 import android.widget.TextView
 
-/** สีของแอป: ห้ามใช้สีเขียวสด (g>190, r<95, b<110) นอกจุดเป้าหมาย ไม่งั้นบอทจะเห็นเป็นเป้า */
+/** สีของแอป: ห้ามใช้สีเขียวสด (g>190, r<95, b<110), เหลือง (r>200, g 170-240, b<90), ฟ้า (r<40, g 140-200, b>220) ใน arena นอกจากเป้า ไม่งั้นบอทเห็นเป็นเป้า */
 object Palette {
     val BG = Color.rgb(15, 19, 30)
     val CARD = Color.rgb(26, 33, 48)
@@ -21,6 +21,9 @@ object Palette {
     val TEXT = Color.WHITE
     val MUTED = Color.rgb(148, 163, 184)
     val TARGET = Color.rgb(0, 255, 0)
+    val BALL = Color.rgb(255, 215, 0)
+    val GOAL = Color.rgb(0, 170, 255)
+    val BOX = Color.rgb(255, 0, 255) // กรอบ overlay ใช้สีที่ไม่ตรงกับตัวตรวจใด ๆ
 }
 
 fun Context.dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

@@ -15,7 +15,7 @@ android {
         minSdk = 29
         targetSdk = 35
         versionCode = buildNumber
-        versionName = "0.3"
+        versionName = "0.4"
     }
 
     // กุญแจเซ็นชุดเดียวทุกครั้ง (keystore/debug.keystore) ห้ามเปลี่ยน/ลบ ไม่งั้นติดตั้งทับไม่ได้
@@ -35,4 +35,12 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+}
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
 }

@@ -10,9 +10,6 @@
     <string name="chip_bot_on">Bot: RUNNING</string>
     <string name="chip_bot_off">Bot: STOPPED</string>
     <string name="score_fmt">Score: %d</string>
-    <string name="btn_accessibility">1. Enable Accessibility</string>
-    <string name="btn_start">2. Start screen capture + bot</string>
-    <string name="btn_test_gesture">2b. Test gesture (no vision)</string>
     <string name="btn_stop">Stop bot</string>
     <string name="hint_accessibility">In the list, find \"Game Bot Touch Controller\" and turn it on.</string>
     <string name="arena_hint">Tap the green dot (or let the bot do it)</string>
@@ -22,4 +19,27 @@
     <string name="notif_title">Game Bot is running</string>
     <string name="notif_text">Local green-target test only</string>
     <string name="notif_stop">Stop</string>
+    <string name="btn_back">‹ Profiles</string>
+    <string name="btn_test_gesture">Test gesture (no vision)</string>
+    <string name="btn_emergency">EMERGENCY STOP</string>
+    <string name="btn_accessibility">1. Accessibility</string>
+    <string name="btn_start">2. Start bot</string>
+    <string name="chip_boxes_on">Boxes: ON</string>
+    <string name="chip_boxes_off">Boxes: OFF</string>
+    <string name="chip_debug_on">Debug: ON</string>
+    <string name="chip_debug_off">Debug: OFF</string>
+    <string name="chip_copy">Copy report</string>
+    <string name="toast_emergency">Emergency stop!</string>
+    <string name="toast_copied">Debug report copied</string>
+    <string name="mistakes_fmt">Misses: %d</string>
+    <string name="select_subtitle">Choose a game profile (test games inside this app only)</string>
+    <string name="cloud_status">Cloud Vision: OFF - no screenshot ever leaves this phone</string>
+    <string name="arena_hint_bullseye">Tap the bullseye (white-black rings), not the decoys</string>
+    <string name="arena_hint_swipe">Swipe the yellow ball up into the blue zone</string>
+    <string name="profile_green_name">Green Dot (Tap)</string>
+    <string name="profile_green_desc">Tap the green circle. The original test game (v0.1-v0.3).</string>
+    <string name="profile_bullseye_name">Bullseye Match (Tap)</string>
+    <string name="profile_bullseye_desc">Find the bullseye among look-alike decoys using template matching, then tap it.</string>
+    <string name="profile_swipe_name">Swipe Ball (Swipe)</string>
+    <string name="profile_swipe_desc">Detect the yellow ball and the blue goal zone, then swipe the ball into the zone.</string>
 </resources>

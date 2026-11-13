@@ -10,9 +10,6 @@
     <string name="chip_bot_on">บอท: กำลังทำงาน</string>
     <string name="chip_bot_off">บอท: หยุดอยู่</string>
     <string name="score_fmt">คะแนน: %d</string>
-    <string name="btn_accessibility">1. เปิดการช่วยเหลือพิเศษ (Accessibility)</string>
-    <string name="btn_start">2. เริ่มจับหน้าจอ + บอท</string>
-    <string name="btn_test_gesture">ทดสอบแตะ (ไม่ใช้ภาพ)</string>
     <string name="btn_stop">หยุดบอท</string>
     <string name="hint_accessibility">ในรายการ หา \"Game Bot Touch Controller\" แล้วกดเปิด</string>
     <string name="arena_hint">แตะจุดสีเขียว (หรือปล่อยให้บอททำ)</string>
@@ -22,4 +19,27 @@
     <string name="notif_title">Game Bot กำลังทำงาน</string>
     <string name="notif_text">ทดสอบเฉพาะจุดสีเขียวในแอปนี้</string>
     <string name="notif_stop">หยุด</string>
+    <string name="btn_back">‹ โปรไฟล์</string>
+    <string name="btn_test_gesture">ทดสอบ Gesture (ไม่ใช้ภาพ)</string>
+    <string name="btn_emergency">หยุดฉุกเฉิน</string>
+    <string name="btn_accessibility">1. Accessibility</string>
+    <string name="btn_start">2. เริ่มบอท</string>
+    <string name="chip_boxes_on">กรอบ: เปิด</string>
+    <string name="chip_boxes_off">กรอบ: ปิด</string>
+    <string name="chip_debug_on">Debug: เปิด</string>
+    <string name="chip_debug_off">Debug: ปิด</string>
+    <string name="chip_copy">คัดลอกรายงาน</string>
+    <string name="toast_emergency">หยุดฉุกเฉินแล้ว</string>
+    <string name="toast_copied">คัดลอกรายงาน Debug แล้ว</string>
+    <string name="mistakes_fmt">พลาด: %d</string>
+    <string name="select_subtitle">เลือกโปรไฟล์เกม (เกมทดสอบในแอปนี้เท่านั้น)</string>
+    <string name="cloud_status">Cloud Vision: ปิด - ไม่มีการส่งภาพหน้าจอออกนอกเครื่องเด็ดขาด</string>
+    <string name="arena_hint_bullseye">แตะเป้าวงกลมซ้อน (ขาว-ดำ) อย่าแตะตัวหลอก</string>
+    <string name="arena_hint_swipe">ปัดลูกบอลสีเหลืองขึ้นไปในโซนสีฟ้า</string>
+    <string name="profile_green_name">จุดเขียว (แตะ)</string>
+    <string name="profile_green_desc">แตะวงกลมสีเขียว เกมทดสอบเดิมตั้งแต่ v0.1-v0.3</string>
+    <string name="profile_bullseye_name">เป้าวงกลมซ้อน (แตะ)</string>
+    <string name="profile_bullseye_desc">หาเป้าวงกลมซ้อนท่ามกลางตัวหลอกหน้าตาคล้ายกันด้วย Template Matching แล้วแตะ</string>
+    <string name="profile_swipe_name">ปัดลูกบอล (ปัด)</string>
+    <string name="profile_swipe_desc">ตรวจจับลูกบอลสีเหลืองกับโซนสีฟ้า แล้วปัดลูกบอลเข้าโซน</string>
 </resources>

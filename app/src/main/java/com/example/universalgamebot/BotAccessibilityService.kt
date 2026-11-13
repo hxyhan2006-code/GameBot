@@ -1,6 +1,7 @@
 package com.example.universalgamebot
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.os.Handler
@@ -19,7 +20,9 @@ class BotAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         instance = this
-        DebugMonitor.log("Accessibility connected, canRetrieveContent=${serviceInfo?.capabilities?.and(android.accessibilityservice.AccessibilityServiceInfo.CAPABILITY_CAN_RETRIEVE_WINDOW_CONTENT) != 0}")
+        ErrorLog.init(this)
+        val canRead = (serviceInfo?.capabilities ?: 0) and AccessibilityServiceInfo.CAPABILITY_CAN_RETRIEVE_WINDOW_CONTENT != 0
+        DebugMonitor.log("Accessibility connected, canRetrieveContent=$canRead")
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
     override fun onInterrupt() {}
@@ -28,49 +31,61 @@ class BotAccessibilityService : AccessibilityService() {
     /** package ของหน้าต่างที่ active (null ถ้าอ่านไม่ได้) ใช้เป็นข้อมูลประกอบ ไม่ใช่เงื่อนไขหลัก */
     fun activePackage(): String? = try { rootInActiveWindow?.packageName?.toString() } catch (e: Exception) { null }
 
+    fun tap(x: Float, y: Float, source: String, onDone: ((Boolean, String) -> Unit)? = null): Boolean {
+        val path = Path().apply { moveTo(x, y); lineTo(x + 0.5f, y + 0.5f) }
+        return perform(path, 60, "$source tap (${x.toInt()},${y.toInt()})", source, onDone)
+    }
+
+    fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, durationMs: Long, source: String, onDone: ((Boolean, String) -> Unit)? = null): Boolean {
+        val path = Path().apply { moveTo(x1, y1); lineTo(x2, y2) }
+        return perform(path, durationMs, "$source swipe (${x1.toInt()},${y1.toInt()})->(${x2.toInt()},${y2.toInt()})", source, onDone)
+    }
+
     /**
-     * ส่งการแตะ และบันทึกผลจริงจาก GestureResultCallback (completed/cancelled)
-     * คืน true ถ้าระบบรับคำสั่งแล้ว (ยังไม่ใช่ว่าแตะสำเร็จ ผลจริงดูที่ DebugMonitor.gestureState)
+     * ส่งท่าทางและบันทึกผลจริงจาก GestureResultCallback (completed/cancelled)
+     * คืน true ถ้าระบบรับคำสั่งแล้ว (ผลจริงมาทาง onDone / DebugMonitor.gestureState) คืน false ถ้ายังมีท่าทางค้างอยู่
      * เรียกได้จากทุก thread: dispatchGesture ถูกส่งผ่าน main thread
      */
-    fun tap(x: Float, y: Float, source: String): Boolean {
-        if (pending.get() && System.currentTimeMillis() - pendingSince < 1500) {
-            DebugMonitor.skip("gesture still pending")
-            return false
+    private fun perform(path: Path, durationMs: Long, desc: String, source: String, onDone: ((Boolean, String) -> Unit)?): Boolean {
+        if (!pending.compareAndSet(false, true)) {
+            if (System.currentTimeMillis() - pendingSince < 3000) { DebugMonitor.skip("gesture still pending"); return false }
+            pending.set(true) // ค้างนานผิดปกติ ปล่อยให้ส่งใหม่ได้
         }
-        pending.set(true); pendingSince = System.currentTimeMillis()
+        pendingSince = System.currentTimeMillis()
         DebugMonitor.gesturesSent.incrementAndGet()
         DebugMonitor.gestureState = "Dispatched"
         main.post {
             try {
-                val path = Path().apply { moveTo(x, y); lineTo(x + 0.5f, y + 0.5f) }
-                val gesture = GestureDescription.Builder()
-                    .addStroke(GestureDescription.StrokeDescription(path, 0, 60)).build()
+                val gesture = GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, durationMs)).build()
                 val accepted = dispatchGesture(gesture, object : GestureResultCallback() {
                     override fun onCompleted(g: GestureDescription?) {
                         pending.set(false)
                         DebugMonitor.gesturesOk.incrementAndGet()
                         DebugMonitor.gestureState = "Success"
-                        DebugMonitor.log("gesture OK [$source] (${x.toInt()},${y.toInt()})")
+                        DebugMonitor.log("gesture OK [$desc]")
+                        onDone?.invoke(true, "completed")
                     }
                     override fun onCancelled(g: GestureDescription?) {
                         pending.set(false)
                         DebugMonitor.gesturesFailed.incrementAndGet()
                         DebugMonitor.gestureState = "Failed (cancelled)"
-                        DebugMonitor.error("gesture cancelled [$source] (${x.toInt()},${y.toInt()})")
+                        DebugMonitor.error("gesture cancelled [$desc]")
+                        onDone?.invoke(false, "cancelled by system")
                     }
                 }, null)
                 if (!accepted) {
                     pending.set(false)
                     DebugMonitor.gesturesFailed.incrementAndGet()
                     DebugMonitor.gestureState = "Failed (dispatchGesture=false)"
-                    DebugMonitor.error("dispatchGesture returned false [$source]")
+                    DebugMonitor.error("dispatchGesture returned false [$desc]")
+                    onDone?.invoke(false, "dispatchGesture=false")
                 }
             } catch (e: Exception) {
                 pending.set(false)
                 DebugMonitor.gesturesFailed.incrementAndGet()
                 DebugMonitor.gestureState = "Failed (exception)"
                 DebugMonitor.error("dispatchGesture exception: ${e.message}", e)
+                onDone?.invoke(false, "exception: ${e.message}")
             }
         }
         return true
