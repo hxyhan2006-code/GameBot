@@ -37,29 +37,29 @@ object MatchProfile : GameProfile {
         private val level = MatchRecordStore.level(ctx)
         private val root = LinearLayout(ctx).apply { orientation = LinearLayout.VERTICAL; background = ctx.roundRect(Palette.ARENA, 18); clipToOutline = true }
         private val pad = ControlPadView(ctx, withTackle = true)
-        private val field = MatchFieldView(ctx, pad, level, { h, a -> onScore(h, a) }) { h, a -> MatchRecordStore.add(ctx, level, h, a); onScore(h, a) }
+        private val pitch = MatchFieldView(ctx, pad, level, { h, a -> onScore(h, a) }) { h, a -> MatchRecordStore.add(ctx, level, h, a); onScore(h, a) }
         override val view: View get() = root
-        override val score get() = field.home
-        override val mistakes get() = field.away
+        override val score get() = pitch.home
+        override val mistakes get() = pitch.away
 
         init {
-            root.addView(field, LinearLayout.LayoutParams(-1, 0, 1f))
+            root.addView(pitch, LinearLayout.LayoutParams(-1, 0, 1f))
             root.addView(pad, LinearLayout.LayoutParams(-1, MatchParams.padHeightPx(density).toInt()))
         }
 
         override fun restoreScore(score: Int) {}
         override fun relayout() {}
         override fun groundTruthAction(): BotAction? = null
-        override fun restart() { field.startMatch() }
+        override fun restart() { pitch.startMatch() }
 
         override val scoreLine: String
             get() {
-                val t = field.timeLeft.toInt()
+                val t = pitch.timeLeft.toInt()
                 val clock = "%d:%02d".format(t / 60, t % 60)
                 return when {
-                    !field.started -> ctx.getString(R.string.match_line_ready, MatchRecordStore.levelName(ctx, level))
-                    field.finished -> ctx.getString(R.string.match_line_final, field.home, field.away, ctx.getString(when { field.home > field.away -> R.string.match_win; field.home == field.away -> R.string.match_draw; else -> R.string.match_loss }))
-                    else -> ctx.getString(R.string.match_line_fmt, field.home, field.away, clock)
+                    !pitch.started -> ctx.getString(R.string.match_line_ready, MatchRecordStore.levelName(ctx, level))
+                    pitch.finished -> ctx.getString(R.string.match_line_final, pitch.home, pitch.away, ctx.getString(when { pitch.home > pitch.away -> R.string.match_win; pitch.home == pitch.away -> R.string.match_draw; else -> R.string.match_loss }))
+                    else -> ctx.getString(R.string.match_line_fmt, pitch.home, pitch.away, clock)
                 }
             }
     }
