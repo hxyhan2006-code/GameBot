@@ -27,8 +27,12 @@ interface GameSurface {
     fun controlTestPlan(): List<ControlStep>? = null
     /** บรรทัดสถานะของเกมแทนคะแนนธรรมดา (เช่น เวลาและสกอร์แมตช์); null = ใช้ score/mistakes */
     val scoreLine: String? get() = null
-    /** เริ่มเกมใหม่/เริ่มแมตช์ (ใช้กับโปรไฟล์ที่ไม่มีบอท); ค่าเริ่มต้น = ไม่ทำอะไร */
+    /** true = มนุษย์เล่นเองได้ด้วย (หน้าเกมจะมีปุ่ม "เล่นเอง" เรียก restart()) */
+    val manualPlay: Boolean get() = false
+    /** เริ่มเกมใหม่/เริ่มแมตช์ใหม่ (ใช้กับ manualPlay และตอนบอทเริ่ม); ค่าเริ่มต้น = ไม่ทำอะไร */
     fun restart() {}
+    /** เรียกหลังผู้ใช้อนุญาตจับหน้าจอและบริการบอทเริ่มแล้ว (เกมที่ต้องเริ่มรอบใหม่พร้อมบอทใช้ตรงนี้) */
+    fun onBotStarted() {}
 }
 
 /**
@@ -42,10 +46,8 @@ interface GameProfile {
     val visionMethod: String
     val actionTypes: String
     val config: ProfileConfig
-    /** false = ยังไม่มีบอทเล่นโปรไฟล์นี้ (ให้มนุษย์เล่นเอง) ปุ่มเริ่มบอทจะกลายเป็นปุ่มเริ่มเกมใหม่ */
-    val hasBot: Boolean get() = true
-    /** บรรทัดผลสะสมที่หน้าแรก (null = ใช้สถิติของบอทตามปกติ) */
-    fun resultLine(context: Context): String? = null
+    /** บรรทัดผลสะสมที่หน้าแรก (ข้อความ, ผ่านเกณฑ์หรือไม่); null = ใช้สถิติของบอทตามปกติ */
+    fun resultLine(context: Context): Pair<String, Boolean>? = null
     fun createSurface(context: Context, onScore: (score: Int, mistakes: Int) -> Unit): GameSurface
     fun createDetectors(context: Context): List<Detector>
     /** สมองแบบแยกคำสั่ง (Tap/Swipe) ถ้าโปรไฟล์ใช้การควบคุมต่อเนื่องให้คืน null แล้วใช้ createControlStrategy แทน */

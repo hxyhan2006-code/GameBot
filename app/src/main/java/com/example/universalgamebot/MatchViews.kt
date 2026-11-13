@@ -28,6 +28,7 @@ class MatchFieldView(
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = rgb(MatchColors.LINE); strokeWidth = 2f * d }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = rgb(MatchColors.LINE); textSize = 26f * d; typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.CENTER }
+    private val dark = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = rgb(MatchColors.FACING); textSize = 24f * d; typeface = Typeface.DEFAULT_BOLD; textAlign = Paint.Align.CENTER }
     private val small = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = rgb(MatchColors.LINE); textSize = 13f * d; textAlign = Paint.Align.CENTER }
 
     val home get() = world?.homeGoals ?: 0
@@ -86,7 +87,11 @@ class MatchFieldView(
         fill.color = rgb(MatchColors.BALL); canvas.drawCircle(wd.bx, wd.by, p.ballR, fill)
         when {
             !wd.started -> { canvas.drawText(context.getString(R.string.match_ready_title), p.w / 2f, p.h / 2f - 70f * d, text); canvas.drawText(context.getString(R.string.match_ready_hint), p.w / 2f, p.h / 2f - 40f * d, small) }
-            wd.finished -> canvas.drawText(context.getString(R.string.match_full_time), p.w / 2f, p.h / 2f - 70f * d, text)
+            wd.finished -> {
+                fill.color = rgb(MatchColors.FULLTIME)
+                canvas.drawRect(p.fullTimeLeft, p.fullTimeTop, p.fullTimeRight, p.fullTimeBottom, fill)
+                canvas.drawText(context.getString(R.string.match_full_time), p.w / 2f, p.fullTimeBottom - 9f * d, dark)
+            }
             wd.inGoalFreeze -> canvas.drawText(context.getString(R.string.match_goal), p.w / 2f, p.h / 2f - 70f * d, text)
         }
         postInvalidateDelayed(15) // ~60 เฟรม/วินาที

@@ -77,12 +77,12 @@
     <string name="goal_streak_fmt">Goal: %d goals in a row</string>
     <string name="limit_hint">Auto-stop at 100 actions</string>
     <string name="profile_match_name">Football Match 3v3</string>
-    <string name="profile_match_desc">Two teams, two goals, 2 minutes. Play it yourself with the joystick, shoot, pass and tackle buttons against an AI opponent. The bot joins in a later version.</string>
+    <string name="profile_match_desc">Two teams, two goals, 2 minutes against an AI opponent. Play it yourself with the joystick, shoot, pass and tackle buttons, or let the bot play it from the screen image.</string>
     <string name="match_ready_title">Match ready</string>
-    <string name="match_ready_hint">Press \"Start new match\" below</string>
+    <string name="match_ready_hint">Press \"Start bot\" or \"Play it yourself\" below</string>
     <string name="match_full_time">Full time</string>
     <string name="match_goal">GOAL!</string>
-    <string name="match_result_fmt">%1$s: won %2$d, drew %3$d, lost %4$d</string>
+    <string name="match_result_fmt">You (%1$s): won %2$d, drew %3$d, lost %4$d</string>
     <string name="match_result_none">%1$s: no matches yet</string>
     <string name="match_line_ready">Level: %1$s - ready to play</string>
     <string name="match_line_final">Full time: You %1$d : %2$d Opponent (%3$s)</string>
@@ -90,11 +90,12 @@
     <string name="match_win">you won</string>
     <string name="match_draw">draw</string>
     <string name="match_loss">you lost</string>
-    <string name="btn_new_match">Start new match</string>
-    <string name="pill_manual">Manual play</string>
     <string name="settings_level">Opponent level</string>
     <string name="settings_level_sub">Tap to change: easy, normal, hard</string>
     <string name="level_easy">Easy</string>
     <string name="level_normal">Normal</string>
     <string name="level_hard">Hard</string>
+    <string name="tool_play_manual">Play it yourself</string>
+    <string name="match_bot_result_fmt">Bot (%1$s): won %2$d of %3$d matches (%4$d%%), drew %5$d</string>
+    <string name="match_bot_pass_fmt">Bot (%1$s): PASSED, won %2$d of %3$d matches (%4$d%%)</string>
 </resources>

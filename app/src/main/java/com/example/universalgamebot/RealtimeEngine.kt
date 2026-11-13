@@ -211,6 +211,6 @@ class RealtimeEngine(
 
     private fun publish() {
         if (!isFinished) phase = when { pendingShotAt >= 0 -> BotPhase.VERIFYING; held -> BotPhase.ACTING; else -> BotPhase.SCANNING }
-        listener.onSnapshot(EngineSnapshot(phase, decision, history.toList(), stats.copy(), consecutiveFailures, tel, streak, best, shotLog.toList()))
+        listener.onSnapshot(EngineSnapshot(phase, decision, history.toList(), stats.copy(), consecutiveFailures, tel, streak, best, shotLog.toList(), try { strategy.statsLine() } catch (_: Exception) { "" }))
     }
 }

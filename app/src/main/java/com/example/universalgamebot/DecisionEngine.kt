@@ -41,7 +41,8 @@ class EngineSnapshot(
     val phase: BotPhase, val decision: String, val history: List<ActionRecord>,
     val stats: ActionStats, val consecutiveFailures: Int,
     val control: ControlTelemetry? = null, val streak: Int = 0, val bestStreak: Int = 0,
-    val shotLog: List<String> = emptyList()
+    val shotLog: List<String> = emptyList(),
+    val extra: String = ""   // สถิติเพิ่มเติมจากสมองของโปรไฟล์ (เช่น สถิติการตัดสินใจ)
 )
 
 /**

@@ -238,7 +238,8 @@ class CaptureService : Service() {
         val goalTxt = if (sg > 0) (if (stats.bestStreak >= sg) "PASS ($sg in a row)" else "NOT YET (best ${stats.bestStreak}/$sg)") else stats.goalLine()
         val streak = if (stats.bestStreak > 0) " | best streak ${stats.bestStreak}" else ""
         val pad = (if (ControlInputStats.used) " | ${ControlInputStats.line()}" else "") + (if (ControlGestureStats.total() > 0) " | gestures: ${ControlGestureStats.line()}" else "")
-        val line = "${profile.id}: ${stats.summary()} | fails: ${stats.failureLine()} | ${s.fpsLine(now)} | ${GroundTruth.line()}$streak$pad | goal $goalTxt"
+        val extra = DebugMonitor.engine?.extra?.takeIf { it.isNotEmpty() }?.let { " | $it" } ?: ""
+        val line = "${profile.id}: ${stats.summary()} | fails: ${stats.failureLine()} | ${s.fpsLine(now)} | ${GroundTruth.line()}$streak$pad$extra | goal $goalTxt"
         DebugMonitor.lastSessionLine = line
         DebugMonitor.sessionProfile = profile.id
         DebugMonitor.sessionActions = stats

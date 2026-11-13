@@ -1,4 +1,4 @@
-# Universal Game Bot v0.7.0 (local proof of concept)
+# Universal Game Bot v0.7.1 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -94,3 +94,9 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - New profile **Football Match 3v3**: two teams (2 field players + 1 keeper each), two goals, a 2 minute match against an AI opponent. Controls: joystick plus shoot, pass (snaps to a teammate within 25 degrees) and tackle buttons. The player you control switches automatically and is marked with a white dot.
 - Opponent level (easy / normal / hard) is chosen in Settings. Your wins / draws / losses per level show on the profile card.
 - No bot in this version. The color detectors, the shared object labels (`MatchLabels`) and the JVM tests that check players never overlap and are detected correctly are already in place for v0.7.1.
+
+## v0.7.1 (the bot plays the match)
+- **Start bot** now works in Football Match 3v3. The bot reads the screen image only (no game internals): it finds the ball, both teams, the goals and the white dot that marks the player it controls, then chases the ball, dribbles toward the far corner of the goal, passes when pressed or to advance the ball, and shoots while holding the joystick toward the aim point. It stops by itself when it sees the full-time bar. A new match starts when the bot starts.
+- The defence is minimal: it only moves toward the opponent who has the ball. Tackling comes in v0.7.2.
+- Play it yourself is still available (icon row). Bot matches are counted separately from yours; the profile card shows the bot win rate at the current level and marks PASSED at 60% or more over 30 matches (easy level).
+- Debug panel and report: a `Strategy` line with decision counts, shot and pass outcomes, and the score the bot counted from the image next to the real game score.

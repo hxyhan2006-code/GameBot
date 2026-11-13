@@ -20,6 +20,7 @@ object MatchColors {
     const val MARKER = 0xFFFFFF
     const val FACING = 0x0A1020
     const val TACKLE = 0x5A6B7A
+    const val FULLTIME = 0xD2B48C
 
     val HOME_RULE = ColorRule { r, g, b -> r < 80 && g < 120 && b > 200 }
     val HOME_KEEPER_RULE = ColorRule { r, g, b -> r < 50 && g < 50 && b in 100..180 }
@@ -28,6 +29,7 @@ object MatchColors {
     val BALL_RULE = FootballColors.BALL_RULE
     val GOAL_RULE = FootballColors.GOAL_RULE
     val MARKER_RULE = ColorRule { r, g, b -> r > 245 && g > 245 && b > 245 }
+    val FULLTIME_RULE = ColorRule { r, g, b -> r in 195..225 && g in 165..195 && b in 125..155 }
     val TACKLE_RULE = ColorRule { r, g, b -> r in 75..105 && g in 92..122 && b in 107..137 }
 }
 
@@ -47,14 +49,16 @@ object MatchLabels {
     const val SHOOT = "shoot"
     const val PASS = "pass"
     const val TACKLE = "tackle"
+    const val FULLTIME = "fulltime"         // แถบกลางสนามที่ปรากฏเมื่อแมตช์จบ
 }
 
-/** ชุดตัวตรวจจับสีของแมตช์ (สุ่มทุก 4 พิกเซล: minCells ปรับตามขนาดวัตถุ) */
+/** ชุดตัวตรวจจับสีของแมตช์ (12 ชนิด) (สุ่มทุก 4 พิกเซล: minCells ปรับตามขนาดวัตถุ) */
 object MatchVision {
     const val STEP = 4
 
     private fun cellsOf(radiusPx: Float, fraction: Float) = max(6, (3.14f * radiusPx * radiusPx / (STEP * STEP) * fraction).toInt())
 
+    // marker รับได้ 3 ก้อน เพราะวงแหวนขาวของปุ่มที่ถูกกดก็ตรงสีนี้ (สมองกรองเฉพาะในสนาม)
     fun detectors(d: Float): List<Detector> = listOf(
         ColorDetector("mt:home", MatchLabels.HOME, MatchColors.HOME_RULE, minCells = cellsOf(11f * d, 0.35f), maxObjects = 2),
         ColorDetector("mt:home_keeper", MatchLabels.HOME_KEEPER, MatchColors.HOME_KEEPER_RULE, minCells = cellsOf(12f * d, 0.35f), maxObjects = 1),
@@ -62,10 +66,11 @@ object MatchVision {
         ColorDetector("mt:away_keeper", MatchLabels.AWAY_KEEPER, MatchColors.AWAY_KEEPER_RULE, minCells = cellsOf(12f * d, 0.35f), maxObjects = 1),
         ColorDetector("mt:ball", MatchLabels.BALL, MatchColors.BALL_RULE, minCells = cellsOf(6f * d, 0.35f), maxObjects = 1),
         ColorDetector("mt:goal", MatchLabels.GOAL, MatchColors.GOAL_RULE, minCells = cellsOf(14f * d, 0.5f), maxObjects = 2),
-        ColorDetector("mt:marker", MatchLabels.MARKER, MatchColors.MARKER_RULE, minCells = cellsOf(4.6f * d, 0.5f), maxObjects = 1),
+        ColorDetector("mt:marker", MatchLabels.MARKER, MatchColors.MARKER_RULE, minCells = cellsOf(4.6f * d, 0.5f), maxObjects = 3),
         ColorDetector("mt:stick", MatchLabels.STICK, FootballColors.STICK_RULE, minCells = cellsOf(24f * d, 0.5f), maxObjects = 1),
         ColorDetector("mt:shoot", MatchLabels.SHOOT, FootballColors.SHOOT_RULE, minCells = cellsOf(20f * d, 0.5f), maxObjects = 1),
         ColorDetector("mt:pass", MatchLabels.PASS, FootballColors.PASS_RULE, minCells = cellsOf(16f * d, 0.5f), maxObjects = 1),
-        ColorDetector("mt:tackle", MatchLabels.TACKLE, MatchColors.TACKLE_RULE, minCells = cellsOf(16f * d, 0.5f), maxObjects = 1)
+        ColorDetector("mt:tackle", MatchLabels.TACKLE, MatchColors.TACKLE_RULE, minCells = cellsOf(16f * d, 0.5f), maxObjects = 1),
+        ColorDetector("mt:fulltime", MatchLabels.FULLTIME, MatchColors.FULLTIME_RULE, minCells = 150, maxObjects = 1)
     )
 }

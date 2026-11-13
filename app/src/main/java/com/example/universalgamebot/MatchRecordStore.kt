@@ -23,13 +23,16 @@ object MatchRecordStore {
         return next
     }
 
-    fun load(c: Context, lv: AiLevel): MatchRecord {
-        val p = prefs(c); val k = lv.name
+    /** bot=true คือแมตช์ที่บอทเล่น (นับแยกจากที่มนุษย์เล่น) */
+    fun load(c: Context, lv: AiLevel, bot: Boolean = false): MatchRecord {
+        val p = prefs(c); val k = key(lv, bot)
         return MatchRecord(p.getInt("$k.w", 0), p.getInt("$k.d", 0), p.getInt("$k.l", 0), p.getInt("$k.gf", 0), p.getInt("$k.ga", 0))
     }
 
-    fun add(c: Context, lv: AiLevel, home: Int, away: Int) {
-        val r = load(c, lv); val k = lv.name
+    private fun key(lv: AiLevel, bot: Boolean) = (if (bot) "bot." else "") + lv.name
+
+    fun add(c: Context, lv: AiLevel, home: Int, away: Int, bot: Boolean = false) {
+        val r = load(c, lv, bot); val k = key(lv, bot)
         prefs(c).edit()
             .putInt("$k.w", r.wins + if (home > away) 1 else 0).putInt("$k.d", r.draws + if (home == away) 1 else 0).putInt("$k.l", r.losses + if (home < away) 1 else 0)
             .putInt("$k.gf", r.goalsFor + home).putInt("$k.ga", r.goalsAgainst + away).apply()

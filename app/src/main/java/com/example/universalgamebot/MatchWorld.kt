@@ -45,6 +45,18 @@ class MatchParams(val w: Float, val h: Float, val d: Float) {
     val matchSeconds = 120f
     val resetDelayS = 1.2f
 
+    // แถบ "หมดเวลา" ที่วาดกลางสนามเมื่อแมตช์จบ (ให้บอทรู้ว่าจบจากภาพ ไม่ต้องอ่านนาฬิกาภายในเกม)
+    val fullTimeLeft = w * 0.2f
+    val fullTimeRight = w * 0.8f
+    val fullTimeTop = h / 2f - 100f * d
+    val fullTimeBottom = h / 2f - 60f * d
+
+    /** เวลาที่ลูกบอลเดินทางครบระยะ dist ด้วยความเร็วเริ่มต้น v0 (วินาที) หรือ NaN ถ้าไปไม่ถึง */
+    fun flightTime(dist: Float, v0: Float): Float {
+        val x = dist * friction / v0
+        return if (x >= 0.98f || dist < 0f) Float.NaN else -kotlin.math.ln(1f - x) / friction
+    }
+
     fun ownGoalX(team: Team) = if (team == Team.HOME) leftLineX else rightLineX
     fun attackGoalX(team: Team) = ownGoalX(team.other)
     fun keeperX(team: Team) = if (team == Team.HOME) leftLineX + keeperR + 4f * d else rightLineX - keeperR - 4f * d
@@ -69,6 +81,10 @@ class AgentInput {
     fun clear() { mx = 0f; my = 0f; shoot = false; pass = false; tackle = false; aimJitter = 0f }
     fun copyFrom(o: AgentInput) { mx = o.mx; my = o.my; shoot = o.shoot; pass = o.pass; tackle = o.tackle; aimJitter = o.aimJitter }
 }
+
+/** ภาพถ่ายตำแหน่งของทุกอย่างในโลก ณ ขณะหนึ่ง (ไว้วาดภาพ/ทดสอบ: เทสต์จำลองใช้ย้อนเวลาเพื่อให้ภาพล่าช้าเหมือนเครื่องจริง) */
+class AgentSnap(val id: Int, val team: Team, val keeper: Boolean, val x: Float, val y: Float, val fx: Float, val fy: Float, val r: Float)
+class MatchSnapshot(val agents: List<AgentSnap>, val bx: Float, val by: Float, val controlledId: Int, val finished: Boolean)
 
 /** ตัวเลขจริงของเกม (ความจริงฝั่งเกม): ไว้เทียบกับสิ่งที่บอทเห็นในรุ่นหลัง · บอทห้ามอ่าน */
 class MatchTruth {
@@ -124,6 +140,8 @@ class MatchWorld(val p: MatchParams, seed: Long = 1L, val level: AiLevel = AiLev
     val result: Int get() = homeGoals.compareTo(awayGoals) // >0 ชนะ 0 เสมอ <0 แพ้ (มุมมองทีมเรา = HOME)
 
     init { kickoff() }
+
+    fun snapshot() = MatchSnapshot(agents.map { AgentSnap(it.id, it.team, it.keeper, it.x, it.y, it.fx, it.fy, rad(it)) }, bx, by, controlledId = controlled.id, finished = finished)
 
     fun rad(a: Agent) = if (a.keeper) p.keeperR else p.playerR
 

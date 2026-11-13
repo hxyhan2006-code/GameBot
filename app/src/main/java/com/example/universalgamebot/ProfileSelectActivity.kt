@@ -177,7 +177,7 @@ class ProfileSelectActivity : Activity() {
 
     /** ผลทดสอบสะสมของโปรไฟล์ (จาก StatsStore) · ผ่าน = ตามเป้าเดียวกับแผง Debug: streak ครบเป้า หรือ verified >= 95% จาก >= 100 action */
     private fun resultOf(p: GameProfile): Pair<String, Boolean> {
-        p.resultLine(this)?.let { return it to false }
+        p.resultLine(this)?.let { return it }
         val s = StatsStore.load(this, p.id)
         val goal = p.config.streakGoal
         return when {
