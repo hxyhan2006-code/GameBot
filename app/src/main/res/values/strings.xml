@@ -101,4 +101,24 @@
     <string name="pill_waiting_frames">Waiting for screen image</string>
     <string name="pill_capture_error">Screen capture failed</string>
     <string name="stat_match_goals_shots">Goals / shots</string>
+
+    <string name="read2048_title">2048 — Read-only prototype</string>
+    <string name="read2048_entry">2048 external game • read board only</string>
+    <string name="read2048_instructions">Install 2048 Test (GameBot) first. Enable Accessibility, then Start and allow screen capture (choose the test game if sharing one app). The test game opens automatically. Wait for the board to settle, swipe manually, then return here to compare the last confirmed reading. Reading stops when you leave the target game or after 2 minutes. This prototype never taps or swipes, makes no cloud calls, and saves no screenshots. Only the supplied test APK/default palette is supported, through tile 2048. Higher or unknown tiles show uncertain.</string>
+    <string name="read2048_start">Start reading and open test game</string>
+    <string name="read2048_accessibility">Open Accessibility settings</string>
+    <string name="read2048_stop">Stop reading</string>
+    <string name="read2048_notification">Reading test game only. Tap to return and inspect.</string>
+    <string name="read2048_no_board">No confirmed board yet</string>
+    <string name="read2048_copy">Copy reading report</string>
+    <string name="read2048_copied">Report copied</string>
+    <string name="read2048_back">Back to profiles</string>
+    <string name="read2048_busy">Stop the active bot or reader first</string>
+    <string name="read2048_missing">Install the supplied 2048 Test APK first</string>
+    <string name="read2048_wait">Waiting for the permitted test game</string>
+    <string name="read2048_stable">Board confirmed across stable frames</string>
+    <string name="read2048_uncertain">Uncertain / animating. Grid below is the LAST confirmed reading.</string>
+    <string name="read2048_error">Reading failed. Retry with Accessibility and screen capture enabled.</string>
+    <string name="read2048_stopped">Stopped. Grid below is a saved reading in memory, not live.</string>
+    <string name="read2048_age">Last confirmed: %1$s ago • frames %2$d • confirmed %3$d</string>
 </resources>

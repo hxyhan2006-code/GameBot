@@ -197,6 +197,12 @@ class ProfileSelectActivity : Activity() {
         page.addView(label, lp())
 
         val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), 0, dp(16), dp(16)) }
+        list.addView(TextView(this).apply {
+            text = getString(R.string.read2048_entry)
+            textSize = 16f; setTextColor(Palette.TEXT); setPadding(dp(16),dp(20),dp(16),dp(20))
+            background = roundRect(Palette.CARD,16,Palette.CARD_LINE)
+            setOnClickListener { startActivity(Intent(this@ProfileSelectActivity,Board2048Activity::class.java)) }
+        }, lp(10))
         for (p in GameProfiles.all) {
             val (result, pass) = resultOf(p)
             val card = LinearLayout(this).apply {

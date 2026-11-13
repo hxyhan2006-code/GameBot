@@ -24,9 +24,11 @@ jobs:
           gradle-version: 8.10.2
       - name: Unit tests (vision, decision engine)
         run: gradle testDebugUnitTest --no-daemon
-      - run: gradle assembleDebug --no-daemon
+      - run: gradle :app:assembleDebug :fixture2048:assembleDebug --no-daemon
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk "UniversalGameBot-build${{ github.run_number }}.apk"
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk "UniversalGameBot-build${{ github.run_number }}.apk"
+          cp fixture2048/build/outputs/apk/debug/fixture2048-debug.apk "GameBot-2048-Test.apk"
       - name: Verify signature matches keystore/debug.keystore
         run: |
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
@@ -36,15 +38,24 @@ jobs:
           GOT=$("$BT/apksigner" verify --print-certs "$APK" | grep "SHA-256 digest" | head -1 | sed 's/.*: //')
           echo "want=$WANT"; echo "got =$GOT"
           [ "$WANT" = "$GOT" ] || { echo "APK signature does not match keystore"; exit 1; }
+          FIXTURE=$("$BT/apksigner" verify --print-certs GameBot-2048-Test.apk | grep "SHA-256 digest" | head -1 | sed 's/.*: //')
+          [ "$WANT" = "$FIXTURE" ] || { echo "Fixture signature mismatch"; exit 1; }
+          for CHECK_APK in "$APK" GameBot-2048-Test.apk; do
+            if "$BT/aapt" dump permissions "$CHECK_APK" | grep -q android.permission.INTERNET; then
+              echo "Unexpected Internet permission: $CHECK_APK"; exit 1
+            fi
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: UniversalGameBot-build${{ github.run_number }}.apk
+          path: |
+            UniversalGameBot-build${{ github.run_number }}.apk
+            GameBot-2048-Test.apk
       - name: Publish release (download the APK directly from the Releases page)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "build-${{ github.run_number }}" "UniversalGameBot-build${{ github.run_number }}.apk" \
+          gh release create "build-${{ github.run_number }}" "UniversalGameBot-build${{ github.run_number }}.apk" "GameBot-2048-Test.apk" \
             --title "Build ${{ github.run_number }}" \
-            --notes "Install over the previous version to update (same signing key). Commit: ${{ github.sha }}" \
+            --notes "GameBot updates over the previous version (same signing key). Install GameBot-2048-Test.apk separately for the read-only 2048 prototype; it does not swipe automatically. Commit: ${{ github.sha }}" \
             --target "${{ github.sha }}"

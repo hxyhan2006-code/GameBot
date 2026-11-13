@@ -115,3 +115,10 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Pass lanes use the ball origin, collision margins and predicted defenders. Match reports shot conversion separately from command failures and ignores the 100-action/95% criterion.
 - Serializes gesture results on the engine thread, guards stop/release, stops on unknown gesture timeout, and uses nonzero tap delays (35/50/70 ms). Capture initialization no longer resets counters after early callbacks.
 - Mobile test steps and metric definitions: [MATCH_TEST_GUIDE.md](MATCH_TEST_GUIDE.md). Normal's target remains <=3 conceded per match; no Hard win target is claimed.
+
+## v0.8.0 — external 2048 reader prototype
+
+- A separate offline MIT-licensed 2048 test APK is built from pinned tpcstld source in `fixture2048/`, with Google Play Games/cloud integration removed and original notices retained.
+- GameBot reads its 16-cell board from pixels and displays stabilized values for manual comparison. This milestone never sends gestures to external apps. Internal ArenaGate and all existing game controls remain unchanged.
+- Recognition is restricted to the test fixture/default palette through tile 2048; uncertain images remain uncertain. No cloud calls or automatic screenshot files.
+- Install both APKs and follow [READ_2048_GUIDE.md](READ_2048_GUIDE.md). Phone validation is required before enabling any external swiping.
