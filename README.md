@@ -1,4 +1,4 @@
-# Universal Game Bot v0.7.1b (local proof of concept)
+# Universal Game Bot v0.7.1c (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -103,3 +103,6 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 
 ## v0.7.1b (honest status when no screen image arrives)
 - If no screen frame arrives within 4 seconds of starting capture, the bot now stops by itself and records diagnostics (callbacks, null images, reader size, display state) in the debug report. The top pill shows "Waiting for screen image" while it waits and "Screen capture failed" afterwards, instead of "Bot running".
+
+## v0.7.1c (screen capture start-up race fix, to be confirmed on the device)
+- The image listener is now registered before the virtual display is created, so early frames can no longer fill the 3-slot image queue unnoticed. If no frame callback has arrived after 1.5 s the service tries to drain a queued image once and logs whether it found one (`recovered: ...` or `no queued image to drain ...`). After 4 s without any frame it still stops with diagnostics.

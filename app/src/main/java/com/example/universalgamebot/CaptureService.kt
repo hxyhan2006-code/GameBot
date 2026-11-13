@@ -41,6 +41,7 @@ class CaptureService : Service() {
     @Volatile private var nullImages = 0
     private var captureStartedAt = 0L
     private var noFrameReported = false
+    private var drainTried = false
 
     override fun onBind(intent: Intent?) = null
     override fun attachBaseContext(base: android.content.Context) { super.attachBaseContext(LocaleHelper.wrap(base)) }
@@ -129,6 +130,9 @@ class CaptureService : Service() {
             val (w, h) = realScreenSize()
             val dpi = resources.displayMetrics.densityDpi
             reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 3)
+            // ต้องตั้งตัวรับภาพ "ก่อน" สร้างจอเสมือน: ถ้าภาพมาก่อนมีตัวรับ ถังภาพ (3 ช่อง) จะเต็มโดยไม่มีใครหยิบ แล้วระบบไม่เรียกตัวรับอีกเลย (เจอจริง: imageCallbacks=0)
+            // ระหว่างที่ running ยังเป็น false ตัวรับจะหยิบภาพทิ้งเพื่อเคลียร์ถัง
+            reader?.setOnImageAvailableListener({ source -> onImage(source) }, handler)
             display = projection?.createVirtualDisplay("GameBotCapture", w, h, dpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader?.surface, null, handler)
             if (display == null) { fail("createVirtualDisplay returned null"); return START_NOT_STICKY }
             DebugMonitor.captureSize = "${w}x$h @${dpi}dpi"
@@ -138,22 +142,28 @@ class CaptureService : Service() {
             return START_NOT_STICKY
         }
         running = true
-        imageCallbacks = 0; nullImages = 0; noFrameReported = false; captureStartedAt = SystemClock.elapsedRealtime()
+        imageCallbacks = 0; nullImages = 0; noFrameReported = false; drainTried = false; captureStartedAt = SystemClock.elapsedRealtime()
         DebugMonitor.captureState = "Active"
         BotState.set(true)
-        reader?.setOnImageAvailableListener({ source ->
-            if (!running) { try { source.acquireLatestImage()?.close() } catch (_: Exception) {}; return@setOnImageAvailableListener }
-            imageCallbacks++
-            var acquireFailed = false
-            val img: Image? = try { source.acquireLatestImage() } catch (e: Exception) { acquireFailed = true; session?.onAcquireError(); DebugMonitor.error("acquireLatestImage: ${e.message}", e); null }
-            // null โดยไม่มี error = เฟรมนี้ถูกดึงไปพร้อมเฟรมที่ใหม่กว่าแล้ว (acquireLatest ทิ้งเฟรมเก่า) = เรายังประมวลผลไม่ทัน (backpressure)
-            if (img == null) { nullImages++; if (!acquireFailed) session?.onSuperseded(); return@setOnImageAvailableListener }
-            session?.onReceived()
-            engine?.onFrameReceived(SystemClock.elapsedRealtime())
-            try { processFrame(img) } catch (e: Exception) { DebugMonitor.error("frame error: ${e.javaClass.simpleName}: ${e.message}", e) } finally { img.close() }
-        }, handler)
         handler.postDelayed(ticker, 40)
         return START_NOT_STICKY
+    }
+
+    /** รับภาพจาก ImageReader (เรียกบน thread BotVision): ก่อนเริ่มทำงานหยิบทิ้ง · หลังเริ่ม ส่งเข้า Vision */
+    private fun onImage(source: ImageReader) {
+        if (!running) { try { source.acquireLatestImage()?.close() } catch (_: Exception) {}; return }
+        imageCallbacks++
+        var acquireFailed = false
+        val img: Image? = try { source.acquireLatestImage() } catch (e: Exception) { acquireFailed = true; session?.onAcquireError(); DebugMonitor.error("acquireLatestImage: ${e.message}", e); null }
+        // null โดยไม่มี error = เฟรมนี้ถูกดึงไปพร้อมเฟรมที่ใหม่กว่าแล้ว (acquireLatest ทิ้งเฟรมเก่า) = เรายังประมวลผลไม่ทัน (backpressure)
+        if (img == null) { nullImages++; if (!acquireFailed) session?.onSuperseded(); return }
+        handleImage(img)
+    }
+
+    private fun handleImage(img: Image) {
+        session?.onReceived()
+        engine?.onFrameReceived(SystemClock.elapsedRealtime())
+        try { processFrame(img) } catch (e: Exception) { DebugMonitor.error("frame error: ${e.javaClass.simpleName}: ${e.message}", e) } finally { img.close() }
     }
 
     private fun fail(msg: String, t: Throwable? = null) {
@@ -229,6 +239,14 @@ class CaptureService : Service() {
     private fun checkNoFrames(): Boolean {
         if (noFrameReported || DebugMonitor.framesReceived.get() > 0L) return false
         val since = SystemClock.elapsedRealtime() - captureStartedAt
+        if (since >= 1500 && !drainTried) {
+            // ยังไม่มีการเรียกกลับเลย: ลองหยิบภาพที่อาจค้างอยู่ในถัง ถ้าเจอ = ถังเต็มจนระบบไม่แจ้ง (เคลียร์ให้ภาพไหลต่อ และบันทึกเป็นหลักฐาน)
+            drainTried = true
+            val img = try { reader?.acquireLatestImage() } catch (e: Exception) { DebugMonitor.error("drain acquire: ${e.message}", e); null }
+            if (img != null) { DebugMonitor.error("recovered: an image was already queued but the listener never fired (callbacks=$imageCallbacks)"); handleImage(img) }
+            else DebugMonitor.log("no queued image to drain after ${since} ms (callbacks=$imageCallbacks)")
+            if (DebugMonitor.framesReceived.get() > 0L) return false
+        }
         if (since < 4000) return false
         noFrameReported = true
         DebugMonitor.error("no frames ${since} ms after capture start: imageCallbacks=$imageCallbacks nullImages=$nullImages reader=${reader?.width}x${reader?.height} surfaceValid=${reader?.surface?.isValid} displayState=${display?.display?.state}")
