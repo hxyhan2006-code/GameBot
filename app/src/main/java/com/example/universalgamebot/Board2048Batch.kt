@@ -3,10 +3,11 @@ package com.example.universalgamebot
 /** Verified bounded run. Evidence is capped independently of lifetime counters. */
 class Board2048Batch(private val startedAt:Long,val limit:Int) {
     enum class Phase { RUNNING, COMPLETE, ERROR, STOPPED, NO_LEGAL_MOVE, WON, GAME_OVER }
+    enum class EndEvidence { NONE, WIN_LABEL, GAME_OVER_LABEL, OBSERVED_2048, NO_LEGAL_MOVES }
     data class Report(val limit:Int,val verified:Int=0,val requests:Int=0,val phase:Phase=Phase.RUNNING,
         val turns:List<Board2048SingleStep.Report> = emptyList(),val detail:String="waiting for fresh stable pixels",
         val highestTile:Int=0,val mergeScore:Int=0,val elapsedMs:Long=0,val turnsDropped:Int=0,
-        val maxPlanningMs:Long=0)
+        val maxPlanningMs:Long=0,val evidence:EndEvidence=EndEvidence.NONE)
     companion object {
         val LIMITS=listOf(10,30,100)
         const val UNTIL_END=3000
@@ -21,6 +22,7 @@ class Board2048Batch(private val startedAt:Long,val limit:Int) {
     @Volatile var current=Board2048SingleStep(startedAt); private set
     @Volatile var report=Report(limit); private set
     private val turns=ArrayDeque<Board2048SingleStep.Report>()
+    private var evidence=EndEvidence.NONE
     private var recorded=0; private var verified=0; private var requests=0
     private var highest=0; private var score=0; private var lastNow=startedAt; private var maxPlanningMs=0L
     private var afterSourceNs=0L
@@ -35,6 +37,7 @@ class Board2048Batch(private val startedAt:Long,val limit:Int) {
         }
         if(board!=null) highest=maxOf(highest,board.cells.max())
         if(board!=null && current.report.phase==Board2048SingleStep.Phase.WAITING && highest>=2048) {
+            evidence=EndEvidence.OBSERVED_2048
             current.stop(); finish(Phase.WON,"2048 tile on stable observed board"); return null
         }
         val request=current.observe(board,sourceNs,now)
@@ -62,6 +65,7 @@ class Board2048Batch(private val startedAt:Long,val limit:Int) {
     @Synchronized fun endScreen(won:Boolean,now:Long) {
         if(terminal) return
         lastNow=now; current.stop()
+        evidence=if(won) EndEvidence.WIN_LABEL else EndEvidence.GAME_OVER_LABEL
         finish(if(won) Phase.WON else Phase.GAME_OVER,"stable ${if(won) "win" else "game-over"} label and overlay observed; final board is not verified${if(requests+current.report.commands==0) "; no move requested in this run" else ""}")
     }
     private fun remember() {
@@ -74,7 +78,7 @@ class Board2048Batch(private val startedAt:Long,val limit:Int) {
         when(current.report.phase) {
             Board2048SingleStep.Phase.VERIFIED -> {
                 remember()
-                if(highest>=2048) publish(Phase.WON,"2048 tile verified")
+                if(highest>=2048) { evidence=EndEvidence.OBSERVED_2048; publish(Phase.WON,"2048 tile verified") }
                 else if(verified==limit) publish(Phase.COMPLETE,"requested limit reached")
                 else {
                     afterSourceNs=sourceNs; current=Board2048SingleStep(now)
@@ -82,7 +86,7 @@ class Board2048Batch(private val startedAt:Long,val limit:Int) {
                 }
             }
             Board2048SingleStep.Phase.ERROR -> finish(Phase.ERROR,current.report.detail)
-            Board2048SingleStep.Phase.NO_LEGAL_MOVE -> finish(Phase.GAME_OVER,"no legal supported move on observed board")
+            Board2048SingleStep.Phase.NO_LEGAL_MOVE -> { evidence=EndEvidence.NO_LEGAL_MOVES; finish(Phase.GAME_OVER,"no legal supported move on observed board") }
             Board2048SingleStep.Phase.STOPPED -> finish(Phase.STOPPED,current.report.detail)
             else -> publish(Phase.RUNNING,current.report.detail)
         }
@@ -90,7 +94,7 @@ class Board2048Batch(private val startedAt:Long,val limit:Int) {
     private fun publish(phase:Phase,detail:String) {
         val pending=if(phase==Phase.RUNNING)current.report.commands else 0
         report=Report(limit,verified,requests+pending,phase,turns.toList(),detail,highest,score,
-            (lastNow-startedAt).coerceAtLeast(0),recorded-turns.size,maxPlanningMs)
+            (lastNow-startedAt).coerceAtLeast(0),recorded-turns.size,maxPlanningMs,evidence)
     }
     private fun finish(phase:Phase,detail:String) { remember(); publish(phase,detail) }
 }

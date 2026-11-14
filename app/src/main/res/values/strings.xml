@@ -166,4 +166,16 @@
     <string name="planner2048_game_over">Game over · %1$d moves verified</string>
     <string name="planner2048_summary">Highest confirmed tile: %1$d\nVerified merge points this run: %2$d · %3$d s</string>
     <string name="planner2048_summary_unknown">No board confirmed yet • verified merge points %1$d • %2$d s</string>
+    <string name="result2048_badge_won">Won</string>
+    <string name="result2048_badge_over">Game over</string>
+    <string name="result2048_badge_complete">Limit reached</string>
+    <string name="result2048_win_overlay">Win confirmed from the on-screen label. The grid is the last complete reading before the win overlay.</string>
+    <string name="result2048_over_overlay">Game-over label confirmed. The grid is the last complete reading before the overlay.</string>
+    <string name="result2048_win_board">Tile 2048 confirmed on a stable board. The run has ended successfully.</string>
+    <string name="result2048_action_covered">Final swipe completed. The end screen covers the board, so the final 16 cells remain unverified.</string>
+    <string name="result2048_final_unverified">End screen observed; the final board/action is not verified.</string>
+    <string name="result2048_preexisting_end">This run started on an end screen; no move was requested.</string>
+    <string name="result2048_recent_title">Latest 3 play-to-end attempts</string>
+    <string name="result2048_recent_line">#%1$d · %2$s · %3$s · %4$d verified moves</string>
+    <string name="result2048_fresh_hint">Start a new game manually for each comparison. Stops/errors are not counted as defeats.</string>
 </resources>

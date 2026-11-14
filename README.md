@@ -156,3 +156,10 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Adds **Play to end** capped at 3,000 moves or 30 minutes, retaining all foreground/window/permit checks and per-move verification. Stops on screen win/game-over evidence, observed terminal board, failure, user stop, count or time.
 - Shows highest confirmed tile, verified merge points this run, elapsed time and reason. A terminal label does not fabricate a verified final board or action. Reports export aggregate statistics for the entire run and detailed evidence for the latest 20 turns, with omitted counts.
 - See [BENCHMARK_2048.md](BENCHMARK_2048.md): fixed paired simulation seeds reached 2048 in 0/8 old versus 8/8 new. This is not a measured Xiaomi win rate.
+
+## v0.9.1 — clear game outcomes and comparison
+
+- Victory is the primary badge/result, independent of capture stopping. A win overlay explicitly explains why the last complete board may still show 1024 and why the final action remains unverified.
+- Reports label the covered final action `ENDED_BY_GAME_SCREEN` while retaining its raw phase for diagnostics. No planned values are substituted for an observed final board.
+- Shows the latest three play-to-end attempts with actual moves, outcomes and elapsed time. Zero-move end screens and 10/30/100 count tests are excluded from this comparison; stopped/error attempts are not labelled defeats. Fresh starts still require the owner to reset the game manually.
+- Next-game source audit: [BRICK_BREAKER_READINESS.md](BRICK_BREAKER_READINESS.md). A Brick Breaker reader is not yet enabled.

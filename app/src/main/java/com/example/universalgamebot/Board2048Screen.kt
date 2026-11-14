@@ -30,6 +30,7 @@ class Board2048Screen(
     private val stepButton: Button
     private val stepResult: TextView
     private val historyNote: TextView
+    private val recentGames: TextView
     private val setup: Button
     private var buttonRunning: Boolean? = null
 
@@ -91,6 +92,8 @@ class Board2048Screen(
         card.addView(stepResult, LayoutParams(-1, -2).apply { topMargin = context.dp(8) })
         historyNote = label("", 12f)
         card.addView(historyNote, LayoutParams(-1, -2).apply { topMargin = context.dp(6) })
+        recentGames=label("",13f,Palette.SOFT)
+        card.addView(recentGames,LayoutParams(-1,-2).apply { topMargin=context.dp(8) })
         content.addView(card, LayoutParams(-1, -2))
         batchControls=Board2048BatchControls(context,onBatch)
         content.addView(batchControls,LayoutParams(-1,-2).apply { topMargin=context.dp(12) })
@@ -140,15 +143,22 @@ class Board2048Screen(
 
     fun render(s: Board2048Readout.Snapshot, now: Long, accessibility: Boolean, otherBotRunning: Boolean) {
         val shortStatus = when {
+            !s.running && s.batch?.phase==Board2048Batch.Phase.WON -> R.string.result2048_badge_won
+            !s.running && s.batch?.phase==Board2048Batch.Phase.GAME_OVER -> R.string.result2048_badge_over
+            !s.running && s.batch?.phase==Board2048Batch.Phase.COMPLETE -> R.string.result2048_badge_complete
             s.running -> if (s.status == "uncertain") R.string.read2048_badge_uncertain else R.string.read2048_badge_running
             s.status == "error" -> R.string.read2048_badge_error
             s.status == "stopped" || s.at > 0 -> R.string.read2048_badge_stopped
             else -> R.string.read2048_badge_ready
         }
         badge.setText(shortStatus)
-        badge.background = context.roundRect(if (s.running) Palette.ACCENT_TINT else Palette.OFF, 16)
+        badge.background = context.roundRect(if(s.batch?.phase==Board2048Batch.Phase.WON) Palette.OK_TINT else if (s.running) Palette.ACCENT_TINT else Palette.OFF, 16)
         grid.show(s.board?.cells)
         val message = when {
+            Board2048RunSummary.overlayEnded(s.batch) && s.board==null -> R.string.result2048_preexisting_end
+            s.batch?.evidence==Board2048Batch.EndEvidence.WIN_LABEL -> R.string.result2048_win_overlay
+            s.batch?.evidence==Board2048Batch.EndEvidence.GAME_OVER_LABEL -> R.string.result2048_over_overlay
+            s.batch?.evidence==Board2048Batch.EndEvidence.OBSERVED_2048 -> R.string.result2048_win_board
             s.status == "error" -> R.string.read2048_error
             s.board == null -> R.string.read2048_no_board
             s.status == "uncertain" -> R.string.read2048_uncertain
@@ -159,6 +169,17 @@ class Board2048Screen(
         age.text = if (s.at == 0L) "" else context.getString(R.string.read2048_age_short, ((now - s.at).coerceAtLeast(0) / 1000))
         metrics.text = context.getString(R.string.read2048_metrics, s.frames, s.confirmed)
         historyNote.text = context.getString(R.string.step2048_history_note, s.historyCount)
+        recentGames.visibility=if(s.recentGames.isEmpty()) GONE else VISIBLE
+        recentGames.text=if(s.recentGames.isEmpty()) "" else context.getString(R.string.result2048_recent_title)+"\n"+s.recentGames.joinToString("\n") { game ->
+            val result=context.getString(when(game.phase) {
+                Board2048Batch.Phase.WON -> R.string.result2048_badge_won
+                Board2048Batch.Phase.GAME_OVER -> R.string.result2048_badge_over
+                Board2048Batch.Phase.ERROR -> R.string.read2048_badge_error
+                Board2048Batch.Phase.COMPLETE -> R.string.result2048_badge_complete
+                else -> R.string.read2048_badge_stopped
+            })
+            context.getString(R.string.result2048_recent_line,game.number,result,game.time,game.verified)
+        }+"\n"+context.getString(R.string.result2048_fresh_hint)
         val step = s.step
         stepResult.visibility = if (step == null) GONE else VISIBLE
         if (step != null) {
@@ -192,6 +213,8 @@ class Board2048Screen(
             }
             stepResult.visibility=VISIBLE
             stepResult.text=context.getString(message,b.verified,b.limit)+"\n"+(if(b.highestTile>0) context.getString(R.string.planner2048_summary,b.highestTile,b.mergeScore,b.elapsedMs/1000) else context.getString(R.string.planner2048_summary_unknown,b.mergeScore,b.elapsedMs/1000))
+            if(Board2048RunSummary.overlayEnded(b)) stepResult.append("\n"+context.getString(
+                if(b.requests==0) R.string.result2048_preexisting_end else if(step?.commandCompleted==true) R.string.result2048_action_covered else R.string.result2048_final_unverified))
             metrics.append("\nbatch=${b.phase} verified=${b.verified}/${b.limit} requests=${b.requests} maxSearchMs=${b.maxPlanningMs}: ${b.detail}")
         }
         batchControls.setAvailable(!s.running && accessibility && !otherBotRunning)

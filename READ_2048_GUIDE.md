@@ -74,3 +74,14 @@ Phone test:
 The end detector matches the fixture's static bundled translated win/game-over glyphs and the fully faded overlay border across three fresh frames spanning 400 ms. Its label strings are copied static MIT fixture assets (notice included in the APK); no runtime game data is read. A detected label can end a run even when the overlay prevents reading the final board. Such an unfinished action remains unverified: final score/max tile are not inferred from the planned move. A preexisting win screen can report WON with zero requests, and is labelled accordingly; it is not counted as a fully verified run. `winsObservedInRetained` is separate from `verifiedInRetained`. English/translated synthetic-render tests are separate from the required phone validation.
 
 Highest tile is the highest stable board value actually read. Merge score is only the sum of gains of verified moves since this run began, not OCR of the game's total/high score. Elapsed time is monotonic time in the run. Detailed evidence is capped at 100 turns in memory and 20 in clipboard export; up to 20 run histories remain in process memory. Older batches show summaries. No screenshots or cloud calls are added.
+
+## Three fresh-game consistency check (0.9.1)
+
+1. Update only GameBot over the old app. Open the existing 2048 Test app and manually press its New Game/reset control. Complete its confirmation if shown.
+2. Return to GameBot, open 2048, press Play to end, and allow full-display capture. Keep the game foreground until the bot stops; Stop remains available in the notification.
+3. Repeat steps 1–2 for three games. Reset manually before **each** run; the bot does not reset a game or prove that a run started fresh.
+4. After the third game, copy the combined report once. Keep GameBot in memory between runs because history is not persistent across process death. If the app is closed by Android, copy the available reports separately; do not imply missing runs were measured.
+
+The victory badge says Won even though the capture service stopped normally. `status=won` and `captureStatus=stopped` are separate. Typed end evidence distinguishes the win label from a stable observed 2048 tile. A label-covered final action is exported as `ENDED_BY_GAME_SCREEN`, with the raw phase preserved, and remains unverified; no 2048 tile/score is invented from its prediction. A win opened before any move is explicitly marked and excluded from the recent-attempt comparison.
+
+The comparison shows only the latest three play-to-end runs with at least one request. Stops/errors are incomplete attempts, not defeats, and the app does not automatically certify fresh starts or a general win rate. The global history still retains other sessions for diagnostics. The next game is prepared in BRICK_BREAKER_READINESS.md; no new capture/control target is shipped in this version.

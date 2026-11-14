@@ -15,7 +15,7 @@ android {
         minSdk = 29
         targetSdk = 35
         versionCode = buildNumber
-        versionName = "0.9.0-2048-planner"
+        versionName = "0.9.1-2048-results"
     }
 
     // กุญแจเซ็นชุดเดียวทุกครั้ง (keystore/debug.keystore) ห้ามเปลี่ยน/ลบ ไม่งั้นติดตั้งทับไม่ได้

@@ -137,6 +137,21 @@ class Board2048ScreenTest {
         } finally { BotAccessibilityService.board2048ScopeObserver=null }
     }
 
+    @Test fun winBadgeExplainsOverlayAndPreservesUnverifiedFinalBoard() {
+        val root=screen()
+        val batch=Board2048Batch.Report(Board2048Batch.UNTIL_END,verified=951,requests=952,
+            phase=Board2048Batch.Phase.WON,highestTile=1024,elapsedMs=986036,evidence=Board2048Batch.EndEvidence.WIN_LABEL)
+        val step=Board2048SingleStep.Report(phase=Board2048SingleStep.Phase.STOPPED,commandCompleted=true)
+        root.render(Board2048Readout.Snapshot(status="stopped",batch=batch,step=step,
+            board=Board2048Reader.Board(List(16){if(it==15)1024 else 0},Box(0f,0f,400f,400f))),1000,true,false)
+        val texts=descendants(root).filterIsInstance<TextView>()
+        assertTrue(texts.any { it.text==root.context.getString(R.string.result2048_badge_won) })
+        assertTrue(texts.any { it.text==root.context.getString(R.string.result2048_win_overlay) })
+        assertTrue(texts.any { it.text.toString().contains(root.context.getString(R.string.result2048_action_covered)) })
+        assertTrue(texts.any { it.text.toString().contains("1024") })
+        assertFalse(texts.any { it.text==root.context.getString(R.string.read2048_badge_stopped) })
+    }
+
     @Test fun unknownCellsDifferFromEmptyAndStopRemainsAvailableWithoutAccessibility() {
         val root = screen()
         val grid = descendants(root).filterIsInstance<Board2048GridView>().single()

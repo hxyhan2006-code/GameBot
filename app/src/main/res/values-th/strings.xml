@@ -166,4 +166,16 @@
     <string name="planner2048_game_over">จบเกม · ยืนยันแล้ว %1$d ตา</string>
     <string name="planner2048_summary">เลขสูงสุดที่อ่านยืนยันได้: %1$d\nคะแนนรวมเพิ่มที่ตรวจยืนยัน: %2$d · %3$d วินาที</string>
     <string name="planner2048_summary_unknown">ยังไม่มีกระดานยืนยัน • คะแนนเพิ่มที่ยืนยัน %1$d • %2$d วินาที</string>
+    <string name="result2048_badge_won">ชนะ</string>
+    <string name="result2048_badge_over">จบเกม</string>
+    <string name="result2048_badge_complete">ครบจำนวน</string>
+    <string name="result2048_win_overlay">ยืนยันว่าชนะจากป้ายบนจอ ตารางคือกระดานล่าสุดก่อนป้ายชนะบัง</string>
+    <string name="result2048_over_overlay">ยืนยันป้ายจบเกมแล้ว ตารางคือกระดานล่าสุดก่อนป้ายบัง</string>
+    <string name="result2048_win_board">อ่านยืนยันช่อง 2048 จากกระดานนิ่งแล้ว จบรอบด้วยชัยชนะ</string>
+    <string name="result2048_action_covered">ปัดตาสุดท้ายจบแล้ว ป้ายจบเกมบังกระดาน จึงยังไม่ยืนยันค่าครบ 16 ช่อง</string>
+    <string name="result2048_final_unverified">พบป้ายจบเกมแล้ว แต่ยังไม่ยืนยันกระดานหรือคำสั่งสุดท้าย</string>
+    <string name="result2048_preexisting_end">รอบนี้เริ่มบนหน้าจอจบเกม ยังไม่ได้สั่งเดิน</string>
+    <string name="result2048_recent_title">ผลเล่นจนจบ 3 รอบล่าสุด</string>
+    <string name="result2048_recent_line">#%1$d · %2$s · %3$s · ยืนยัน %4$d ตา</string>
+    <string name="result2048_fresh_hint">เริ่มเกมใหม่เองก่อนแต่ละรอบที่เปรียบเทียบ การหยุดหรือผิดพลาดไม่ถูกนับเป็นแพ้</string>
 </resources>
