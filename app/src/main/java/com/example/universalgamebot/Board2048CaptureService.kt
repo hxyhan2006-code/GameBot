@@ -24,9 +24,21 @@ class Board2048CaptureService:Service() {
     private val stable=Stable2048Board()
     private val frame=SampledFrame()
     private val frameClock=Board2048FrameClock()
+    private val focusWatcher:(String?)->Unit = { pkg ->
+        if(active && session.access(pkg,SystemClock.elapsedRealtime())==Board2048Session.Access.STOP) {
+            // Revoke on the event thread, before a queued dispatch can run.
+            permit?.revoke(); active=false
+            worker.post { stopRead("window focus lost or unknown") }
+        }
+    }
     private var targetEnteredNs=0L
     @Volatile private var active=false
     private var started=false
+    private var batch:Board2048Batch?=null
+    private var notice:Notification.Builder?=null
+    private var lastNotified=-1
+    private var sessionDuration=120_000L
+    private val currentStep get()=batch?.current ?: singleStep
     private var singleStep:Board2048SingleStep?=null
     @Volatile private var permit:Board2048SwipePermit?=null
     private var width=0
@@ -43,7 +55,7 @@ class Board2048CaptureService:Service() {
         thread.start(); worker=Handler(thread.looper)
     }
     override fun onStartCommand(intent:Intent?,flags:Int,startId:Int):Int {
-        if(intent?.action=="STOP") { stopRead(); return START_NOT_STICKY }
+        if(intent?.action=="STOP") { stopRead("notification stop"); return START_NOT_STICKY }
         if(started) return START_NOT_STICKY
         started=true
         if(BotState.running || BotAccessibilityService.instance==null) { fail("reader requires idle bot and Accessibility"); return START_NOT_STICKY }
@@ -51,6 +63,8 @@ class Board2048CaptureService:Service() {
             @Suppress("DEPRECATION") intent?.getParcelableExtra("data")
         }
         if(data==null || intent?.getIntExtra("code",0)!=Activity.RESULT_OK) { fail("projection permission missing"); return START_NOT_STICKY }
+        val batchLimit=intent.getIntExtra("batchLimit",0)
+        if(batchLimit!=0 && batchLimit !in Board2048Batch.LIMITS) { fail("unsupported batch limit"); return START_NOT_STICKY }
         try {
             val nm=getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(NotificationChannel("read2048",getString(R.string.read2048_title),NotificationManager.IMPORTANCE_LOW))
@@ -58,21 +72,27 @@ class Board2048CaptureService:Service() {
             val open=PendingIntent.getActivity(this,2048,Intent(this,Board2048Activity::class.java),PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             val n=Notification.Builder(this,"read2048").setContentTitle(getString(R.string.read2048_title))
                 .setContentText(getString(R.string.read2048_notification)).setSmallIcon(android.R.drawable.ic_menu_view)
-                .setContentIntent(open).addAction(android.R.drawable.ic_delete,getString(R.string.notif_stop),stop).build()
-            startForeground(2048,n,ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
+                .setContentIntent(open).addAction(android.R.drawable.ic_delete,getString(R.string.notif_stop),stop)
+            if(batchLimit>0) n.setContentTitle("2048 · ${getString(R.string.batch2048_title)}")
+            notice=n
+            startForeground(2048,n.build(),ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
             projection=getSystemService(MediaProjectionManager::class.java).getMediaProjection(Activity.RESULT_OK,data)
-            projection?.registerCallback(object:MediaProjection.Callback() { override fun onStop() { if(active) stopRead() } },worker)
+            projection?.registerCallback(object:MediaProjection.Callback() { override fun onStop() { if(active) stopRead("screen capture stopped") } },worker)
             val wm=getSystemService(WindowManager::class.java)
             val size=if(Build.VERSION.SDK_INT>=30) wm.maximumWindowMetrics.bounds.let { it.width() to it.height() } else {
                 val m=android.util.DisplayMetrics()
                 @Suppress("DEPRECATION") wm.defaultDisplay.getRealMetrics(m)
                 m.widthPixels to m.heightPixels
             }
-            startedAt=SystemClock.elapsedRealtime(); session=Board2048Session(startedAt)
+            startedAt=SystemClock.elapsedRealtime()
+            sessionDuration=if(batchLimit==0) 120_000 else Board2048Batch.durationMs(batchLimit)
+            session=Board2048Session(startedAt,sessionDuration)
             width=size.first; height=size.second
-            val stepMode=intent.getBooleanExtra("singleStep",false)
-            singleStep=if(stepMode) Board2048SingleStep(startedAt) else null
-            Board2048Readout.begin(stepMode); active=true
+            val stepMode=batchLimit>0 || intent.getBooleanExtra("singleStep",false)
+            batch=if(batchLimit>0) Board2048Batch(startedAt,batchLimit) else null
+            singleStep=if(stepMode && batch==null) Board2048SingleStep(startedAt) else null
+            Board2048Readout.begin(stepMode,batch?.report); active=true
+            if(batch!=null) BotAccessibilityService.board2048ScopeObserver=focusWatcher
             reader=ImageReader.newInstance(size.first,size.second,PixelFormat.RGBA_8888,3)
             reader!!.setOnImageAvailableListener({ source ->
                 val img=try { source.acquireLatestImage() } catch(e:Exception) { fail("acquire: ${e.message}"); null }
@@ -80,7 +100,7 @@ class Board2048CaptureService:Service() {
                     if(active) {
                         val now=SystemClock.elapsedRealtime()
                         when(session.access(BotAccessibilityService.instance?.activePackage(),now)) {
-                            Board2048Session.Access.STOP -> stopRead()
+                            Board2048Session.Access.STOP -> stopRead(scopeStopReason(now))
                             Board2048Session.Access.READ -> if(now-lastSample>=200) {
                                 lastSample=now
                                 if(targetEnteredNs==0L) targetEnteredNs=System.nanoTime()
@@ -97,7 +117,7 @@ class Board2048CaptureService:Service() {
                                     if(active && session.access(BotAccessibilityService.instance?.activePackage(),SystemClock.elapsedRealtime())==Board2048Session.Access.READ) {
                                         Board2048Readout.frame(result,now)
                                         processStep(result,timestamp,now)
-                                    } else stopRead()
+                                    } else stopRead("target lost while reading")
                                 }
                             }
                             else -> {}
@@ -116,51 +136,76 @@ class Board2048CaptureService:Service() {
         override fun run() {
             if(!active) return
             val now=SystemClock.elapsedRealtime()
-            if(BotState.running || session.access(BotAccessibilityService.instance?.activePackage(),now)==Board2048Session.Access.STOP) { stopRead(); return }
+            if(BotState.running) { stopRead("internal bot started"); return }
+            if(session.access(BotAccessibilityService.instance?.activePackage(),now)==Board2048Session.Access.STOP) { stopRead(scopeStopReason(now)); return }
             if((lastFrame==0L && now-startedAt>10_000) || (lastFrame>0L && now-lastFrame>3000)) { fail("no fresh capture frames"); return }
-            singleStep?.let { it.tick(now); Board2048Readout.step(it.report); if(it.terminal) { finishStep(); return } }
+            if(batch!=null) {
+                batch!!.tick(now); publishStep()
+                if(batch!!.terminal) { finishStep(); return }
+            } else singleStep?.let { it.tick(now); Board2048Readout.step(it.report); if(it.terminal) { finishStep(); return } }
             worker.postDelayed(this,200)
         }
     }
+    private fun publishStep() {
+        currentStep?.let { Board2048Readout.step(it.report) }
+        batch?.let {
+            val report=it.report
+            Board2048Readout.batch(report)
+            if(active && lastNotified!=report.verified) {
+                lastNotified=report.verified
+                try {
+                    val id=if(report.phase==Board2048Batch.Phase.COMPLETE) R.string.batch2048_complete else R.string.batch2048_progress
+                    notice?.setContentText(getString(id,report.verified,report.limit))?.build()?.let { n -> getSystemService(NotificationManager::class.java).notify(2048,n) }
+                } catch(e:Exception) { DebugMonitor.error("2048 progress notification: ${e.message}") }
+            }
+        }
+    }
     private fun processStep(board:Board2048Reader.Board?,sourceNs:Long,now:Long) {
-        val step=singleStep ?: return
-        val request=step.observe(board,sourceNs,now)
-        Board2048Readout.step(step.report)
+        val step=currentStep ?: return
+        val request=if(batch!=null) batch!!.observe(board,sourceNs,now) else step.observe(board,sourceNs,now)
+        publishStep()
+        if(currentStep!==step) permit?.revoke()
         if(request!=null) {
             val ticket=Board2048SwipePermit(request,width,height)
             permit=ticket
-            Board2048GestureExecutor.execute(ticket, { active && permit===ticket && step.report.phase==Board2048SingleStep.Phase.DISPATCHED && SystemClock.elapsedRealtime()-startedAt<120_000 }) { ok,reason ->
+            Board2048GestureExecutor.execute(ticket, { active && permit===ticket && currentStep===step && step.report.phase==Board2048SingleStep.Phase.DISPATCHED && SystemClock.elapsedRealtime()-startedAt<sessionDuration }) { ok,reason ->
                 val callbackNs=System.nanoTime()
                 worker.post {
-                    if(active && permit===ticket && step.report.phase==Board2048SingleStep.Phase.DISPATCHED) {
-                        step.commandResult(ok,reason,SystemClock.elapsedRealtime(),callbackNs)
-                        verifyAfterNs=callbackNs; stable.invalidate()
-                        Board2048Readout.step(step.report)
+                    if(active && permit===ticket && currentStep===step && step.report.phase==Board2048SingleStep.Phase.DISPATCHED) {
+                        if(batch!=null) batch!!.commandResult(step,ok,reason,SystemClock.elapsedRealtime(),callbackNs)
+                        else step.commandResult(ok,reason,SystemClock.elapsedRealtime(),callbackNs)
+                        verifyAfterNs=callbackNs; stable.invalidate(); publishStep()
                         DebugMonitor.log("2048 step gesture: ok=$ok $reason")
-                        if(step.terminal) finishStep()
+                        if(batch?.terminal ?: step.terminal) finishStep()
                     }
                 }
             }
         }
-        if(step.terminal) finishStep()
+        if(batch?.terminal ?: step.terminal) finishStep()
     }
     private fun finishStep() {
-        val r=singleStep?.report ?: return
+        val r=currentStep?.report ?: return
         if(r.phase==Board2048SingleStep.Phase.ERROR) DebugMonitor.error("2048 step: ${r.detail}")
         else DebugMonitor.log("2048 step: ${r.phase} ${r.direction} ${r.detail}")
         stopRead()
     }
-    private fun stopRead() {
-        active=false; permit?.revoke(); singleStep?.let { it.stop(); Board2048Readout.step(it.report) }
+    private fun scopeStopReason(now:Long)=if(now-startedAt>=sessionDuration) "session deadline reached" else "target focus lost or unknown"
+    private fun stopSteps(reason:String="capture service stopped") {
+        batch?.stop(reason) ?: singleStep?.stop()
+        publishStep()
+    }
+    private fun stopRead(reason:String="stopped") {
+        active=false; permit?.revoke(); stopSteps(reason)
         Board2048Readout.stop(); stopSelf()
     }
     private fun fail(reason:String) {
-        active=false; permit?.revoke(); singleStep?.let { it.stop(); Board2048Readout.step(it.report) }
+        active=false; permit?.revoke(); batch?.abort(reason); stopSteps(reason)
         DebugMonitor.error("2048 reader: $reason"); Board2048Readout.fail(); stopSelf()
     }
     override fun onDestroy() {
+        if(BotAccessibilityService.board2048ScopeObserver===focusWatcher) BotAccessibilityService.board2048ScopeObserver=null
         active=false; permit?.revoke()
-        singleStep?.let { it.stop(); Board2048Readout.step(it.report) }
+        stopSteps()
         if(Board2048Readout.snapshot.running) Board2048Readout.stop()
         worker.removeCallbacksAndMessages(null)
         worker.post {

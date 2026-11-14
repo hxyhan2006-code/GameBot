@@ -97,6 +97,36 @@ class Board2048ScreenTest {
         assertTrue(descendants(root).filterIsInstance<TextView>().any { it.text.toString().contains(root.context.getString(R.string.step2048_verified,root.context.getString(R.string.step2048_left))) })
     }
 
+    @Test fun batchChoicesAreExplicitAndDisabledDuringCapture() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().get()
+        var selected=0
+        val root=Board2048Screen(activity,{},{},{},{},onBatch={selected=it})
+        root.render(Board2048Readout.Snapshot(),0,true,false)
+        val options=descendants(root).filterIsInstance<android.widget.RadioButton>()
+        assertEquals(listOf("10","30","100"),options.map { it.text.toString() })
+        options.last().performClick()
+        val start=descendants(root).filterIsInstance<Button>().single { it.text==root.context.getString(R.string.batch2048_start) }
+        assertEquals(0,selected); start.performClick(); assertEquals(100,selected)
+        root.render(Board2048Readout.Snapshot(running=true,batch=Board2048Batch.Report(100)),0,true,false)
+        assertFalse(start.isEnabled); assertTrue(options.all { !it.isEnabled })
+    }
+    @Test fun windowEventLatchesLossEvenBeforeTheNextPoll() {
+        val service=Robolectric.buildService(BotAccessibilityService::class.java).create().get()
+        val session=Board2048Session(0)
+        session.access(Board2048Session.TARGET,1)
+        var revoked=false
+        BotAccessibilityService.board2048ScopeObserver={ pkg ->
+            revoked=session.access(pkg,2)==Board2048Session.Access.STOP
+        }
+        try {
+            val event=android.view.accessibility.AccessibilityEvent.obtain(android.view.accessibility.AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)
+            event.packageName="com.example.other"
+            service.onAccessibilityEvent(event)
+            assertTrue(revoked)
+            assertEquals(Board2048Session.Access.STOP,session.access(Board2048Session.TARGET,3))
+        } finally { BotAccessibilityService.board2048ScopeObserver=null }
+    }
+
     @Test fun unknownCellsDifferFromEmptyAndStopRemainsAvailableWithoutAccessibility() {
         val root = screen()
         val grid = descendants(root).filterIsInstance<Board2048GridView>().single()

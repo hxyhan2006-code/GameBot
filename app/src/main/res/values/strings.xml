@@ -121,7 +121,7 @@
     <string name="read2048_error">Reading failed. Retry with Accessibility and screen capture enabled.</string>
     <string name="read2048_stopped">Stopped. Grid below is a saved reading in memory, not live.</string>
     <string name="read2048_age">Last confirmed: %1$s ago • frames %2$d • confirmed %3$d</string>
-    <string name="read2048_subtitle">Read / move one step</string>
+    <string name="read2048_subtitle">Read / single step / bounded run</string>
     <string name="read2048_latest">Last confirmed board</string>
     <string name="read2048_how_title">How to use</string>
     <string name="read2048_details_title">Reading details</string>
@@ -152,4 +152,13 @@
     <string name="step2048_up">up</string>
     <string name="step2048_down">down</string>
     <string name="step2048_history_note">%1$d runs saved • report includes the latest 20 runs in this app process</string>
+    <string name="batch2048_title">Play several moves</string>
+    <string name="batch2048_hint">Choose a move limit. Checks every move. Stop from the notification or return here.</string>
+    <string name="batch2048_start">Start selected run</string>
+    <string name="batch2048_stop">Stop run</string>
+    <string name="batch2048_progress">Verified %1$d / %2$d moves; running</string>
+    <string name="batch2048_complete">Complete: %1$d / %2$d moves verified</string>
+    <string name="batch2048_error">Stopped: result uncertain after %1$d / %2$d verified moves</string>
+    <string name="batch2048_stopped">Stopped: %1$d / %2$d moves verified</string>
+    <string name="batch2048_no_move">No supported move; stopped at %1$d / %2$d</string>
 </resources>

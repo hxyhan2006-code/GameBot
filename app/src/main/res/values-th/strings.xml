@@ -103,7 +103,7 @@
     <string name="stat_match_goals_shots">ประตู / ยิง</string>
 
     <string name="read2048_title">2048 — ต้นแบบอ่านกระดาน</string>
-    <string name="read2048_entry">2048 เกมภายนอก • อ่านกระดาน / เดินทีละ 1 ครั้ง</string>
+    <string name="read2048_entry">2048 เกมภายนอก • อ่านกระดาน / เดินครั้งเดียวหรือต่อเนื่อง</string>
     <string name="read2048_instructions">ติดตั้ง 2048 Test ที่ให้และเปิด Accessibility ปุ่มเริ่มอ่านจะเปิดเกมโดยไม่แตะจอ ให้ปัดเองแล้วกลับมาเทียบกระดานที่ยืนยันล่าสุด การจับภาพหยุดเมื่อออกจากเกมทดสอบหรือครบ 2 นาที รองรับเฉพาะ APK ทดสอบและสีเริ่มต้น ถึงช่อง 2048 หากอ่านไม่ชัดจะขึ้นไม่แน่ใจ ไม่ใช้ Cloud และไม่เก็บไฟล์ภาพ หากต้องการเดิน 1 ครั้ง ให้กดปุ่มเดิน อนุญาตจับภาพทั้งหน้าจอ และอย่าปัดเอง ระบบเลือกทิศ ปัดครั้งเดียว ตรวจผลใหม่แล้วหยุด กลับมาหน้านี้เพื่อดูผล ไม่มีการลองซ้ำอัตโนมัติ</string>
     <string name="read2048_start">เริ่มอ่านและเปิดเกมทดสอบ</string>
     <string name="read2048_accessibility">เปิดหน้าตั้งค่า Accessibility</string>
@@ -121,7 +121,7 @@
     <string name="read2048_error">อ่านไม่สำเร็จ ลองใหม่โดยเปิด Accessibility และอนุญาตจับภาพ</string>
     <string name="read2048_stopped">หยุดแล้ว ตารางด้านล่างเป็นผลที่จำไว้ ไม่ใช่ภาพสด</string>
     <string name="read2048_age">ยืนยันล่าสุด: %1$s ที่แล้ว • ภาพ %2$d • ยืนยัน %3$d</string>
-    <string name="read2048_subtitle">อ่านกระดาน / เดินทีละ 1 ครั้ง</string>
+    <string name="read2048_subtitle">อ่านกระดาน / เดินครั้งเดียวหรือต่อเนื่อง</string>
     <string name="read2048_latest">กระดานที่ยืนยันล่าสุด</string>
     <string name="read2048_how_title">วิธีใช้งาน</string>
     <string name="read2048_details_title">รายละเอียดการอ่าน</string>
@@ -152,4 +152,13 @@
     <string name="step2048_up">ขึ้น</string>
     <string name="step2048_down">ลง</string>
     <string name="step2048_history_note">บันทึกแล้ว %1$d รอบ • รายงานรวม 20 รอบล่าสุดระหว่างเปิดแอป</string>
+    <string name="batch2048_title">เดินต่อเนื่อง</string>
+    <string name="batch2048_hint">เลือกจำนวนครั้ง ตรวจผลทุกตา หยุดได้จากการแจ้งเตือนหรือกลับหน้านี้</string>
+    <string name="batch2048_start">เริ่มเดินตามจำนวนที่เลือก</string>
+    <string name="batch2048_stop">หยุดเดิน</string>
+    <string name="batch2048_progress">เดินและยืนยันแล้ว %1$d / %2$d ครั้ง กำลังทำต่อ</string>
+    <string name="batch2048_complete">ครบแล้ว: ยืนยันผล %1$d / %2$d ครั้ง</string>
+    <string name="batch2048_error">ยืนยันผลไม่ได้ หยุดแล้ว: สำเร็จ %1$d / %2$d ครั้ง</string>
+    <string name="batch2048_stopped">หยุดแล้ว: ยืนยันผล %1$d / %2$d ครั้ง</string>
+    <string name="batch2048_no_move">ไม่มีทิศที่รองรับ หยุดแล้ว: %1$d / %2$d ครั้ง</string>
 </resources>

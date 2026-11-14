@@ -16,7 +16,8 @@ class Board2048History(val capacity: Int = 20) {
         // Freeze lists so starting another reading cannot change an archived result.
         val frozen = result.copy(
             board = result.board?.let { it.copy(cells = it.cells.toList()) },
-            step = step.copy(before = step.before?.toList(), expected = step.expected?.toList(), after = step.after?.toList()))
+            step = step.copy(before = step.before?.toList(), expected = step.expected?.toList(), after = step.after?.toList()),
+            batch = result.batch?.let { b -> b.copy(turns=b.turns.map { it.copy(before=it.before?.toList(),expected=it.expected?.toList(),after=it.after?.toList()) }) })
         total++
         saved.addLast(Entry(total, frozen))
         if (saved.size > capacity) saved.removeFirst()

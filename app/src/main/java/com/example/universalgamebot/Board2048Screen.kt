@@ -17,8 +17,10 @@ class Board2048Screen(
     onPrimary: () -> Unit,
     onAccessibility: () -> Unit,
     onCopy: () -> Unit,
-    onStep: () -> Unit = {}
+    onStep: () -> Unit = {},
+    onBatch: (Int) -> Unit = {}
 ) : LinearLayout(context) {
+    private val batchControls: Board2048BatchControls
     private val badge: TextView
     private val age: TextView
     private val hint: TextView
@@ -90,6 +92,8 @@ class Board2048Screen(
         historyNote = label("", 12f)
         card.addView(historyNote, LayoutParams(-1, -2).apply { topMargin = context.dp(6) })
         content.addView(card, LayoutParams(-1, -2))
+        batchControls=Board2048BatchControls(context,onBatch)
+        content.addView(batchControls,LayoutParams(-1,-2).apply { topMargin=context.dp(12) })
         content.addView(disclosure(R.string.read2048_how_title, label(context.getString(R.string.read2048_instructions), 14f)), LayoutParams(-1, -2).apply { topMargin = context.dp(12) })
         metrics = label("", 13f)
         content.addView(disclosure(R.string.read2048_details_title, metrics), LayoutParams(-1, -2))
@@ -176,9 +180,22 @@ class Board2048Screen(
             stepResult.text = context.getString(message, direction)
             metrics.append("\n${step.phase}: ${step.detail}")
         }
+        s.batch?.let { b ->
+            val message=when(b.phase) {
+                Board2048Batch.Phase.RUNNING -> R.string.batch2048_progress
+                Board2048Batch.Phase.COMPLETE -> R.string.batch2048_complete
+                Board2048Batch.Phase.ERROR -> R.string.batch2048_error
+                Board2048Batch.Phase.STOPPED -> R.string.batch2048_stopped
+                Board2048Batch.Phase.NO_LEGAL_MOVE -> R.string.batch2048_no_move
+            }
+            stepResult.visibility=VISIBLE
+            stepResult.text=context.getString(message,b.verified,b.limit)
+            metrics.append("\nbatch=${b.phase} verified=${b.verified}/${b.limit} requests=${b.requests}: ${b.detail}")
+        }
+        batchControls.setAvailable(!s.running && accessibility && !otherBotRunning)
         stepButton.isEnabled = !s.running && accessibility && !otherBotRunning
         stepButton.alpha = if (stepButton.isEnabled) 1f else 0.5f
-        val mainLabel = if (s.running) R.string.read2048_stop else if (s.board != null) R.string.read2048_restart else R.string.read2048_start
+        val mainLabel = if (s.running && s.batch!=null) R.string.batch2048_stop else if (s.running) R.string.read2048_stop else if (s.board != null) R.string.read2048_restart else R.string.read2048_start
         if (primary.text != context.getString(mainLabel)) primary.setText(mainLabel)
         if (buttonRunning != s.running) {
             primary.background = RippleDrawable(ColorStateList.valueOf(0x33FFFFFF),

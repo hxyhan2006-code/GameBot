@@ -1,6 +1,6 @@
 # 2048 test game — reader and explicit single step
 
-GameBot reads the supplied **2048 Test (GameBot)** Android app. Han confirmed repeated manual swipes were read correctly and approved the next single-step milestone. **Start reading** stays read-only; **Move once and open game** authorizes at most one swipe in this fixed test package. The existing internal-game ArenaGate and executors are unchanged. Continuous autoplay remains unimplemented.
+GameBot reads the supplied **2048 Test (GameBot)** Android app. Han confirmed repeated manual swipes were read correctly and approved the next single-step milestone. **Start reading** stays read-only; **Move once and open game** authorizes at most one swipe in this fixed test package. The existing internal-game ArenaGate and executors are unchanged. User-selected bounded continuous runs of 10/30/100 moves are available from v0.8.4. Unlimited autoplay remains unimplemented.
 
 ## Owner phone steps / ขั้นตอนเทสต์มือถือ
 
@@ -45,6 +45,17 @@ JVM tests cover moves/merges, random-spawn verification, single-use/stale/revoke
 
 ## Combined report / รายงานหลายรอบ (0.8.3)
 
-Install the GameBot update, perform three one-step sessions as above, then press **คัดลอกรายงานรวม** once. The report begins with `2048 SINGLE STEP HISTORY` and includes `run #...` sections with each run's command/result evidence. `retained`, `total`, `dropped`, and `verifiedInRetained` distinguish retained runs from successful ones. The screen shows how many completed runs are retained. A running session or a read-only session is labelled separately and does not count as a completed single-step run.
+Install the GameBot update, perform three one-step sessions as above, then press **คัดลอกรายงานรวม** once. The report begins with `2048 RUN HISTORY` and includes `run #...` sections with each run's command/result evidence. `retained`, `total`, `dropped`, and `verifiedInRetained` distinguish retained runs from successful ones. The screen shows how many completed runs are retained. A running session or a read-only session is labelled separately and does not count as a completed single-step run.
 
 History is numeric/status data in memory only, capped at 20 runs, and resets when Android kills the app process or the app is force-closed/restarted. Merely leaving the reader page to open the test game does not clear it. Earlier Build 28 runs cannot be recovered. No new capture/gesture permission is required by this reporting change; the existing capture consent for each step still applies.
+
+## Bounded continuous run / เดินต่อเนื่อง (0.8.4)
+
+1. Update GameBot over the old app. Open the 2048 page; scroll to **เดินต่อเนื่อง**, choose **10**, and press **เริ่มเดินตามจำนวนที่เลือก**.
+2. Approve full-display capture once. The fixture opens. Do not swipe or reset the board manually while the run is active.
+3. The bot verifies each move before another is allowed. Watch the game or the notification for verified progress. Stop using the notification action, or return to GameBot (leaving the fixture stops the run). No overlay permission is needed.
+4. After completion, return and copy the combined report once. Expect `batch=COMPLETE limit=10 verified=10 requests=10` if all ten were confirmed; an earlier stop/error is reported with partial progress and a reason. Try 30/100 only after the first report is checked.
+
+Each turn reuses single-step rules, callback/source-frame barriers, fresh board stabilization, exact-package/window/occlusion checks and a new short-lived one-use permit. The next turn requires a source frame newer than the previous verification and the same verified board/geometry. A changed/uncertain board between turns stops the batch; transient animation during verification waits only up to the existing bounded timeout. There are no retries, including after cancelled commands. The only accepted batch limits are 10/30/100. Deadlines are finite (10:70s, 30:190s, 100:600s), with the existing initial-target and fresh-frame checks; read-only/single-step sessions retain their original deadline. Unsupported tiles/moves or no legal supported direction stop rather than extending the run.
+
+A batch is one history entry, with verified count, request count, terminal status and reason. Full per-turn evidence is included for the latest archived run and the current run; older batches are summarized to keep clipboard text bounded. History remains capped at 20 runs in process memory. This does not establish playing strength or a win rate. Test real capture, input and Stop behavior on the Xiaomi.

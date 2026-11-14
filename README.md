@@ -142,3 +142,10 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Keeps the latest 20 completed single-step runs in process memory, including failed/stopped runs, with ordered run numbers and an explicit dropped-run count.
 - Copy the combined report once after several tests. Starting a reader/step session preserves prior history; repeated shutdown callbacks do not duplicate runs. No changes to moves, gestures or their scope.
 - History begins in this version and resets when the app process exits; no screenshots or report files are saved.
+
+## v0.8.4 — bounded continuous 2048 runs
+
+- Choose 10, 30 or 100 moves and start once. Every move still requires fresh stable pixels, a one-use permit, a completed gesture and a verified legal slide plus one spawn before the next move.
+- Stops on count, leaving the fixture, uncertain/changed between-move board, failed verification, unsupported/no move, or bounded deadline (at most 10 minutes). Read-only and single-step actions remain.
+- Notification shows verified progress and Stop. Reports include a batch summary and every turn of the latest run; older batches retain summaries. No cloud or internal game-state reads.
+- Phone test: start with 10 moves and copy the combined report after completion. Physical batch validation is pending.
