@@ -10,6 +10,7 @@ import android.widget.*
 class Board2048BatchControls(context:Context,onStart:(Int)->Unit):LinearLayout(context) {
     private val choices=RadioGroup(context).apply { orientation=HORIZONTAL }
     private val start:Button
+    private val untilEnd:Button
     init {
         orientation=VERTICAL
         setPadding(context.dp(12),context.dp(12),context.dp(12),context.dp(12))
@@ -32,8 +33,11 @@ class Board2048BatchControls(context:Context,onStart:(Int)->Unit):LinearLayout(c
             if(selected in Board2048Batch.LIMITS) onStart(selected!!)
         }
         addView(start,LayoutParams(-1,-2))
+        untilEnd=context.actionButton(context.getString(R.string.planner2048_until_end),Palette.CARD_LINE,Palette.TEXT) { onStart(Board2048Batch.UNTIL_END) }
+        addView(untilEnd,LayoutParams(-1,-2).apply { topMargin=context.dp(8) })
     }
     fun setAvailable(available:Boolean) {
+        untilEnd.isEnabled=available; untilEnd.alpha=if(available)1f else 0.5f
         start.isEnabled=available; start.alpha=if(available)1f else 0.5f
         for(i in 0 until choices.childCount) choices.getChildAt(i).isEnabled=available
     }

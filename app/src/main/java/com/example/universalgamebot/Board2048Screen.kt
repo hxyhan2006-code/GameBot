@@ -187,10 +187,12 @@ class Board2048Screen(
                 Board2048Batch.Phase.ERROR -> R.string.batch2048_error
                 Board2048Batch.Phase.STOPPED -> R.string.batch2048_stopped
                 Board2048Batch.Phase.NO_LEGAL_MOVE -> R.string.batch2048_no_move
+                Board2048Batch.Phase.WON -> R.string.planner2048_won
+                Board2048Batch.Phase.GAME_OVER -> R.string.planner2048_game_over
             }
             stepResult.visibility=VISIBLE
-            stepResult.text=context.getString(message,b.verified,b.limit)
-            metrics.append("\nbatch=${b.phase} verified=${b.verified}/${b.limit} requests=${b.requests}: ${b.detail}")
+            stepResult.text=context.getString(message,b.verified,b.limit)+"\n"+(if(b.highestTile>0) context.getString(R.string.planner2048_summary,b.highestTile,b.mergeScore,b.elapsedMs/1000) else context.getString(R.string.planner2048_summary_unknown,b.mergeScore,b.elapsedMs/1000))
+            metrics.append("\nbatch=${b.phase} verified=${b.verified}/${b.limit} requests=${b.requests} maxSearchMs=${b.maxPlanningMs}: ${b.detail}")
         }
         batchControls.setAvailable(!s.running && accessibility && !otherBotRunning)
         stepButton.isEnabled = !s.running && accessibility && !otherBotRunning

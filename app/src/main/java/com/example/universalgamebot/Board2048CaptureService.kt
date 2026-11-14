@@ -20,6 +20,7 @@ class Board2048CaptureService:Service() {
     private var display:VirtualDisplay?=null
     private var reader:ImageReader?=null
     private lateinit var session:Board2048Session
+    private var endDetector:Board2048EndDetector?=null
     private val detector=Board2048Reader()
     private val stable=Stable2048Board()
     private val frame=SampledFrame()
@@ -64,7 +65,7 @@ class Board2048CaptureService:Service() {
         }
         if(data==null || intent?.getIntExtra("code",0)!=Activity.RESULT_OK) { fail("projection permission missing"); return START_NOT_STICKY }
         val batchLimit=intent.getIntExtra("batchLimit",0)
-        if(batchLimit!=0 && batchLimit !in Board2048Batch.LIMITS) { fail("unsupported batch limit"); return START_NOT_STICKY }
+        if(batchLimit!=0 && !Board2048Batch.supported(batchLimit)) { fail("unsupported batch limit"); return START_NOT_STICKY }
         try {
             val nm=getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(NotificationChannel("read2048",getString(R.string.read2048_title),NotificationManager.IMPORTANCE_LOW))
@@ -92,6 +93,10 @@ class Board2048CaptureService:Service() {
             batch=if(batchLimit>0) Board2048Batch(startedAt,batchLimit) else null
             singleStep=if(stepMode && batch==null) Board2048SingleStep(startedAt) else null
             Board2048Readout.begin(stepMode,batch?.report); active=true
+            if(stepMode) worker.post {
+                Board2048Planner.warmUp()
+                if(batch!=null) endDetector=Board2048EndDetector()
+            }
             if(batch!=null) BotAccessibilityService.board2048ScopeObserver=focusWatcher
             reader=ImageReader.newInstance(size.first,size.second,PixelFormat.RGBA_8888,3)
             reader!!.setOnImageAvailableListener({ source ->
@@ -113,6 +118,15 @@ class Board2048CaptureService:Service() {
                                 lastFrame=now
                                 val p=img.planes[0]
                                 if(SampledFrame.sample(p.buffer,p.rowStride,p.pixelStride,img.width,img.height,0,0,img.width,img.height,4,frame)) {
+                                    val end=if(batch!=null) endDetector?.observe(frame,Board2048Readout.snapshot.board?.bounds,timestamp/1_000_000) else null
+                                    if(end!=null && timestamp>verifyAfterNs && active && session.access(BotAccessibilityService.instance?.activePackage(),SystemClock.elapsedRealtime())==Board2048Session.Access.READ) {
+                                        batch!!.endScreen(end==Board2048EndDetector.End.WON,now)
+                                        publishStep(); finishStep(); return@setOnImageAvailableListener
+                                    }
+                                    if(batch!=null && endDetector?.pending==true) {
+                                        stable.invalidate(); Board2048Readout.frame(null,now)
+                                        return@setOnImageAvailableListener
+                                    }
                                     val result=stable.observe(detector.read(frame),timestamp/1_000_000)
                                     if(active && session.access(BotAccessibilityService.instance?.activePackage(),SystemClock.elapsedRealtime())==Board2048Session.Access.READ) {
                                         Board2048Readout.frame(result,now)

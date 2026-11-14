@@ -1,41 +1,55 @@
 package com.example.universalgamebot
 
-/** Bounded sequence of independent one-use steps. Only VERIFIED can authorize the next step. */
-class Board2048Batch(startedAt:Long,val limit:Int) {
-    enum class Phase { RUNNING, COMPLETE, ERROR, STOPPED, NO_LEGAL_MOVE }
+/** Verified bounded run. Evidence is capped independently of lifetime counters. */
+class Board2048Batch(private val startedAt:Long,val limit:Int) {
+    enum class Phase { RUNNING, COMPLETE, ERROR, STOPPED, NO_LEGAL_MOVE, WON, GAME_OVER }
     data class Report(val limit:Int,val verified:Int=0,val requests:Int=0,val phase:Phase=Phase.RUNNING,
-        val turns:List<Board2048SingleStep.Report> = emptyList(),val detail:String="waiting for fresh stable pixels")
+        val turns:List<Board2048SingleStep.Report> = emptyList(),val detail:String="waiting for fresh stable pixels",
+        val highestTile:Int=0,val mergeScore:Int=0,val elapsedMs:Long=0,val turnsDropped:Int=0,
+        val maxPlanningMs:Long=0)
     companion object {
         val LIMITS=listOf(10,30,100)
-        fun durationMs(limit:Int):Long { require(limit in LIMITS); return minOf(600_000L,10_000L+limit*6000L) }
+        const val UNTIL_END=3000
+        const val MAX_DURATION_MS=1_800_000L
+        fun supported(limit:Int)=limit in LIMITS || limit==UNTIL_END
+        fun durationMs(limit:Int):Long {
+            require(supported(limit))
+            return if(limit==UNTIL_END) MAX_DURATION_MS else minOf(600_000L,10_000L+limit*6000L)
+        }
     }
-    init { require(limit in LIMITS) }
+    init { require(supported(limit)) }
     @Volatile var current=Board2048SingleStep(startedAt); private set
     @Volatile var report=Report(limit); private set
-    private val turns=mutableListOf<Board2048SingleStep.Report>()
+    private val turns=ArrayDeque<Board2048SingleStep.Report>()
+    private var recorded=0; private var verified=0; private var requests=0
+    private var highest=0; private var score=0; private var lastNow=startedAt; private var maxPlanningMs=0L
     private var afterSourceNs=0L
     private var nextBoard:Board2048Reader.Board?=null
     val terminal get()=report.phase!=Phase.RUNNING
 
     @Synchronized fun observe(board:Board2048Reader.Board?,sourceNs:Long,now:Long):Board2048SingleStep.Request? {
-        if(terminal) return null
-        if(sourceNs<=afterSourceNs) return null
-        if(turns.isNotEmpty() && current.report.phase==Board2048SingleStep.Phase.WAITING && (board==null || board.cells!=nextBoard?.cells || !Board2048SingleStep.sameBounds(board.bounds,nextBoard!!.bounds))) {
+        if(terminal || sourceNs<=afterSourceNs) return null
+        lastNow=now
+        if(recorded>0 && current.report.phase==Board2048SingleStep.Phase.WAITING && (board==null || board.cells!=nextBoard?.cells || !Board2048SingleStep.sameBounds(board.bounds,nextBoard!!.bounds))) {
             current.stop(); finish(Phase.STOPPED,"uncertain or changed board between moves; no retry"); return null
         }
+        if(board!=null) highest=maxOf(highest,board.cells.max())
+        if(board!=null && current.report.phase==Board2048SingleStep.Phase.WAITING && highest>=2048) {
+            current.stop(); finish(Phase.WON,"2048 tile on stable observed board"); return null
+        }
         val request=current.observe(board,sourceNs,now)
+        maxPlanningMs=maxOf(maxPlanningMs,current.report.planningMs)
         if(current.report.phase==Board2048SingleStep.Phase.VERIFIED) nextBoard=board
         settle(now,sourceNs)
         return request
     }
     @Synchronized fun commandResult(step:Board2048SingleStep,ok:Boolean,reason:String,now:Long,sourceNs:Long) {
         if(terminal || current!==step) return
-        current.commandResult(ok,reason,now,sourceNs)
-        settle(now,sourceNs)
+        lastNow=now; current.commandResult(ok,reason,now,sourceNs); settle(now,sourceNs)
     }
     @Synchronized fun tick(now:Long) {
         if(terminal) return
-        current.tick(now); settle(now,afterSourceNs)
+        lastNow=now; current.tick(now); settle(now,afterSourceNs)
     }
     @Synchronized fun stop(reason:String="stopped; no further moves") {
         if(terminal) return
@@ -45,29 +59,38 @@ class Board2048Batch(startedAt:Long,val limit:Int) {
         if(terminal) return
         current.stop(); finish(Phase.ERROR,reason)
     }
+    @Synchronized fun endScreen(won:Boolean,now:Long) {
+        if(terminal) return
+        lastNow=now; current.stop()
+        finish(if(won) Phase.WON else Phase.GAME_OVER,"stable ${if(won) "win" else "game-over"} label and overlay observed; final board is not verified${if(requests+current.report.commands==0) "; no move requested in this run" else ""}")
+    }
+    private fun remember() {
+        val r=current.report
+        turns.addLast(r); recorded++; requests+=r.commands
+        if(r.phase==Board2048SingleStep.Phase.VERIFIED) { verified++; score+=r.scoreGain }
+        if(turns.size>100) turns.removeFirst()
+    }
     private fun settle(now:Long,sourceNs:Long) {
         when(current.report.phase) {
             Board2048SingleStep.Phase.VERIFIED -> {
-                turns.add(current.report)
-                if(turns.size==limit) {
-                    report=Report(limit,turns.size,turns.sumOf { it.commands },Phase.COMPLETE,turns.toList(),"requested limit reached")
-                } else {
-                    afterSourceNs=sourceNs
-                    current=Board2048SingleStep(now)
-                    update("waiting for a newer stable frame before the next move")
+                remember()
+                if(highest>=2048) publish(Phase.WON,"2048 tile verified")
+                else if(verified==limit) publish(Phase.COMPLETE,"requested limit reached")
+                else {
+                    afterSourceNs=sourceNs; current=Board2048SingleStep(now)
+                    publish(Phase.RUNNING,"waiting for a newer stable frame before the next move")
                 }
             }
             Board2048SingleStep.Phase.ERROR -> finish(Phase.ERROR,current.report.detail)
-            Board2048SingleStep.Phase.NO_LEGAL_MOVE -> finish(Phase.NO_LEGAL_MOVE,current.report.detail)
+            Board2048SingleStep.Phase.NO_LEGAL_MOVE -> finish(Phase.GAME_OVER,"no legal supported move on observed board")
             Board2048SingleStep.Phase.STOPPED -> finish(Phase.STOPPED,current.report.detail)
-            else -> update(current.report.detail)
+            else -> publish(Phase.RUNNING,current.report.detail)
         }
     }
-    private fun update(detail:String) {
-        report=Report(limit,turns.size,turns.sumOf { it.commands }+current.report.commands,turns=turns.toList(),detail=detail)
+    private fun publish(phase:Phase,detail:String) {
+        val pending=if(phase==Phase.RUNNING)current.report.commands else 0
+        report=Report(limit,verified,requests+pending,phase,turns.toList(),detail,highest,score,
+            (lastNow-startedAt).coerceAtLeast(0),recorded-turns.size,maxPlanningMs)
     }
-    private fun finish(phase:Phase,detail:String) {
-        turns.add(current.report)
-        report=Report(limit,turns.count { it.phase==Board2048SingleStep.Phase.VERIFIED },turns.sumOf { it.commands },phase,turns.toList(),detail)
-    }
+    private fun finish(phase:Phase,detail:String) { remember(); publish(phase,detail) }
 }

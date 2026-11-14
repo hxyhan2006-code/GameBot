@@ -149,3 +149,10 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Stops on count, leaving the fixture, uncertain/changed between-move board, failed verification, unsupported/no move, or bounded deadline (at most 10 minutes). Read-only and single-step actions remain.
 - Notification shows verified progress and Stop. Reports include a batch summary and every turn of the latest run; older batches retain summaries. No cloud or internal game-state reads.
 - Phone test: start with 10 moves and copy the combined report after completion. Physical batch validation is pending.
+
+## v0.9.0 — local planning and play to end
+
+- Bounded expectimax enumerates future 2/4 spawns and searches several player turns; the old chooser remains for the paired benchmark. No cloud or API charges.
+- Adds **Play to end** capped at 3,000 moves or 30 minutes, retaining all foreground/window/permit checks and per-move verification. Stops on screen win/game-over evidence, observed terminal board, failure, user stop, count or time.
+- Shows highest confirmed tile, verified merge points this run, elapsed time and reason. A terminal label does not fabricate a verified final board or action. Reports export aggregate statistics for the entire run and detailed evidence for the latest 20 turns, with omitted counts.
+- See [BENCHMARK_2048.md](BENCHMARK_2048.md): fixed paired simulation seeds reached 2048 in 0/8 old versus 8/8 new. This is not a measured Xiaomi win rate.

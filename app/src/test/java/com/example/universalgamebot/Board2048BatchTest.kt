@@ -74,7 +74,7 @@ class Board2048BatchTest {
         val session=Board2048Session(0,duration)
         assertEquals(Board2048Session.Access.READ,session.access(Board2048Session.TARGET,120001))
         assertEquals(Board2048Session.Access.STOP,session.access(Board2048Session.TARGET,duration))
-        try { Board2048Session(0,600001); fail("unbounded") } catch(_:IllegalArgumentException) {}
+        try { Board2048Session(0,Board2048Batch.MAX_DURATION_MS+1); fail("unbounded") } catch(_:IllegalArgumentException) {}
     }
     @Test fun announcedFocusLossIsLatchedEvenIfForegroundAlreadyReturned() {
         val s=Board2048Session(0)
@@ -90,6 +90,40 @@ class Board2048BatchTest {
         failed.abort("no fresh capture frames")
         assertEquals(Board2048Batch.Phase.ERROR,failed.report.phase)
         assertEquals(0,failed.report.requests)
+    }
+    @Test fun playToEndHasFiniteCapAndScreenWinDoesNotInventVerifiedMoves() {
+        assertEquals(1_800_000L,Board2048Batch.durationMs(Board2048Batch.UNTIL_END))
+        val b=Board2048Batch(0,Board2048Batch.UNTIL_END)
+        b.endScreen(true,1200)
+        assertEquals(Board2048Batch.Phase.WON,b.report.phase)
+        assertEquals(0,b.report.verified); assertEquals(0,b.report.requests)
+        assertNull(b.observe(board(),2_000_000_000,2000))
+        assertTrue(b.report.detail.contains("no move requested"))
+        val lost=Board2048Batch(0,Board2048Batch.UNTIL_END)
+        lost.endScreen(false,1200)
+        assertEquals(Board2048Batch.Phase.GAME_OVER,lost.report.phase)
+    }
+    @Test fun longRunEvidenceAndStatsStayBoundedIndependentlyOfTarget() {
+        val b=Board2048Batch(0,Board2048Batch.UNTIL_END)
+        var current=board(); var time=1000L
+        repeat(150) {
+            val r=b.observe(current,time*1000000,time)!!
+            b.commandResult(b.current,true,"completed",time+200,(time+200)*1000000)
+            current=spawn(r); b.observe(current,(time+800)*1000000,time+800); time+=1000
+        }
+        assertEquals(150,b.report.verified); assertEquals(150,b.report.requests)
+        assertEquals(100,b.report.turns.size); assertEquals(50,b.report.turnsDropped)
+        assertTrue(b.report.highestTile>=current.cells.max())
+        assertTrue(b.report.mergeScore>0)
+        b.stop("test stop")
+        assertEquals(150,b.report.verified); assertTrue(b.report.turns.size<=100)
+        Board2048Readout.stop(); Board2048Readout.begin(true,b.report)
+        Board2048Readout.step(b.current.report); Board2048Readout.batch(b.report); Board2048Readout.stop()
+        val text=Board2048Readout.report()
+        assertTrue(text.contains("verified=150 requests=150"))
+        assertTrue(text.contains("turnsExported=20 earlierTurnsNotShown=131"))
+        assertTrue(text.contains("turn #150: VERIFIED"))
+        assertFalse(text.contains("turn #1: VERIFIED"))
     }
     @Test fun batchIsArchivedOnceAndReportContainsEveryLatestTurn() {
         val b=Board2048Batch(0,10)

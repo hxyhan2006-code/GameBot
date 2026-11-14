@@ -34,6 +34,18 @@ class Board2048HistoryTest {
         assertEquals(2,saved.board!!.cells[0]); assertEquals(2,saved.step!!.before!![0])
         assertEquals(2,saved.step.expected!![0]); assertEquals(2,saved.step.after!![0])
     }
+    @Test fun observedVictoryWithoutActionIsSeparateFromVerifiedRunCount() {
+        Board2048Readout.stop()
+        fun headerValue(name:String):Int = Regex("$name=([0-9]+)").find(Board2048Readout.report())?.groupValues?.get(1)?.toInt() ?: 0
+        val completed=headerValue("verifiedInRetained")
+        val batch=Board2048Batch(0,Board2048Batch.UNTIL_END)
+        batch.endScreen(true,1000)
+        Board2048Readout.begin(true,batch.report)
+        Board2048Readout.step(batch.current.report); Board2048Readout.batch(batch.report); Board2048Readout.stop()
+        assertEquals(completed,headerValue("verifiedInRetained"))
+        assertTrue(headerValue("winsObservedInRetained")>=1)
+        assertTrue(Board2048Readout.report().contains("no move requested in this run"))
+    }
     @Test fun threeSessionsAreCopiedTogetherAndRepeatedShutdownDoesNotDuplicate() {
         Board2048Readout.stop()
         val startTotal=Board2048Readout.snapshot.historyTotal

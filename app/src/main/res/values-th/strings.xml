@@ -153,7 +153,7 @@
     <string name="step2048_down">ลง</string>
     <string name="step2048_history_note">บันทึกแล้ว %1$d รอบ • รายงานรวม 20 รอบล่าสุดระหว่างเปิดแอป</string>
     <string name="batch2048_title">เดินต่อเนื่อง</string>
-    <string name="batch2048_hint">เลือกจำนวนครั้ง ตรวจผลทุกตา หยุดได้จากการแจ้งเตือนหรือกลับหน้านี้</string>
+    <string name="batch2048_hint">วางแผนล่วงหน้าบนเครื่อง ตรวจผลทุกตา หยุดได้จากการแจ้งเตือนหรือกลับหน้านี้</string>
     <string name="batch2048_start">เริ่มเดินตามจำนวนที่เลือก</string>
     <string name="batch2048_stop">หยุดเดิน</string>
     <string name="batch2048_progress">เดินและยืนยันแล้ว %1$d / %2$d ครั้ง กำลังทำต่อ</string>
@@ -161,4 +161,9 @@
     <string name="batch2048_error">ยืนยันผลไม่ได้ หยุดแล้ว: สำเร็จ %1$d / %2$d ครั้ง</string>
     <string name="batch2048_stopped">หยุดแล้ว: ยืนยันผล %1$d / %2$d ครั้ง</string>
     <string name="batch2048_no_move">ไม่มีทิศที่รองรับ หยุดแล้ว: %1$d / %2$d ครั้ง</string>
+    <string name="planner2048_until_end">เล่นจนจบ · สูงสุด 3,000 ตา / 30 นาที</string>
+    <string name="planner2048_won">ชนะจากหลักฐานบนจอ · ยืนยันแล้ว %1$d ตา</string>
+    <string name="planner2048_game_over">จบเกม · ยืนยันแล้ว %1$d ตา</string>
+    <string name="planner2048_summary">เลขสูงสุดที่อ่านยืนยันได้: %1$d\nคะแนนรวมเพิ่มที่ตรวจยืนยัน: %2$d · %3$d วินาที</string>
+    <string name="planner2048_summary_unknown">ยังไม่มีกระดานยืนยัน • คะแนนเพิ่มที่ยืนยัน %1$d • %2$d วินาที</string>
 </resources>

@@ -110,6 +110,16 @@ class Board2048ScreenTest {
         root.render(Board2048Readout.Snapshot(running=true,batch=Board2048Batch.Report(100)),0,true,false)
         assertFalse(start.isEnabled); assertTrue(options.all { !it.isEnabled })
     }
+    @Test fun playToEndIsExplicitAndUsesFiniteApprovedLimit() {
+        val activity=Robolectric.buildActivity(Activity::class.java).setup().get()
+        var limit=0
+        val root=Board2048Screen(activity,{},{},{},{},onBatch={limit=it})
+        root.render(Board2048Readout.Snapshot(),0,true,false)
+        val button=descendants(root).filterIsInstance<Button>().single { it.text==root.context.getString(R.string.planner2048_until_end) }
+        assertEquals(0,limit); button.performClick(); assertEquals(Board2048Batch.UNTIL_END,limit)
+        root.render(Board2048Readout.Snapshot(running=true,batch=Board2048Batch.Report(limit)),0,true,false)
+        assertFalse(button.isEnabled)
+    }
     @Test fun windowEventLatchesLossEvenBeforeTheNextPoll() {
         val service=Robolectric.buildService(BotAccessibilityService::class.java).create().get()
         val session=Board2048Session(0)

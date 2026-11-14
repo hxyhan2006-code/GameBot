@@ -8,7 +8,7 @@ class Board2048SingleStep(private val startedAt: Long) {
     data class Request(val move: Board2048Moves.Move, val bounds: Box, val sourceNs: Long)
     data class Report(val phase: Phase = Phase.WAITING, val direction: Board2048Moves.Direction? = null,
         val before: List<Int>? = null, val expected: List<Int>? = null, val after: List<Int>? = null,
-        val commands: Int = 0, val commandCompleted: Boolean = false, val detail: String = "waiting for fresh stable pixels")
+        val commands: Int = 0, val commandCompleted: Boolean = false, val detail: String = "waiting for fresh stable pixels",val searchDepth:Int=0,val searchNodes:Int=0,val planningMs:Long=0,val scoreGain:Int=0)
     @Volatile var report = Report(); private set
     private var request: Request? = null
     private var dispatchedAt = 0L
@@ -21,12 +21,14 @@ class Board2048SingleStep(private val startedAt: Long) {
         if (terminal || board == null) return null
         when (report.phase) {
             Phase.WAITING -> {
-                val move = Board2048Moves.choose(board.cells)
+                val decision=Board2048Planner.choose(board.cells)
+                val move = decision.move
                 if (move == null) { report = report.copy(phase = Phase.NO_LEGAL_MOVE, detail = "no supported legal move"); return null }
                 val next = Request(move, board.bounds, sourceNs)
                 request = next; dispatchedAt = now
                 report = Report(Phase.DISPATCHED, move.direction, move.before, move.shifted,
-                    commands = 1, detail = "one move requested; awaiting gesture callback")
+                    commands = 1, detail = "one move requested; awaiting gesture callback",
+                    searchDepth=decision.depth,searchNodes=decision.nodes,planningMs=decision.elapsedMs,scoreGain=move.scoreGain)
                 return next
             }
             Phase.VERIFYING -> if (sourceNs > barrierNs) {

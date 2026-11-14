@@ -2,7 +2,7 @@ package com.example.universalgamebot
 
 /** Fixed read-only target. This session has no action executor and grants no gesture permission. */
 class Board2048Session(private val startedAt:Long,private val durationMs:Long=120_000) {
-    init { require(durationMs in 1..600_000) }
+    init { require(durationMs in 1..Board2048Batch.MAX_DURATION_MS) }
     companion object {
         const val TARGET="com.example.gamebot2048test"
         fun eventPackage(foreground:String?,announced:String?) = if(foreground==TARGET) announced else foreground
@@ -49,19 +49,23 @@ object Board2048Readout {
         if(history.size==0) return format(snapshot)
         val archived=history.entries
         val verified=archived.count { if(it.result.batch!=null) it.result.batch.phase==Board2048Batch.Phase.COMPLETE else it.result.step?.phase==Board2048SingleStep.Phase.VERIFIED }
-        val header="2048 RUN HISTORY\nretained=${history.size}/${history.capacity} total=${history.total} dropped=${history.total-history.size} verifiedInRetained=$verified\nOldest first. Memory only; history resets when the app process exits.\n"
+        val wins=archived.count { it.result.batch?.phase==Board2048Batch.Phase.WON }
+        val moves=archived.sumOf { it.result.batch?.verified ?: if(it.result.step?.phase==Board2048SingleStep.Phase.VERIFIED)1 else 0 }
+        val header="2048 RUN HISTORY\nretained=${history.size}/${history.capacity} total=${history.total} dropped=${history.total-history.size} verifiedInRetained=$verified winsObservedInRetained=$wins verifiedMovesInRetained=$moves\nOldest first. Memory only; history resets when the app process exits.\n"
         val runs=archived.joinToString("\n\n") { "=== run #${it.number} ===\n${format(it.result,fullBatch=it.number==archived.last().number)}" }
         val current=if(snapshot!=archivedCurrent) "\n\n=== current session / status (not archived) ===\n${format(snapshot)}" else ""
         return header+"\n"+runs+current
     }
     private fun format(s:Snapshot,fullBatch:Boolean=true):String {
         val mode=if(s.batch!=null) "BATCH" else if(s.step==null) "READ ONLY" else "SINGLE STEP"
-        val step=s.step?.let { r -> "\nstep=${r.phase} direction=${r.direction} requests=${r.commands} commandCompleted=${r.commandCompleted}\ndetail=${r.detail}\nbefore=${r.before}\nexpectedBeforeSpawn=${r.expected}\nafter=${r.after}" } ?: ""
+        val step=s.step?.let { r -> "\nstep=${r.phase} direction=${r.direction} requests=${r.commands} commandCompleted=${r.commandCompleted}\ndetail=${r.detail} depth=${r.searchDepth} nodes=${r.searchNodes} searchMs=${r.planningMs}\nbefore=${r.before}\nexpectedBeforeSpawn=${r.expected}\nafter=${r.after}" } ?: ""
         val batch=s.batch?.let { b ->
-            val summary="\nbatch=${b.phase} limit=${b.limit} verified=${b.verified} requests=${b.requests} detail=${b.detail}"
-            val evidence=if(fullBatch) b.turns.mapIndexed { i,r ->
-                "\nturn #${i+1}: ${r.phase} direction=${r.direction} requests=${r.commands} commandCompleted=${r.commandCompleted} detail=${r.detail}\nbefore=${r.before}\nexpectedBeforeSpawn=${r.expected}\nafter=${r.after}"
-            }.joinToString("") else "\nOlder batch: summary only; full turn evidence is included for the latest run."
+            val summary="\nbatch=${b.phase} limit=${b.limit} verified=${b.verified} requests=${b.requests} detail=${b.detail}\nplanner=expectimax highestObserved=${b.highestTile} verifiedMergeScore=${b.mergeScore} elapsedMs=${b.elapsedMs} maxSearchMs=${b.maxPlanningMs} turnsRetained=${b.turns.size} turnsDropped=${b.turnsDropped}"
+            val exported=b.turns.takeLast(20)
+            val exportOffset=b.turnsDropped+b.turns.size-exported.size
+            val evidence=if(fullBatch) "\nturnsExported=${exported.size} earlierTurnsNotShown=$exportOffset (aggregate counters cover the entire run)"+exported.mapIndexed { i,r ->
+                "\nturn #${i+1+exportOffset}: ${r.phase} direction=${r.direction} requests=${r.commands} commandCompleted=${r.commandCompleted} detail=${r.detail} depth=${r.searchDepth} nodes=${r.searchNodes} searchMs=${r.planningMs}\nbefore=${r.before}\nexpectedBeforeSpawn=${r.expected}\nafter=${r.after}"
+            }.joinToString("") else "\nOlder batch: summary only; recent turn evidence is included for the latest run."
             summary+evidence
         } ?: ""
         return "2048 $mode\ntarget=${Board2048Session.TARGET}\nstatus=${s.status} running=${s.running}\nframes=${s.frames} confirmed=${s.confirmed} lastConfirmedAt=${s.at}\n${s.board?.rows() ?: "no confirmed board"}$step$batch\nLast confirmed board; not guaranteed current after a change. ${if(s.step==null) "No gestures." else if(s.batch!=null) "Bounded batch; verify every move before the next; no retries." else "At most one swipe per user request; no retries."} No cloud calls or screenshot files."

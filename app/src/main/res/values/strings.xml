@@ -153,7 +153,7 @@
     <string name="step2048_down">down</string>
     <string name="step2048_history_note">%1$d runs saved • report includes the latest 20 runs in this app process</string>
     <string name="batch2048_title">Play several moves</string>
-    <string name="batch2048_hint">Choose a move limit. Checks every move. Stop from the notification or return here.</string>
+    <string name="batch2048_hint">Local multi-step planning. Checks every move. Stop from the notification or return here.</string>
     <string name="batch2048_start">Start selected run</string>
     <string name="batch2048_stop">Stop run</string>
     <string name="batch2048_progress">Verified %1$d / %2$d moves; running</string>
@@ -161,4 +161,9 @@
     <string name="batch2048_error">Stopped: result uncertain after %1$d / %2$d verified moves</string>
     <string name="batch2048_stopped">Stopped: %1$d / %2$d moves verified</string>
     <string name="batch2048_no_move">No supported move; stopped at %1$d / %2$d</string>
+    <string name="planner2048_until_end">Play to end · max 3,000 moves / 30 min</string>
+    <string name="planner2048_won">Won from screen evidence · %1$d moves verified</string>
+    <string name="planner2048_game_over">Game over · %1$d moves verified</string>
+    <string name="planner2048_summary">Highest confirmed tile: %1$d\nVerified merge points this run: %2$d · %3$d s</string>
+    <string name="planner2048_summary_unknown">No board confirmed yet • verified merge points %1$d • %2$d s</string>
 </resources>
