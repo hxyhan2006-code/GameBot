@@ -172,4 +172,4 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Install GameBot and GameBot-Brick-Test APKs; follow [READ_BRICK_GUIDE.md](READ_BRICK_GUIDE.md). Physical Xiaomi OpenGL capture/input remains to be checked.
 # งานระหว่างพัฒนา: eFootball Training
 
-เริ่มแกนตรรกะสำหรับต้นแบบโหมดฝึกตามคำสั่งเจ้าของแล้ว แต่ยังไม่เชื่อมกับตัวอ่านภาพและการควบคุมเกมจริง **ยังไม่มี APK สำหรับเล่น eFootball**. รายละเอียดสิ่งที่ทำแล้ว/ข้อมูลจริงที่ยังขาดอยู่ใน [EFOOTBALL_TRAINING_STATUS.md](EFOOTBALL_TRAINING_STATUS.md). Build33 ยังเป็นรุ่นล่าสุดที่เผยแพร่จากงานก่อนหน้า ไม่ใช่รุ่น eFootball
+มีแกนตรรกะ controller และตัวแปลงคำสั่งสัมผัส Android สำหรับโหมดฝึกแล้ว แต่ยังไม่มี capture/ตัวอ่านภาพจริงและหน้าเริ่มที่เรียกใช้ **ยังไม่มี APK สำหรับเล่น eFootball**. รายละเอียดสิ่งที่ทำแล้ว/ข้อมูลจริงที่ยังขาดอยู่ใน [EFOOTBALL_TRAINING_STATUS.md](EFOOTBALL_TRAINING_STATUS.md). Build33 ยังเป็นรุ่นล่าสุดที่เผยแพร่จากงานก่อนหน้า ไม่ใช่รุ่น eFootball

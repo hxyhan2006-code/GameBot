@@ -6,7 +6,7 @@ on:
     paths:
       - '.github/workflows/verify-training-core.yml'
       - 'app/src/main/java/com/example/universalgamebot/EFootball*.kt'
-      - 'app/src/test/java/com/example/universalgamebot/EFootballTrainingTest.kt'
+      - 'app/src/test/java/com/example/universalgamebot/EFootball*Test.kt'
 
 permissions:
   contents: read
@@ -29,4 +29,4 @@ jobs:
         with:
           gradle-version: 8.10.2
       - name: Training policy and existing reader regression tests
-        run: gradle :app:testDebugUnitTest --tests '*EFootballTrainingTest' --tests '*Board2048Test' --tests '*BrickVisionTest' --no-daemon
+        run: gradle :app:testDebugUnitTest --tests '*EFootball*Test' --tests '*Board2048Test' --tests '*BrickVisionTest' --no-daemon

@@ -1,7 +1,7 @@
 package com.example.universalgamebot
 
 /**
- * Pure session/dispatch policy, deliberately not connected to Android Accessibility.
+ * Pure session/dispatch policy; the controller adapter keeps Android concerns outside this class.
  * A future perception adapter must establish TRAINING_* scenes from actual game evidence.
  */
 class EFootballTrainingSession(
