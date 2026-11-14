@@ -103,8 +103,8 @@
     <string name="stat_match_goals_shots">Goals / shots</string>
 
     <string name="read2048_title">2048 — Read-only prototype</string>
-    <string name="read2048_entry">2048 external game • read board only</string>
-    <string name="read2048_instructions">Install 2048 Test (GameBot) first. Enable Accessibility, then Start and allow screen capture (choose the test game if sharing one app). The test game opens automatically. Wait for the board to settle, swipe manually, then return here to compare the last confirmed reading. Reading stops when you leave the target game or after 2 minutes. This prototype never taps or swipes, makes no cloud calls, and saves no screenshots. Only the supplied test APK/default palette is supported, through tile 2048. Higher or unknown tiles show uncertain.</string>
+    <string name="read2048_entry">2048 external test • read / move one step</string>
+    <string name="read2048_instructions">Install the supplied 2048 Test APK and enable Accessibility. Start reading opens the game without touching it; swipe manually then return to compare the last confirmed board. Capture stops when leaving the test game or after two minutes. Only the supplied APK/default palette through 2048 is supported. Unknown images remain uncertain. No cloud calls or screenshot files. For one step, press Move once, allow full-display capture, and do not swipe manually. It chooses one legal direction, swipes once, checks a fresh result and stops. Return here to inspect; no automatic retry.</string>
     <string name="read2048_start">Start reading and open test game</string>
     <string name="read2048_accessibility">Open Accessibility settings</string>
     <string name="read2048_stop">Stop reading</string>
@@ -121,7 +121,7 @@
     <string name="read2048_error">Reading failed. Retry with Accessibility and screen capture enabled.</string>
     <string name="read2048_stopped">Stopped. Grid below is a saved reading in memory, not live.</string>
     <string name="read2048_age">Last confirmed: %1$s ago • frames %2$d • confirmed %3$d</string>
-    <string name="read2048_subtitle">Read board only</string>
+    <string name="read2048_subtitle">Read / move one step</string>
     <string name="read2048_latest">Last confirmed board</string>
     <string name="read2048_how_title">How to use</string>
     <string name="read2048_details_title">Reading details</string>
@@ -139,4 +139,16 @@
     <string name="read2048_cell_description">Row %1$d, column %2$d: %3$s</string>
     <string name="read2048_external_group">EXTERNAL TEST GAME</string>
     <string name="read2048_internal_group">IN-APP TEST GAMES</string>
+    <string name="step2048_start">Move once and open game</string>
+    <string name="step2048_wait">One step: waiting for a fresh stable board</string>
+    <string name="step2048_dispatch">One step: requesting swipe %1$s</string>
+    <string name="step2048_verify">Swiped %1$s; checking the board</string>
+    <string name="step2048_verified">Verified: %1$s plus one new tile. Stopped.</string>
+    <string name="step2048_no_move">No supported legal move. Stopped.</string>
+    <string name="step2048_error">Could not verify the step. Stopped; see reading details.</string>
+    <string name="step2048_stopped">Step stopped before verification</string>
+    <string name="step2048_left">left</string>
+    <string name="step2048_right">right</string>
+    <string name="step2048_up">up</string>
+    <string name="step2048_down">down</string>
 </resources>

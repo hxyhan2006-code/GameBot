@@ -79,6 +79,24 @@ class Board2048ScreenTest {
         }
     }
 
+    @Test fun singleStepButtonIsExplicitAndDisabledDuringAnyCapture() {
+        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+        var calls = 0
+        val root = Board2048Screen(activity, {}, {}, {}, {}, onStep = { calls++ })
+        root.render(Board2048Readout.Snapshot(), 0, true, false)
+        assertEquals(0, calls)
+        val button = descendants(root).filterIsInstance<Button>().single { it.text == root.context.getString(R.string.step2048_start) }
+        button.performClick()
+        assertEquals(1, calls)
+        root.render(Board2048Readout.Snapshot(running=true, step=Board2048SingleStep.Report()), 0, true, false)
+        assertFalse(button.isEnabled)
+        root.render(Board2048Readout.Snapshot(step=Board2048SingleStep.Report(phase=Board2048SingleStep.Phase.VERIFIED,
+            direction=Board2048Moves.Direction.LEFT, commandCompleted=true)), 1000, true, false)
+        assertTrue(button.isEnabled)
+        assertEquals(1, calls)
+        assertTrue(descendants(root).filterIsInstance<TextView>().any { it.text.toString().contains(root.context.getString(R.string.step2048_verified,root.context.getString(R.string.step2048_left))) })
+    }
+
     @Test fun unknownCellsDifferFromEmptyAndStopRemainsAvailableWithoutAccessibility() {
         val root = screen()
         val grid = descendants(root).filterIsInstance<Board2048GridView>().single()

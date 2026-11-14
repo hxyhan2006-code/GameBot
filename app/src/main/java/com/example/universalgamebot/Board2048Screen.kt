@@ -16,7 +16,8 @@ class Board2048Screen(
     onBack: () -> Unit,
     onPrimary: () -> Unit,
     onAccessibility: () -> Unit,
-    onCopy: () -> Unit
+    onCopy: () -> Unit,
+    onStep: () -> Unit = {}
 ) : LinearLayout(context) {
     private val badge: TextView
     private val age: TextView
@@ -24,6 +25,8 @@ class Board2048Screen(
     private val metrics: TextView
     private val grid: Board2048GridView
     private val primary: Button
+    private val stepButton: Button
+    private val stepResult: TextView
     private val setup: Button
     private var buttonRunning: Boolean? = null
 
@@ -81,6 +84,8 @@ class Board2048Screen(
         age = label("", 12f)
         card.addView(hint, LayoutParams(-1, -2).apply { topMargin = context.dp(10) })
         card.addView(age, LayoutParams(-1, -2).apply { topMargin = context.dp(4) })
+        stepResult = label("", 14f, Palette.SOFT)
+        card.addView(stepResult, LayoutParams(-1, -2).apply { topMargin = context.dp(8) })
         content.addView(card, LayoutParams(-1, -2))
         content.addView(disclosure(R.string.read2048_how_title, label(context.getString(R.string.read2048_instructions), 14f)), LayoutParams(-1, -2).apply { topMargin = context.dp(12) })
         metrics = label("", 13f)
@@ -95,6 +100,8 @@ class Board2048Screen(
         footer.addView(setup, LayoutParams(-1, -2).apply { bottomMargin = context.dp(8) })
         primary = context.actionButton(context.getString(R.string.read2048_start), Palette.ACCENT, Palette.ON_ACCENT, onPrimary)
         footer.addView(primary, LayoutParams(-1, -2))
+        stepButton = context.actionButton(context.getString(R.string.step2048_start), Palette.CARD, Palette.ACCENT, onStep)
+        footer.addView(stepButton, LayoutParams(-1, -2).apply { topMargin = context.dp(8) })
         footer.addView(context.actionButton(context.getString(R.string.read2048_copy), Palette.BG, Palette.SOFT, onCopy), LayoutParams(-1, -2).apply { topMargin = context.dp(4) })
         addView(footer, LayoutParams(-1, -2))
     }
@@ -144,6 +151,29 @@ class Board2048Screen(
         hint.setText(message)
         age.text = if (s.at == 0L) "" else context.getString(R.string.read2048_age_short, ((now - s.at).coerceAtLeast(0) / 1000))
         metrics.text = context.getString(R.string.read2048_metrics, s.frames, s.confirmed)
+        val step = s.step
+        stepResult.visibility = if (step == null) GONE else VISIBLE
+        if (step != null) {
+            val direction = step.direction?.let { context.getString(when (it) {
+                Board2048Moves.Direction.LEFT -> R.string.step2048_left
+                Board2048Moves.Direction.RIGHT -> R.string.step2048_right
+                Board2048Moves.Direction.UP -> R.string.step2048_up
+                Board2048Moves.Direction.DOWN -> R.string.step2048_down
+            }) } ?: ""
+            val message = when (step.phase) {
+                Board2048SingleStep.Phase.WAITING -> R.string.step2048_wait
+                Board2048SingleStep.Phase.DISPATCHED -> R.string.step2048_dispatch
+                Board2048SingleStep.Phase.VERIFYING -> R.string.step2048_verify
+                Board2048SingleStep.Phase.VERIFIED -> R.string.step2048_verified
+                Board2048SingleStep.Phase.NO_LEGAL_MOVE -> R.string.step2048_no_move
+                Board2048SingleStep.Phase.ERROR -> R.string.step2048_error
+                Board2048SingleStep.Phase.STOPPED -> R.string.step2048_stopped
+            }
+            stepResult.text = context.getString(message, direction)
+            metrics.append("\n${step.phase}: ${step.detail}")
+        }
+        stepButton.isEnabled = !s.running && accessibility && !otherBotRunning
+        stepButton.alpha = if (stepButton.isEnabled) 1f else 0.5f
         val mainLabel = if (s.running) R.string.read2048_stop else if (s.board != null) R.string.read2048_restart else R.string.read2048_start
         if (primary.text != context.getString(mainLabel)) primary.setText(mainLabel)
         if (buttonRunning != s.running) {

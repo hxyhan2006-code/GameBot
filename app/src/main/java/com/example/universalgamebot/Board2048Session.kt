@@ -17,9 +17,10 @@ class Board2048Session(private val startedAt:Long) {
 /** Only numeric results are retained in memory; no screenshots are persisted or uploaded. */
 object Board2048Readout {
     data class Snapshot(val running:Boolean=false, val status:String="idle",val board:Board2048Reader.Board?=null,
-        val at:Long=0, val frames:Int=0,val confirmed:Int=0)
+        val at:Long=0, val frames:Int=0,val confirmed:Int=0, val step:Board2048SingleStep.Report?=null)
     @Volatile var snapshot=Snapshot(); private set
-    @Synchronized fun begin() { snapshot=Snapshot(running=true,status="waiting_target") }
+    @Synchronized fun begin(singleStep:Boolean=false) { snapshot=Snapshot(running=true,status="waiting_target",step=if(singleStep) Board2048SingleStep.Report() else null) }
+    @Synchronized fun step(report:Board2048SingleStep.Report) { if(snapshot.running) snapshot=snapshot.copy(step=report) }
     @Synchronized fun frame(board:Board2048Reader.Board?,at:Long) {
         val old=snapshot
         if(!old.running) return
@@ -28,7 +29,12 @@ object Board2048Readout {
     }
     @Synchronized fun stop() { snapshot=snapshot.copy(running=false,status="stopped") }
     @Synchronized fun fail() { snapshot=snapshot.copy(running=false,status="error") }
-    fun report() = snapshot.let { s -> "2048 READ ONLY\ntarget=${Board2048Session.TARGET}\nstatus=${s.status} running=${s.running}\nframes=${s.frames} confirmed=${s.confirmed} lastConfirmedAt=${s.at}\n${s.board?.rows() ?: "no confirmed board"}\nLast confirmed board; not guaranteed current after a change. No gestures, cloud calls or screenshot files." }
+    fun report() = snapshot.let { s ->
+        val mode=if(s.step==null) "READ ONLY" else "SINGLE STEP"
+        val step=s.step?.let { r -> "\nstep=${r.phase} direction=${r.direction} requests=${r.commands} commandCompleted=${r.commandCompleted}\ndetail=${r.detail}\nbefore=${r.before}\nexpectedBeforeSpawn=${r.expected}\nafter=${r.after}" } ?: ""
+        "2048 $mode\ntarget=${Board2048Session.TARGET}\nstatus=${s.status} running=${s.running}\nframes=${s.frames} confirmed=${s.confirmed} lastConfirmedAt=${s.at}\n${s.board?.rows() ?: "no confirmed board"}$step\nLast confirmed board; not guaranteed current after a change. ${if(s.step==null) "No gestures." else "At most one swipe per user request; no retries."} No cloud calls or screenshot files."
+    }
+
 }
 
 /** Source timestamp uses the monotonic nanoTime clock, independent of callback scheduling. */

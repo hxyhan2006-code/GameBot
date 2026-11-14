@@ -12,7 +12,7 @@ import android.media.projection.MediaProjectionManager
 import android.os.*
 import android.view.WindowManager
 
-/** Dedicated pixel reader. Never uses ArenaGate, BotEngine, or gesture dispatch. */
+/** Pixel capture for read-only sessions or one explicitly requested, bounded 2048 step. */
 class Board2048CaptureService:Service() {
     private val thread=HandlerThread("Read2048")
     private lateinit var worker:Handler
@@ -26,6 +26,12 @@ class Board2048CaptureService:Service() {
     private val frameClock=Board2048FrameClock()
     private var targetEnteredNs=0L
     @Volatile private var active=false
+    private var started=false
+    private var singleStep:Board2048SingleStep?=null
+    @Volatile private var permit:Board2048SwipePermit?=null
+    private var width=0
+    private var height=0
+    private var verifyAfterNs=0L
     private var startedAt=0L
     private var lastFrame=0L
     private var lastSample=0L
@@ -38,7 +44,8 @@ class Board2048CaptureService:Service() {
     }
     override fun onStartCommand(intent:Intent?,flags:Int,startId:Int):Int {
         if(intent?.action=="STOP") { stopRead(); return START_NOT_STICKY }
-        if(active) return START_NOT_STICKY
+        if(started) return START_NOT_STICKY
+        started=true
         if(BotState.running || BotAccessibilityService.instance==null) { fail("reader requires idle bot and Accessibility"); return START_NOT_STICKY }
         val data:Intent? = if(Build.VERSION.SDK_INT>=33) intent?.getParcelableExtra("data",Intent::class.java) else {
             @Suppress("DEPRECATION") intent?.getParcelableExtra("data")
@@ -62,7 +69,10 @@ class Board2048CaptureService:Service() {
                 m.widthPixels to m.heightPixels
             }
             startedAt=SystemClock.elapsedRealtime(); session=Board2048Session(startedAt)
-            Board2048Readout.begin(); active=true
+            width=size.first; height=size.second
+            val stepMode=intent.getBooleanExtra("singleStep",false)
+            singleStep=if(stepMode) Board2048SingleStep(startedAt) else null
+            Board2048Readout.begin(stepMode); active=true
             reader=ImageReader.newInstance(size.first,size.second,PixelFormat.RGBA_8888,3)
             reader!!.setOnImageAvailableListener({ source ->
                 val img=try { source.acquireLatestImage() } catch(e:Exception) { fail("acquire: ${e.message}"); null }
@@ -75,7 +85,7 @@ class Board2048CaptureService:Service() {
                                 lastSample=now
                                 if(targetEnteredNs==0L) targetEnteredNs=System.nanoTime()
                                 val timestamp=img.timestamp
-                                if(!frameClock.accept(timestamp,System.nanoTime(),targetEnteredNs)) {
+                                if(!frameClock.accept(timestamp,System.nanoTime(),targetEnteredNs) || timestamp<=verifyAfterNs || img.width!=width || img.height!=height) {
                                     stable.invalidate()
                                     Board2048Readout.frame(null,now)
                                     return@setOnImageAvailableListener
@@ -84,9 +94,10 @@ class Board2048CaptureService:Service() {
                                 val p=img.planes[0]
                                 if(SampledFrame.sample(p.buffer,p.rowStride,p.pixelStride,img.width,img.height,0,0,img.width,img.height,4,frame)) {
                                     val result=stable.observe(detector.read(frame),timestamp/1_000_000)
-                                    if(active && session.access(BotAccessibilityService.instance?.activePackage(),SystemClock.elapsedRealtime())==Board2048Session.Access.READ)
+                                    if(active && session.access(BotAccessibilityService.instance?.activePackage(),SystemClock.elapsedRealtime())==Board2048Session.Access.READ) {
                                         Board2048Readout.frame(result,now)
-                                    else stopRead()
+                                        processStep(result,timestamp,now)
+                                    } else stopRead()
                                 }
                             }
                             else -> {}
@@ -107,13 +118,49 @@ class Board2048CaptureService:Service() {
             val now=SystemClock.elapsedRealtime()
             if(BotState.running || session.access(BotAccessibilityService.instance?.activePackage(),now)==Board2048Session.Access.STOP) { stopRead(); return }
             if((lastFrame==0L && now-startedAt>10_000) || (lastFrame>0L && now-lastFrame>3000)) { fail("no fresh capture frames"); return }
+            singleStep?.let { it.tick(now); Board2048Readout.step(it.report); if(it.terminal) { finishStep(); return } }
             worker.postDelayed(this,200)
         }
     }
-    private fun stopRead() { active=false; Board2048Readout.stop(); stopSelf() }
-    private fun fail(reason:String) { active=false; DebugMonitor.error("2048 reader: $reason"); Board2048Readout.fail(); stopSelf() }
+    private fun processStep(board:Board2048Reader.Board?,sourceNs:Long,now:Long) {
+        val step=singleStep ?: return
+        val request=step.observe(board,sourceNs,now)
+        Board2048Readout.step(step.report)
+        if(request!=null) {
+            val ticket=Board2048SwipePermit(request,width,height)
+            permit=ticket
+            Board2048GestureExecutor.execute(ticket, { active && permit===ticket && step.report.phase==Board2048SingleStep.Phase.DISPATCHED && SystemClock.elapsedRealtime()-startedAt<120_000 }) { ok,reason ->
+                val callbackNs=System.nanoTime()
+                worker.post {
+                    if(active && permit===ticket && step.report.phase==Board2048SingleStep.Phase.DISPATCHED) {
+                        step.commandResult(ok,reason,SystemClock.elapsedRealtime(),callbackNs)
+                        verifyAfterNs=callbackNs; stable.invalidate()
+                        Board2048Readout.step(step.report)
+                        DebugMonitor.log("2048 step gesture: ok=$ok $reason")
+                        if(step.terminal) finishStep()
+                    }
+                }
+            }
+        }
+        if(step.terminal) finishStep()
+    }
+    private fun finishStep() {
+        val r=singleStep?.report ?: return
+        if(r.phase==Board2048SingleStep.Phase.ERROR) DebugMonitor.error("2048 step: ${r.detail}")
+        else DebugMonitor.log("2048 step: ${r.phase} ${r.direction} ${r.detail}")
+        stopRead()
+    }
+    private fun stopRead() {
+        active=false; permit?.revoke(); singleStep?.let { it.stop(); Board2048Readout.step(it.report) }
+        Board2048Readout.stop(); stopSelf()
+    }
+    private fun fail(reason:String) {
+        active=false; permit?.revoke(); singleStep?.let { it.stop(); Board2048Readout.step(it.report) }
+        DebugMonitor.error("2048 reader: $reason"); Board2048Readout.fail(); stopSelf()
+    }
     override fun onDestroy() {
-        active=false
+        active=false; permit?.revoke()
+        singleStep?.let { it.stop(); Board2048Readout.step(it.report) }
         if(Board2048Readout.snapshot.running) Board2048Readout.stop()
         worker.removeCallbacksAndMessages(null)
         worker.post {

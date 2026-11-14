@@ -129,3 +129,10 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - External test game has its own section and matching card style; instructions and frame counts are expandable.
 - Persistent Start/Stop and copy actions; no changes to capture boundaries, vision or gesture permissions. Still read-only.
 - Phone check: open both pages, try a larger system font, read a board again, and compare all 16 cells. See [READ_2048_GUIDE.md](READ_2048_GUIDE.md).
+
+## v0.8.2 — one requested 2048 step
+
+- Adds **Move once and open game** alongside the existing read-only action, after Han confirmed manual-swipe readings on the phone.
+- Selects a supported legal move locally, dispatches at most one swipe, checks fresh stable pixels against merge rules plus exactly one spawned 2/4, and stops without retry.
+- Separate fixed-package, board-bounded, expiring one-use gesture permission; internal ArenaGate unchanged. No cloud, Internet permission, screenshots, or continuous autoplay.
+- Follow the single-step section in [READ_2048_GUIDE.md](READ_2048_GUIDE.md); physical Xiaomi validation is pending for this new capability.

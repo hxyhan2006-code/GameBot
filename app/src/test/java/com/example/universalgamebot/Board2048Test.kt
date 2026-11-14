@@ -86,7 +86,7 @@ class Board2048Test {
         assertEquals("stopped",Board2048Readout.snapshot.status)
         assertEquals(0,Board2048Readout.snapshot.frames)
     }
-    @Test fun readOnlyServiceHasNoGestureOrInternalGameStateDependency() {
+    @Test fun readerComponentsHaveNoDirectGestureOrInternalGameStateDependency() {
         val root=if(File("src/main").exists()) File("src/main") else File("app/src/main")
         val names=listOf("Board2048CaptureService.kt","Board2048Activity.kt","Board2048Reader.kt","Board2048Session.kt")
         for(name in names) {
