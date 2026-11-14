@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GameBot Thai UI additions, 2026-11-14; upstream English/Spanish resources retained. -->
+<resources>
+ <string name="app_name">Brick Test (GameBot)</string>
+ <string name="gamebot_test_hint">ลากนิ้วซ้ายขวาเพื่อขยับไม้รับ GameBot รุ่นนี้อ่านภาพอย่างเดียว</string>
+ <string name="button_newGame">เริ่มเกมใหม่</string>
+ <string name="button_resumeGame">เล่นต่อ</string>
+ <string name="text_highScoreLabel">คะแนนสูงสุด</string>
+ <string name="difficulty">ระดับความยาก</string>
+ <string name="checkbox_neverLoseBall">ไม่เสียลูกบอล (ตัวเลือกทดสอบ)</string>
+ <string name="checkbox_soundEffectsEnabled">เปิดเสียง</string>
+ <string-array name="difficulty_level_names"><item>ง่าย</item><item>ปกติ</item><item>ยาก</item><item>สูงมาก</item></string-array>
+</resources>

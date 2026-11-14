@@ -59,7 +59,7 @@ class Board2048CaptureService:Service() {
         if(intent?.action=="STOP") { stopRead("notification stop"); return START_NOT_STICKY }
         if(started) return START_NOT_STICKY
         started=true
-        if(BotState.running || BotAccessibilityService.instance==null) { fail("reader requires idle bot and Accessibility"); return START_NOT_STICKY }
+        if(BotState.running || BrickReadout.snapshot.running || BotAccessibilityService.instance==null) { fail("reader requires idle bot and Accessibility"); return START_NOT_STICKY }
         val data:Intent? = if(Build.VERSION.SDK_INT>=33) intent?.getParcelableExtra("data",Intent::class.java) else {
             @Suppress("DEPRECATION") intent?.getParcelableExtra("data")
         }

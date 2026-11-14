@@ -18,7 +18,7 @@
     <string name="toast_emergency">หยุดฉุกเฉินแล้ว</string>
     <string name="toast_copied">คัดลอกรายงาน Debug แล้ว</string>
     <string name="mistakes_fmt">พลาด: %d</string>
-    <string name="select_subtitle">เลือกโปรไฟล์เกม (เกมทดสอบในแอปนี้เท่านั้น)</string>
+    <string name="select_subtitle">เลือกเกมทดสอบที่รองรับ</string>
     <string name="cloud_status">Cloud Vision: ปิด - ไม่มีการส่งภาพหน้าจอออกนอกเครื่องเด็ดขาด</string>
     <string name="arena_hint_bullseye">แตะเป้าวงกลมซ้อน (ขาว-ดำ) อย่าแตะตัวหลอก</string>
     <string name="arena_hint_swipe">ปัดลูกบอลสีเหลืองขึ้นไปในโซนสีฟ้า</string>
@@ -178,4 +178,22 @@
     <string name="result2048_recent_title">ผลเล่นจนจบ 3 รอบล่าสุด</string>
     <string name="result2048_recent_line">#%1$d · %2$s · %3$s · ยืนยัน %4$d ตา</string>
     <string name="result2048_fresh_hint">เริ่มเกมใหม่เองก่อนแต่ละรอบที่เปรียบเทียบ การหยุดหรือผิดพลาดไม่ถูกนับเป็นแพ้</string>
+    <string name="brick_title">Brick Breaker · อ่านภาพ</string>
+    <string name="brick_subtitle">อ่านลูกบอล ไม้รับ และอิฐเท่านั้น</string>
+    <string name="brick_start">เริ่มอ่านและเปิด Brick Test</string>
+    <string name="brick_copy">คัดลอกรายงาน Brick</string>
+    <string name="brick_missing">กรุณาติดตั้ง APK Brick Test ที่ให้ก่อน</string>
+    <string name="brick_notification">อ่านภาพเกมทดสอบเท่านั้น หยุดหรือกลับไปดูผลได้</string>
+    <string name="brick_map_hint">แผนผังจากตำแหน่งที่อ่านล่าสุด ไม่ใช่ภาพหน้าจอเกม</string>
+    <string name="brick_instructions">ติดตั้ง Brick Test และเปิด Accessibility กดเริ่มและอนุญาตจับภาพ เกมจะเปิดเอง ลากไม้รับเล่นด้วยมือ 10–15 วินาที แล้วกลับมาคัดลอกรายงาน การอ่านหยุดเมื่อออกจากเกมหรือครบ 2 นาที โหมดนี้ไม่ควบคุมไม้รับ ไม่ใช้ Cloud และไม่เก็บภาพ จุดขาวคือลูกบอล สีฟ้าคือไม้รับ สีเทาคืออิฐที่ตรวจพบ ถ้าวัตถุถูกบังหรือไม่ชัดจะไม่เดาตำแหน่ง</string>
+    <string name="brick_stopped">หยุดแล้ว · แสดงตำแหน่งที่จำไว้</string>
+    <string name="brick_waiting">รอภาพใหม่จากเกม</string>
+    <string name="brick_uncertain">อ่านไม่แน่ใจ · อาจมีวัตถุหายหรือถูกบัง</string>
+    <string name="brick_reading">ตรวจพบลูกบอลและไม้รับ</string>
+    <string name="brick_no_observation">ยังไม่มีผลอ่านสนาม</string>
+    <string name="brick_unknown">ยังไม่ทราบ</string>
+    <string name="brick_age">อ่านล่าสุด %1$d วินาทีที่แล้ว เป็นค่าที่จำไว้หลังออกจากเกม</string>
+    <string name="brick_values">ลูกบอล (x,y): %1$s\nไม้รับ (x,y): %2$s\nอิฐที่ตรวจพบ: %3$d\nภาพ: %4$d · พบสองวัตถุ: %5$d · ประมาณการเคลื่อนที่: %6$d</string>
+    <string name="brick_motion">ความเร็วประมาณจากภาพล่าสุด: x=%1$d y=%2$d พิกเซล/วินาที (ขวา/ลงเป็นบวก)</string>
+    <string name="brick_error">อ่านไม่สำเร็จ · คัดลอกรายงานเพื่อดูสาเหตุ</string>
 </resources>

@@ -4,3 +4,5 @@ rootProject.name = "UniversalGameBot"
 include(":app")
 
 include(":fixture2048")
+
+include(":fixturebrick")

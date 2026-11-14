@@ -215,6 +215,20 @@ class ProfileSelectActivity : Activity() {
         external.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
         external.addView(IconView(this, Icon.CHEVRON, Palette.DIM), LinearLayout.LayoutParams(dp(18), dp(18)).apply { leftMargin = dp(8) })
         list.addView(external, lp(4))
+        val brickCard=LinearLayout(this).apply {
+            gravity=Gravity.CENTER_VERTICAL; setPadding(dp(14),dp(16),dp(14),dp(16))
+            background=roundRect(Palette.CARD,16,Palette.CARD_LINE); isClickable=true; isFocusable=true
+            setOnClickListener { startActivity(Intent(this@ProfileSelectActivity,BrickReaderActivity::class.java)) }
+        }
+        val brickTile=FrameLayout(this).apply { background=roundRect(Palette.ACCENT_TINT,12) }
+        brickTile.addView(IconView(this,Icon.BOXES,Palette.ACCENT),FrameLayout.LayoutParams(dp(22),dp(22),Gravity.CENTER))
+        brickCard.addView(brickTile,LinearLayout.LayoutParams(dp(44),dp(44)).apply { rightMargin=dp(14) })
+        val brickTexts=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL }
+        brickTexts.addView(TextView(this).apply { text="Brick Breaker Test"; textSize=16f; typeface=Typeface.DEFAULT_BOLD; setTextColor(Palette.TEXT) })
+        brickTexts.addView(TextView(this).apply { setText(R.string.brick_subtitle); textSize=13f; setTextColor(Palette.MUTED) },lp(4))
+        brickCard.addView(brickTexts,LinearLayout.LayoutParams(0,-2,1f))
+        brickCard.addView(IconView(this,Icon.CHEVRON,Palette.DIM),LinearLayout.LayoutParams(dp(18),dp(18)).apply { leftMargin=dp(8) })
+        list.addView(brickCard,lp(10))
         section(R.string.read2048_internal_group, getString(R.string.profiles_count_fmt, GameProfiles.all.size))
         for (p in GameProfiles.all) {
             val (result, pass) = resultOf(p)

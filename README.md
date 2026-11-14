@@ -163,3 +163,10 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Reports label the covered final action `ENDED_BY_GAME_SCREEN` while retaining its raw phase for diagnostics. No planned values are substituted for an observed final board.
 - Shows the latest three play-to-end attempts with actual moves, outcomes and elapsed time. Zero-move end screens and 10/30/100 count tests are excluded from this comparison; stopped/error attempts are not labelled defeats. Fresh starts still require the owner to reset the game manually.
 - Next-game source audit: [BRICK_BREAKER_READINESS.md](BRICK_BREAKER_READINESS.md). A Brick Breaker reader is not yet enabled.
+
+## v0.10.0 — second external game, Brick Breaker reader
+
+- Separate Apache-2.0 Brick Test APK, modern SDK35 phone menu and original game rules/physics.
+- Read-only pixel arena/ball/paddle/brick observations, adjacent-frame motion estimates and a historical schematic/report. No automatic paddle movement.
+- Shared pixel-observation and source-frame freshness contracts; fixed-package scope, event loss latch, finite session and generation checks. Original 2048 behavior remains.
+- Install GameBot and GameBot-Brick-Test APKs; follow [READ_BRICK_GUIDE.md](READ_BRICK_GUIDE.md). Physical Xiaomi OpenGL capture/input remains to be checked.

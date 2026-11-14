@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class BotAccessibilityService : AccessibilityService() {
     companion object {
         @Volatile var instance: BotAccessibilityService? = null
+        @Volatile internal var readOnlyScopeObserver: ((String?,String?) -> Unit)? = null
         @Volatile internal var board2048ScopeObserver: ((String?) -> Unit)? = null
     }
 
@@ -26,23 +27,26 @@ class BotAccessibilityService : AccessibilityService() {
         DebugMonitor.log("Accessibility connected, canRetrieveContent=$canRead")
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        val observer=board2048ScopeObserver ?: return
+        val observer=board2048ScopeObserver
+        val readOnly=readOnlyScopeObserver
+        if(observer==null && readOnly==null) return
         if(event?.eventType==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             // Use the announced window too: a brief focus loss must remain latched even if focus returned.
             val foreground=activePackage()
             val announced=event.packageName?.toString()
-            observer(Board2048Session.eventPackage(foreground,announced))
+            observer?.invoke(Board2048Session.eventPackage(foreground,announced))
+            readOnly?.invoke(foreground,announced)
         }
     }
-    override fun onInterrupt() { board2048ScopeObserver?.invoke(null) }
-    override fun onDestroy() { board2048ScopeObserver?.invoke(null); instance = null; super.onDestroy() }
+    override fun onInterrupt() { board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null) }
+    override fun onDestroy() { board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); instance = null; super.onDestroy() }
 
     fun postMain(r: Runnable) { main.post(r) }
 
     /** ปิดบริการตัวเอง (API 24+): ใช้ตอนเลิกทดสอบ เพราะแอปการเงินบางแอป (เช่น Dime) ไม่ยอมให้ใช้งานถ้ามี Accessibility ของแอปนอก Store เปิดอยู่ */
     fun turnOff() {
         DebugMonitor.log("Accessibility turned off from the app")
-        board2048ScopeObserver?.invoke(null)
+        board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null)
         instance = null
         try { disableSelf() } catch (e: Exception) { DebugMonitor.error("disableSelf failed: ${e.message}", e) }
     }

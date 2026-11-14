@@ -18,7 +18,7 @@
     <string name="toast_emergency">Emergency stop!</string>
     <string name="toast_copied">Debug report copied</string>
     <string name="mistakes_fmt">Misses: %d</string>
-    <string name="select_subtitle">Choose a game profile (test games inside this app only)</string>
+    <string name="select_subtitle">Choose a supported test game</string>
     <string name="cloud_status">Cloud Vision: OFF - no screenshot ever leaves this phone</string>
     <string name="arena_hint_bullseye">Tap the bullseye (white-black rings), not the decoys</string>
     <string name="arena_hint_swipe">Swipe the yellow ball up into the blue zone</string>
@@ -137,7 +137,7 @@
     <string name="read2048_cell_unknown">unknown</string>
     <string name="read2048_cell_empty">empty</string>
     <string name="read2048_cell_description">Row %1$d, column %2$d: %3$s</string>
-    <string name="read2048_external_group">EXTERNAL TEST GAME</string>
+    <string name="read2048_external_group">EXTERNAL TEST GAMES</string>
     <string name="read2048_internal_group">IN-APP TEST GAMES</string>
     <string name="step2048_start">Move once and open game</string>
     <string name="step2048_wait">One step: waiting for a fresh stable board</string>
@@ -178,4 +178,22 @@
     <string name="result2048_recent_title">Latest 3 play-to-end attempts</string>
     <string name="result2048_recent_line">#%1$d · %2$s · %3$s · %4$d verified moves</string>
     <string name="result2048_fresh_hint">Start a new game manually for each comparison. Stops/errors are not counted as defeats.</string>
+    <string name="brick_title">Brick Breaker · reader</string>
+    <string name="brick_subtitle">Read ball, paddle and bricks only</string>
+    <string name="brick_start">Read and open Brick Test</string>
+    <string name="brick_copy">Copy Brick reading report</string>
+    <string name="brick_missing">Install the supplied Brick Test APK first</string>
+    <string name="brick_notification">Read-only test game. Stop or return to inspect.</string>
+    <string name="brick_map_hint">Schematic from the last observation, not a game screenshot.</string>
+    <string name="brick_instructions">Install Brick Test first and enable Accessibility. Start opens the game after capture consent. Drag the paddle yourself for 10–15 seconds, then return and copy the report. Capture stops when leaving the game or after 2 minutes. This mode never controls the paddle, uses no cloud, and saves no images. White: ball; cyan: paddle; gray: detected bricks. Unknown or occluded objects are not guessed.</string>
+    <string name="brick_stopped">Stopped · last observation only</string>
+    <string name="brick_waiting">Waiting for fresh game frames</string>
+    <string name="brick_uncertain">Reading uncertain · objects may be missing or occluded</string>
+    <string name="brick_reading">Ball and paddle detected</string>
+    <string name="brick_no_observation">No arena observation yet</string>
+    <string name="brick_unknown">unknown</string>
+    <string name="brick_age">Last observed %1$d seconds ago; historical after leaving the game</string>
+    <string name="brick_values">Ball (x,y): %1$s\nPaddle (x,y): %2$s\nBricks detected: %3$d\nFrames: %4$d · both objects found: %5$d · motion estimates: %6$d</string>
+    <string name="brick_motion">Last visual velocity estimate: x=%1$d y=%2$d px/s (right/down positive)</string>
+    <string name="brick_error">Reading failed · copy the report for details</string>
 </resources>

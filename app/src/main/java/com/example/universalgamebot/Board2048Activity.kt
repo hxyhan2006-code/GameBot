@@ -38,7 +38,7 @@ class Board2048Activity:Activity() {
         screen.requestApplyInsets()
     }
     private fun startRead(singleStep:Boolean=false,batchLimit:Int=0) {
-        if(permissionPending || BotState.running || Board2048Readout.snapshot.running) { Toast.makeText(this,R.string.read2048_busy,Toast.LENGTH_LONG).show(); return }
+        if(permissionPending || BotState.running || BrickReadout.snapshot.running || Board2048Readout.snapshot.running) { Toast.makeText(this,R.string.read2048_busy,Toast.LENGTH_LONG).show(); return }
         if(BotAccessibilityService.instance==null) { Toast.makeText(this,R.string.toast_need_accessibility,Toast.LENGTH_LONG).show(); return }
         if(packageManager.getLaunchIntentForPackage(Board2048Session.TARGET)==null) { Toast.makeText(this,R.string.read2048_missing,Toast.LENGTH_LONG).show(); return }
         pendingSingleStep=singleStep; pendingBatchLimit=batchLimit; permissionPending=true
@@ -64,7 +64,7 @@ class Board2048Activity:Activity() {
     private val refresh=object:Runnable {
         override fun run() {
             screen.render(Board2048Readout.snapshot, SystemClock.elapsedRealtime(),
-                BotAccessibilityService.instance != null, BotState.running)
+                BotAccessibilityService.instance != null, BotState.running || BrickReadout.snapshot.running)
             ui.postDelayed(this,300)
         }
     }
