@@ -1,0 +1,32 @@
+name: Verify training core (no release)
+
+on:
+  push:
+    branches: [feature/2048-reader]
+    paths:
+      - '.github/workflows/verify-training-core.yml'
+      - 'app/src/main/java/com/example/universalgamebot/EFootball*.kt'
+      - 'app/src/test/java/com/example/universalgamebot/EFootballTrainingTest.kt'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install Android SDK platform
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
+      - name: Training policy and existing reader regression tests
+        run: gradle :app:testDebugUnitTest --tests '*EFootballTrainingTest' --tests '*Board2048Test' --tests '*BrickVisionTest' --no-daemon
