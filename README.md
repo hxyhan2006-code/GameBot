@@ -136,3 +136,9 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - Selects a supported legal move locally, dispatches at most one swipe, checks fresh stable pixels against merge rules plus exactly one spawned 2/4, and stops without retry.
 - Separate fixed-package, board-bounded, expiring one-use gesture permission; internal ArenaGate unchanged. No cloud, Internet permission, screenshots, or continuous autoplay.
 - Follow the single-step section in [READ_2048_GUIDE.md](READ_2048_GUIDE.md); physical Xiaomi validation is pending for this new capability.
+
+## v0.8.3 — combined 2048 test reports
+
+- Keeps the latest 20 completed single-step runs in process memory, including failed/stopped runs, with ordered run numbers and an explicit dropped-run count.
+- Copy the combined report once after several tests. Starting a reader/step session preserves prior history; repeated shutdown callbacks do not duplicate runs. No changes to moves, gestures or their scope.
+- History begins in this version and resets when the app process exits; no screenshots or report files are saved.

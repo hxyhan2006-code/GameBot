@@ -110,7 +110,7 @@
     <string name="read2048_stop">หยุดอ่าน</string>
     <string name="read2048_notification">กำลังอ่านเฉพาะเกมทดสอบ แตะเพื่อกลับไปตรวจผล</string>
     <string name="read2048_no_board">ยังไม่มีค่ากระดานที่ยืนยันได้</string>
-    <string name="read2048_copy">คัดลอกรายงานการอ่าน</string>
+    <string name="read2048_copy">คัดลอกรายงานรวม</string>
     <string name="read2048_copied">คัดลอกรายงานแล้ว</string>
     <string name="read2048_back">กลับหน้าโปรไฟล์</string>
     <string name="read2048_busy">หยุดบอทหรือการอ่านรอบเดิมก่อน</string>
@@ -151,4 +151,5 @@
     <string name="step2048_right">ขวา</string>
     <string name="step2048_up">ขึ้น</string>
     <string name="step2048_down">ลง</string>
+    <string name="step2048_history_note">บันทึกแล้ว %1$d รอบ • รายงานรวม 20 รอบล่าสุดระหว่างเปิดแอป</string>
 </resources>

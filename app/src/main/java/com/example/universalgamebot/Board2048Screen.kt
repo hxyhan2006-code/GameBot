@@ -27,6 +27,7 @@ class Board2048Screen(
     private val primary: Button
     private val stepButton: Button
     private val stepResult: TextView
+    private val historyNote: TextView
     private val setup: Button
     private var buttonRunning: Boolean? = null
 
@@ -86,6 +87,8 @@ class Board2048Screen(
         card.addView(age, LayoutParams(-1, -2).apply { topMargin = context.dp(4) })
         stepResult = label("", 14f, Palette.SOFT)
         card.addView(stepResult, LayoutParams(-1, -2).apply { topMargin = context.dp(8) })
+        historyNote = label("", 12f)
+        card.addView(historyNote, LayoutParams(-1, -2).apply { topMargin = context.dp(6) })
         content.addView(card, LayoutParams(-1, -2))
         content.addView(disclosure(R.string.read2048_how_title, label(context.getString(R.string.read2048_instructions), 14f)), LayoutParams(-1, -2).apply { topMargin = context.dp(12) })
         metrics = label("", 13f)
@@ -151,6 +154,7 @@ class Board2048Screen(
         hint.setText(message)
         age.text = if (s.at == 0L) "" else context.getString(R.string.read2048_age_short, ((now - s.at).coerceAtLeast(0) / 1000))
         metrics.text = context.getString(R.string.read2048_metrics, s.frames, s.confirmed)
+        historyNote.text = context.getString(R.string.step2048_history_note, s.historyCount)
         val step = s.step
         stepResult.visibility = if (step == null) GONE else VISIBLE
         if (step != null) {

@@ -110,7 +110,7 @@
     <string name="read2048_stop">Stop reading</string>
     <string name="read2048_notification">Reading test game only. Tap to return and inspect.</string>
     <string name="read2048_no_board">No confirmed board yet</string>
-    <string name="read2048_copy">Copy reading report</string>
+    <string name="read2048_copy">Copy combined report</string>
     <string name="read2048_copied">Report copied</string>
     <string name="read2048_back">Back to profiles</string>
     <string name="read2048_busy">Stop the active bot or reader first</string>
@@ -151,4 +151,5 @@
     <string name="step2048_right">right</string>
     <string name="step2048_up">up</string>
     <string name="step2048_down">down</string>
+    <string name="step2048_history_note">%1$d runs saved • report includes the latest 20 runs in this app process</string>
 </resources>
