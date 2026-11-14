@@ -5,7 +5,7 @@ This milestone reads the board of the supplied **2048 Test (GameBot)** Android a
 ## Owner phone steps / ขั้นตอนเทสต์มือถือ
 
 1. Install both APKs from the same Release: update UniversalGameBot over the old app, and install `GameBot-2048-Test.apk` as a separate game. Open the test game once, dismiss its help if shown, then return to GameBot. No Google login is needed.
-2. In GameBot's Profiles page choose **2048 เกมภายนอก • อ่านกระดานอย่างเดียว**. Enable Accessibility if needed, then press **เริ่มอ่านและเปิดเกมทดสอบ**. Approve screen capture; if Android asks to share a single app, select **2048 Test (GameBot)**. The supplied fixture's package is `com.example.gamebot2048test`; other 2048 apps are intentionally unsupported.
+2. In GameBot's Profiles page choose **2048 Test** under **เกมทดสอบภายนอก**. Enable Accessibility if needed, then press **เริ่มอ่านและเปิดเกมทดสอบ**. Approve screen capture; if Android asks to share a single app, select **2048 Test (GameBot)**. The supplied fixture's package is `com.example.gamebot2048test`; other 2048 apps are intentionally unsupported.
 3. Wait at least two seconds for a still board. Optionally swipe the game manually a few times and wait again. Return to GameBot using Recents (or tap the reader notification) to compare the last confirmed 4x4 grid. A dot means an empty cell. Returning stops capture; the result is labelled as an older confirmed reading with its age.
 4. Compare all 16 cells, then use **คัดลอกรายงานการอ่าน** and send the report. If any value differs, send a manually taken screenshot of the still game board as well. There are no automatic screenshot files or uploads in this prototype.
 5. Check that leaving the target game stops reading. The notification also has a Stop action. Sessions stop after two minutes; no target foreground within ten seconds or no fresh frames also ends the session. If stopped before a board is confirmed, restart a session rather than treating an old grid as current.
@@ -26,3 +26,7 @@ This milestone reads the board of the supplied **2048 Test (GameBot)** Android a
 ## Verification scope
 
 JVM tests exercise palette/grid reading, numeral holes, board translation, unsupported cells, obscuration, stabilization, stale/duplicate frames, target matching and session deadlines. These synthetic raster tests do not establish accuracy on real Android screenshots. Android compilation and package checks are separate from the required Xiaomi test above. No emulator/physical device run is claimed without actual evidence.
+
+## UI refresh (0.8.1)
+
+The reader uses system bar/cutout insets, a square 4×4 grid and a persistent Start/Stop action. Instructions and frame counts are collapsed under expandable rows. Unknown cells use a dash; confirmed empty cells use a dot. Capture/session behavior is unchanged. Check the header, scrolling and buttons on the Xiaomi with the normal font size and a larger font size; local builds do not replace that phone check.

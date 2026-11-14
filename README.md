@@ -122,3 +122,10 @@ Pipeline: **Screen Capture → Vision Engine → Decision Engine (state machine)
 - GameBot reads its 16-cell board from pixels and displays stabilized values for manual comparison. This milestone never sends gestures to external apps. Internal ArenaGate and all existing game controls remain unchanged.
 - Recognition is restricted to the test fixture/default palette through tile 2048; uncertain images remain uncertain. No cloud calls or automatic screenshot files.
 - Install both APKs and follow [READ_2048_GUIDE.md](READ_2048_GUIDE.md). Phone validation is required before enabling any external swiping.
+
+## v0.8.1 — 2048 reader UI
+
+- Reader header respects status/navigation bars and cutouts. A square 4×4 grid distinguishes unknown cells from confirmed empty cells.
+- External test game has its own section and matching card style; instructions and frame counts are expandable.
+- Persistent Start/Stop and copy actions; no changes to capture boundaries, vision or gesture permissions. Still read-only.
+- Phone check: open both pages, try a larger system font, read a board again, and compare all 16 cells. See [READ_2048_GUIDE.md](READ_2048_GUIDE.md).

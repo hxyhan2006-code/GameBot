@@ -191,18 +191,31 @@ class ProfileSelectActivity : Activity() {
 
     private fun profilesPage(): View {
         val page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val label = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(16), dp(12), dp(16), dp(8)) }
-        label.addView(TextView(this).apply { text = getString(R.string.section_profiles); textSize = 12f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Palette.MUTED); letterSpacing = 0.08f }, LinearLayout.LayoutParams(0, -2, 1f))
-        label.addView(TextView(this).apply { text = getString(R.string.profiles_count_fmt, GameProfiles.all.size); textSize = 12f; setTextColor(Palette.MUTED) })
-        page.addView(label, lp())
-
-        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), 0, dp(16), dp(16)) }
-        list.addView(TextView(this).apply {
-            text = getString(R.string.read2048_entry)
-            textSize = 16f; setTextColor(Palette.TEXT); setPadding(dp(16),dp(20),dp(16),dp(20))
-            background = roundRect(Palette.CARD,16,Palette.CARD_LINE)
-            setOnClickListener { startActivity(Intent(this@ProfileSelectActivity,Board2048Activity::class.java)) }
-        }, lp(10))
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(8), dp(16), dp(16)) }
+        fun section(title: Int, count: String? = null) {
+            val row = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(12), 0, dp(8)) }
+            row.addView(TextView(this).apply { text = getString(title); textSize = 12f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Palette.MUTED) }, LinearLayout.LayoutParams(0, -2, 1f))
+            if (count != null) row.addView(TextView(this).apply { text = count; textSize = 12f; setTextColor(Palette.MUTED) })
+            list.addView(row, lp())
+        }
+        section(R.string.read2048_external_group)
+        val external = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(16), dp(14), dp(16))
+            background = roundRect(Palette.CARD, 16, Palette.CARD_LINE)
+            isClickable = true; isFocusable = true
+            setOnClickListener { startActivity(Intent(this@ProfileSelectActivity, Board2048Activity::class.java)) }
+        }
+        val tile = FrameLayout(this).apply { background = roundRect(Palette.ACCENT_TINT, 12) }
+        tile.addView(IconView(this, Icon.GRID, Palette.ACCENT), FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
+        external.addView(tile, LinearLayout.LayoutParams(dp(44), dp(44)).apply { rightMargin = dp(14) })
+        val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        texts.addView(TextView(this).apply { text = "2048 Test"; textSize = 16f; typeface = Typeface.DEFAULT_BOLD; setTextColor(Palette.TEXT) })
+        texts.addView(TextView(this).apply { text = getString(R.string.read2048_subtitle); textSize = 13f; setTextColor(Palette.MUTED) }, lp(4))
+        external.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+        external.addView(IconView(this, Icon.CHEVRON, Palette.DIM), LinearLayout.LayoutParams(dp(18), dp(18)).apply { leftMargin = dp(8) })
+        list.addView(external, lp(4))
+        section(R.string.read2048_internal_group, getString(R.string.profiles_count_fmt, GameProfiles.all.size))
         for (p in GameProfiles.all) {
             val (result, pass) = resultOf(p)
             val card = LinearLayout(this).apply {
@@ -221,7 +234,7 @@ class ProfileSelectActivity : Activity() {
             texts.addView(TextView(this).apply { text = result; textSize = 12f; typeface = Typeface.DEFAULT_BOLD; setTextColor(if (pass) Palette.OK else Palette.MUTED) }, lp(2))
             card.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
             card.addView(IconView(this, Icon.CHEVRON, Palette.DIM), LinearLayout.LayoutParams(dp(18), dp(18)).apply { leftMargin = dp(8) })
-            list.addView(card, lp(if (p === GameProfiles.all.first()) 0 else 10))
+            list.addView(card, lp(10))
         }
         page.addView(ScrollView(this).apply { addView(list) }, LinearLayout.LayoutParams(-1, 0, 1f))
         return page

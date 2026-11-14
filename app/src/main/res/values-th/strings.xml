@@ -117,8 +117,26 @@
     <string name="read2048_missing">กรุณาติดตั้ง APK 2048 Test ที่ให้ก่อน</string>
     <string name="read2048_wait">กำลังรอเกมทดสอบที่อนุญาต</string>
     <string name="read2048_stable">ยืนยันกระดานจากภาพที่นิ่งต่อเนื่องแล้ว</string>
-    <string name="read2048_uncertain">อ่านไม่แน่ใจหรือภาพยังเคลื่อนไหว ตารางด้านล่างเป็นค่าล่าสุดที่เคยยืนยัน</string>
+    <string name="read2048_uncertain">อ่านไม่แน่ใจหรือภาพยังเคลื่อนไหว แสดงค่าล่าสุดที่เคยยืนยัน</string>
     <string name="read2048_error">อ่านไม่สำเร็จ ลองใหม่โดยเปิด Accessibility และอนุญาตจับภาพ</string>
     <string name="read2048_stopped">หยุดแล้ว ตารางด้านล่างเป็นผลที่จำไว้ ไม่ใช่ภาพสด</string>
     <string name="read2048_age">ยืนยันล่าสุด: %1$s ที่แล้ว • ภาพ %2$d • ยืนยัน %3$d</string>
+    <string name="read2048_subtitle">อ่านกระดานอย่างเดียว</string>
+    <string name="read2048_latest">กระดานที่ยืนยันล่าสุด</string>
+    <string name="read2048_how_title">วิธีใช้งาน</string>
+    <string name="read2048_details_title">รายละเอียดการอ่าน</string>
+    <string name="read2048_badge_uncertain">ไม่แน่ใจ</string>
+    <string name="read2048_badge_running">กำลังอ่าน</string>
+    <string name="read2048_badge_error">อ่านไม่สำเร็จ</string>
+    <string name="read2048_badge_stopped">หยุดแล้ว</string>
+    <string name="read2048_badge_ready">ยังไม่เริ่ม</string>
+    <string name="read2048_history_hint">ผลที่จำไว้ ไม่ใช่ภาพสด เริ่มอ่านอีกครั้งเพื่ออัปเดต</string>
+    <string name="read2048_age_short">ยืนยันเมื่อ %1$d วินาทีที่แล้ว</string>
+    <string name="read2048_metrics">ภาพ: %1$d • ภาพที่ยืนยัน: %2$d</string>
+    <string name="read2048_restart">อ่านอีกครั้งและเปิดเกม</string>
+    <string name="read2048_cell_unknown">ยังไม่ทราบ</string>
+    <string name="read2048_cell_empty">ว่าง</string>
+    <string name="read2048_cell_description">แถว %1$d ช่อง %2$d: %3$s</string>
+    <string name="read2048_external_group">เกมทดสอบภายนอก</string>
+    <string name="read2048_internal_group">เกมทดสอบในแอป</string>
 </resources>

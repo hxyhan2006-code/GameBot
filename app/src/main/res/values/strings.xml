@@ -117,8 +117,26 @@
     <string name="read2048_missing">Install the supplied 2048 Test APK first</string>
     <string name="read2048_wait">Waiting for the permitted test game</string>
     <string name="read2048_stable">Board confirmed across stable frames</string>
-    <string name="read2048_uncertain">Uncertain / animating. Grid below is the LAST confirmed reading.</string>
+    <string name="read2048_uncertain">Uncertain / animating. Showing the last confirmed reading.</string>
     <string name="read2048_error">Reading failed. Retry with Accessibility and screen capture enabled.</string>
     <string name="read2048_stopped">Stopped. Grid below is a saved reading in memory, not live.</string>
     <string name="read2048_age">Last confirmed: %1$s ago • frames %2$d • confirmed %3$d</string>
+    <string name="read2048_subtitle">Read board only</string>
+    <string name="read2048_latest">Last confirmed board</string>
+    <string name="read2048_how_title">How to use</string>
+    <string name="read2048_details_title">Reading details</string>
+    <string name="read2048_badge_uncertain">Uncertain</string>
+    <string name="read2048_badge_running">Reading</string>
+    <string name="read2048_badge_error">Error</string>
+    <string name="read2048_badge_stopped">Stopped</string>
+    <string name="read2048_badge_ready">Not started</string>
+    <string name="read2048_history_hint">Previous reading in memory, not live. Start again to refresh.</string>
+    <string name="read2048_age_short">Confirmed %1$d seconds ago</string>
+    <string name="read2048_metrics">Frames: %1$d • confirmed frames: %2$d</string>
+    <string name="read2048_restart">Read again and open game</string>
+    <string name="read2048_cell_unknown">unknown</string>
+    <string name="read2048_cell_empty">empty</string>
+    <string name="read2048_cell_description">Row %1$d, column %2$d: %3$s</string>
+    <string name="read2048_external_group">EXTERNAL TEST GAME</string>
+    <string name="read2048_internal_group">IN-APP TEST GAMES</string>
 </resources>
