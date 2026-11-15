@@ -1,8 +1,8 @@
 # eFootball — ต้นแบบควบคุม Free Training
 
-สถานะ: เชื่อม capture → local OCR/pixels → policy/session → Android gesture → รายงานแล้ว เผยแพร่ Build36 พร้อมป้ายสถานะแล้ว ยังไม่ใช่บอทระดับโปรหรือรุ่นเล่นแมตช์เต็ม รุ่นแก้ยังต้องยืนยันบน Xiaomi
+สถานะ: เชื่อม capture → local OCR/pixels → policy/session → Android gesture → รายงานแล้ว เผยแพร่ Build38 แก้เวลาในหัวจอและปุ่มจางแล้ว ยังไม่ใช่บอทระดับโปรหรือรุ่นเล่นแมตช์เต็ม รุ่นแก้ยังต้องยืนยันบน Xiaomi
 
-ดาวน์โหลด: [UniversalGameBot Build36](https://github.com/hxyhan2006-code/GameBot/releases/download/build-36/UniversalGameBot-build36.apk) — ติดตั้งทับแอปเดิม ไม่ต้องติดตั้ง fixture ใหม่สำหรับ eFootball และไม่ต้องเปิดสิทธิ์วาดทับแอปอื่นเพิ่ม
+ดาวน์โหลด: [UniversalGameBot Build38](https://github.com/hxyhan2006-code/GameBot/releases/download/build-38/UniversalGameBot-build38.apk) — ติดตั้งทับแอปเดิม ไม่ต้องติดตั้ง fixture ใหม่สำหรับ eFootball และไม่ต้องเปิดสิทธิ์วาดทับแอปอื่นเพิ่ม
 
 ## ใช้งานหนึ่งรอบ
 
@@ -53,10 +53,12 @@
 
 ตรวจใน workspace ผ่าน66กรณีและ build ผ่าน; CI ชุดเต็มและ Release สำเร็จ ดาวน์โหลด APK กลับมาตรวจ versionCode36 / 0.11.2-training-status ลายเซ็นเดิมและไม่มี INTERNET/ACCESS_NETWORK_STATE/SYSTEM_ALERT_WINDOW แล้ว รายละเอียดหลักฐานอยู่ในเอกสารสถานะ
 
-## งานแก้ v0.11.3 — ระหว่างตรวจ
+## งานแก้ v0.11.3 — เผยแพร่ Build38
 
 ภาพฝึกจากเจ้าของกับรายงาน Build36 ยังมี0คำสั่ง: ภาพเร็วพอแล้วแต่ปุ่ม Dash ถูกอ่านเป็น Da และเฟรมสุดท้ายถูก clock regex ตีความเป็นแมตช์. รุ่นแก้แยกเวลาเดี่ยวจาก clockพร้อมคะแนนของเกม เวลาเดี่ยวทำให้รอและห้ามส่งคำสั่งโดยไม่อ้างMATCH. Pixel scoreboard และ clockพร้อมคะแนนยังบล็อกแมตช์ตามเดิม
 
 ขยายเฉพาะช่องตัวอักษรปุ่มStandard2x เพิ่มความต่างจากหญ้า แล้วแปลงพิกัด OCR กลับก่อนส่งสัมผัส ไม่ใช้ตำแหน่งเดาจากช่องแทนข้อความที่หาย. ยอมรับDa/Dasเฉพาะช่องDashเมื่ออีกสามปุ่มและตำแหน่งครบ; ไม่สุ่มกดเมื่ออ่านไม่ครบ. ยังต้องยืนยัน ML Kit engine/ความเร็ว/สัมผัสบนเครื่องจริง
 
 ป้ายขึ้นอ่านจอเมื่อเห็นสนามแต่ข้อมูลยังไม่พร้อม ไม่ขึ้นรอสนามตลอดทั้งที่เห็นสนามแล้ว. ปัดเปิดแถบระบบหลังเริ่มเล่นอาจทำให้เสียโฟกัสหรือบังภาพ จึงหยุดตามขอบเขตเดิมและต้องเริ่มรอบใหม่ ไม่กลับมาเล่นเอง
+
+ตรวจใน workspace74กรณีและ build ผ่าน CI ชุดเต็มและ Release สำเร็จ ดาวน์โหลด APK กลับมาตรวจ versionCode38 / 0.11.3-training-vision ลายเซ็นเดิมและไม่มี INTERNET/ACCESS_NETWORK_STATE/SYSTEM_ALERT_WINDOW แล้ว. Build37 ยกเลิกก่อนเผยแพร่เพื่อตรวจแก้ contrast; ไม่มีไฟล์ Build37 ให้ติดตั้ง
