@@ -1,6 +1,6 @@
 # eFootball Training — สถานะต้นแบบ
 
-เชื่อมต้นแบบ Free Training ตามคำสั่งเจ้าของแล้ว: Activity/Screen แนวนอน → MediaProjection → bundled local Latin OCR + pixel reader → perception → policy/session/controller → Android gestures → รายงานในเครื่อง. เผยแพร่ Build38 แก้เวลาในหัวจอและปุ่มจางแล้ว (source commite45e950) รุ่นแก้ยังต้องยืนยันบน Xiaomi ไม่ใช่รุ่นแมตช์เต็ม
+เชื่อมต้นแบบ Free Training ตามคำสั่งเจ้าของแล้ว: Activity/Screen แนวนอน → MediaProjection → bundled local Latin OCR + pixel reader → perception → policy/session/controller → Android gestures → รายงานในเครื่อง. เผยแพร่ Build39 แก้จับเครื่องหมายผู้เล่นและเรดาร์แล้ว (source commit5259f36) รุ่นแก้ยังต้องยืนยันบน Xiaomi ไม่ใช่รุ่นแมตช์เต็ม
 
 วิธีใช้และข้อจำกัด: [EFOOTBALL_TRAINING_GUIDE.md](EFOOTBALL_TRAINING_GUIDE.md)
 
@@ -71,7 +71,7 @@ Build35: source a251919e04244264ff00dec90db8b25e137d0aa9, run43695450290 success
 - Signer SHA256 22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947 ตรงกุญแจเดิม ผ่าน apksigner สำหรับ SDK36, zipalign16KB และ ZIP CRC/ไม่มีชื่อไฟล์ซ้ำ. ไม่มี INTERNET/ACCESS_NETWORK_STATE/SYSTEM_ALERT_WINDOW
 - APK SHA256 c3f760f8c94072d636e8c57ece66cbafb2eb6f8f9c695966d1e4fbb32c991187
 
-## v0.11.4 — ระหว่างตรวจจากผลมือถือ Build38
+## v0.11.4 — เผยแพร่ Build39 จากผลมือถือ Build38
 
 เจ้าของตั้งButton Opacity100%แล้ว รายงานframes749/live743/armedtrue/commands11/AndroidCompleted11/failures0 จบtraining deadline. ภาพ182ms (OCR95ms) กับปุ่มครบยืนยันว่าเหตุรอหลักรอบนี้ไม่ใช่OCRหรือframe stale. waitingReasons649ครั้งคือsolid controlled-player marker not established; เฟรมสุดท้ายselectedfalse/radarSelectedtrue/ballfalse/hudtrue. AndroidCompletedไม่พิสูจน์ว่าตัวละครเคลื่อนหรือเล่นสำเร็จ และ649ไม่ใช่จำนวนเฟรมบอลหายเพราะรายงานเลือกเหตุแรก
 
@@ -79,4 +79,10 @@ Build35: source a251919e04244264ff00dec90db8b25e137d0aa9, run43695450290 success
 
 เพิ่มpublic fixturesสองเฟรมสำหรับโฆษณาและเศษสีในเรดาร์ พร้อมการตรวจลำดับหลายเฟรม→controller/backendจำลอง, การหาย/กำกวมของmarker, ไม่มีบอลแม้พบตัวผู้เล่น, native sampling/row padding. ภาพอ้างอิงอยู่เฉพาะtest resources ไม่อยู่ในAPK. Scope/freshness/geometry/generation/menu/play deadlines ไม่เปลี่ยน ไม่เปิดfull match/auto-resume/สุ่มสลับตัว และไม่เก็บภาพมือถือเพิ่ม
 
-ชุดตรวจที่เกี่ยวข้องในworkspaceผ่าน81กรณี ไม่มีล้ม/ข้าม และassembleDebugผ่าน (efootball-markers39-final.log). ตรวจdiffอิสระเทียบโค้ดจริงและภาพอ้างอิงแล้วไม่พบfindingที่ยืนยันได้. ยังต้องผ่านCI/releaseและยืนยันผลอ่านภาพ/สัมผัสบนโทรศัพท์จริง
+ชุดตรวจที่เกี่ยวข้องในworkspaceผ่าน81กรณี ไม่มีล้ม/ข้าม และassembleDebugผ่าน (efootball-markers39-final.log). ตรวจdiffอิสระเทียบโค้ดจริงและภาพอ้างอิงแล้วไม่พบfindingที่ยืนยันได้. CI/releaseสำเร็จแล้ว ยังต้องยืนยันผลอ่านภาพ/สัมผัสบนโทรศัพท์จริง
+
+- Build APK run43715071117 success: https://github.com/hxyhan2006-code/GameBot/actions/runs/43715071117
+- Core verification run43715039376 success. Release source5259f367bd4952a9fa1f1f5d8ba0ac04c9beb438
+- ดาวน์โหลด UniversalGameBot-build39.apk กลับมาตรวจ: ขนาด53,157,145bytes, applicationId com.example.universalgamebot, versionCode39 / 0.11.4-training-markers
+- Signer SHA256 22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947 ตรงกุญแจเดิม ผ่านapksignerสำหรับSDK36, zipalign16KB, ZIP CRC/ไม่มีชื่อซ้ำ. ไม่มี INTERNET/ACCESS_NETWORK_STATE/SYSTEM_ALERT_WINDOW และไม่มีภาพpublic test fixturesในAPK
+- APK SHA256 7300563b966a06f6fefa0a54049ac182c7cf2d64d6255ea6e8d5e400b8924e90
