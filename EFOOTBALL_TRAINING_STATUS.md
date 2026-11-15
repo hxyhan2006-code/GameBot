@@ -1,12 +1,12 @@
 # eFootball Training — สถานะต้นแบบ
 
-เชื่อมต้นแบบ Free Training ตามคำสั่งเจ้าของแล้ว: Activity/Screen แนวนอน → MediaProjection → bundled local Latin OCR + pixel reader → perception → policy/session/controller → Android gestures → รายงานในเครื่อง. เผยแพร่ Build34 แล้ว (source commit65a5574) ไม่อ้างว่าผ่านบน Xiaomi หรือเล่นแมตช์เต็มแล้ว
+เชื่อมต้นแบบ Free Training ตามคำสั่งเจ้าของแล้ว: Activity/Screen แนวนอน → MediaProjection → bundled local Latin OCR + pixel reader → perception → policy/session/controller → Android gestures → รายงานในเครื่อง. เผยแพร่ Build35 แล้ว (source commita251919) ไม่อ้างว่าผ่านบน Xiaomi หรือเล่นแมตช์เต็มแล้ว
 
 วิธีใช้และข้อจำกัด: [EFOOTBALL_TRAINING_GUIDE.md](EFOOTBALL_TRAINING_GUIDE.md)
 
 ## ขอบเขตจริง
 
-เป้าหมายคงที่ `jp.konami.pesam`. ผู้ใช้เปิดสนาม Free Training เอง เลือกทิศบุก/สีจุดทีมในเรดาร์ เริ่มจาก GameBot แล้วอนุญาตจับภาพทั้งจอ. รอเข้าเกม20วินาที รอหลักฐานสนามฝึก15วินาที จำกัดช่วงฝึก2นาที. ออกจากเกม/unknown focus/หมุนจอ/พักเกม/เมนู/รีเพลย์จะหยุด ไม่ resume เอง. ไม่เปลี่ยน ArenaGate ของเกมทดสอบเดิม ไม่รองรับ PvP/ซื้อของ/เมนู
+เป้าหมายคงที่ `jp.konami.pesam`. ผู้ใช้เปิดสนาม Free Training เอง เลือกทิศบุก/สีจุดทีมในเรดาร์ เริ่มจาก GameBot แล้วอนุญาตจับภาพทั้งจอ. รอเมนู/สนามเริ่มต้น60วินาที รองรับ Back ครั้งเดียวเฉพาะเมนูฝึกหกช่องที่ยืนยันครบสองเฟรม จำกัดช่วงฝึก2นาทีเริ่มเมื่อพบสนาม. ออกจากเกม/unknown focus/หมุนจอ/พักเกม/เมนู/รีเพลย์จะหยุด ไม่ resume เอง. ไม่เปลี่ยน ArenaGate ของเกมทดสอบเดิม ไม่รองรับ PvP/ซื้อของ/เมนู
 
 ไอคอน Home/Away อย่างเดียวแยก Training ไม่ได้: เพิ่ม veto สี scoreboard ปัจจุบันและ OCR นาฬิกา/คะแนนในมุมบนซ้าย. มีเทสต์ภาพแมตช์จริง แม้ใส่ตำแหน่งปุ่มแบบเดียวกับเจ้าของ. หลักฐาน4ภาพไม่ใช่การรับรองกับทุกหน้าตาเกม
 
@@ -37,8 +37,10 @@ Independent review พบและนำมาแก้: ไอคอนฝึ�
 - APK SHA256 402907829bad4bb66ad77b4ec94f5d43395ad3d7cd855ea2ce73f2e3f326cfa6
 - ยังไม่มีผล physical touch/ML Kit engine/การเล่นจริงบน Xiaomi จากเจ้าของ รุ่นนี้เป็นต้นแบบพื้นฐานตามข้อจำกัดในคู่มือ
 
-## แก้ v0.11.1 ระหว่างตรวจ
+## แก้ v0.11.1 — เผยแพร่ Build35
 
 เจ้าของแจ้ง Build34 ไม่เล่น โดยภาพแสดง Training Pause ตอนกลับเข้าเกมและปุ่ม Clear แทน Shoot ในสนาม. แก้การอ่าน Clear/ความสามารถยิงแยกกัน, แยก scene สนามจาก controls ที่อ่านไม่ครบ, เก็บ OCR tokens ในรายงาน, invalidated queued decision ไม่ใช่ physical failure, startup60วินาทีและเริ่มงบเล่นเมื่อพบสนามจริง. รองรับ Back ครั้งเดียวก่อนเริ่มเล่นเฉพาะเมนูหกช่องที่ยืนยันสองเฟรมสดและตรวจ foreground/geometry/อายุภาพก่อน dispatch. Watchdog แยกช่วงพักเริ่มต้นจากช่วงเล่นและ rebase เมื่อเข้าจริง ห้ามอ่านภาพแอปอื่นและห้าม auto Back หลัง arm
 
-ชุดทดสอบที่เกี่ยวข้องใน workspace ผ่าน59กรณี ไม่มีล้ม/ข้าม และ build ผ่าน (efootball-focus-final.log). Independent diff review ปิด blocker watchdog แล้วและไม่พบ blockerใหม่. เจ้าของส่งรายงานจริง3รอบ frames=0/target focus lost or unknown ยืนยันว่าหยุดก่อนอ่านภาพ จึงเพิ่ม focus-window metadata validation และ focus diagnostics; ไม่ถือว่ารายงานนี้พิสูจน์ OCR/บอล/กล้องถูกต้องแล้ว. ยังต้อง CI/release และยืนยันบนเครื่องรุ่นแก้
+ชุดทดสอบที่เกี่ยวข้องใน workspace ผ่าน59กรณี ไม่มีล้ม/ข้าม และ build ผ่าน (efootball-focus-final.log). Independent diff review ปิด blocker watchdog แล้วและไม่พบ blockerใหม่. เจ้าของส่งรายงานจริง3รอบ frames=0/target focus lost or unknown ยืนยันว่าหยุดก่อนอ่านภาพ จึงเพิ่ม focus-window metadata validation และ focus diagnostics; ไม่ถือว่ารายงานนี้พิสูจน์ OCR/บอล/กล้องถูกต้องแล้ว. CI และ Release ผ่านแล้ว ยังต้องยืนยันบนเครื่องรุ่นแก้
+
+Build35: source a251919e04244264ff00dec90db8b25e137d0aa9, run43695450290 success, core verification43695436302 success. ดาวน์โหลด asset UniversalGameBot-build35.apk กลับมาตรวจจริง: versionCode35 / 0.11.1-training-startflow, ขนาด53,105,877bytes ลายเซ็นเดิม22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947, ไม่มี INTERNET/ACCESS_NETWORK_STATE. APK SHA256 7aaa598d1972a2f16ebfa2e9952d5155cdbf8a0b50393cda5d3a4cb427418657
