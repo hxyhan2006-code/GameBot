@@ -38,7 +38,7 @@ class EFootballPixels {
         val training=!scoreboard && pitch>.40f && cyan>=3 && pink>=3 && light>n*.12f
         return training to pitch
     }
-    fun read(f:SampledFrame):Anchors {
+    fun read(f:SampledFrame,withAxes:Boolean=true):Anchors {
         val w=f.width;val h=f.height
         val radar=Box(w*.443f,h*.801f,w*.557f,h*.948f)
         val (training,pitch)=trainingContext(f)
@@ -55,7 +55,7 @@ class EFootballPixels {
             r>65 && r>g*1.25f && r>b*1.05f }.filter { it.count>=2 && it.w<=w*.012f && it.h<=h*.025f }
         val green=blobs(f,radar) { v ->val r=v shr 16 and 255;val g=v shr 8 and 255;val b=v and 255
             g>140 && g>r*1.15f && g>b*1.1f }.filter { it.count>=2 && it.w<=w*.012f && it.h<=h*.025f }
-        return Anchors(training,pitch,selected,selectedRadar,gold,radar,red,green,axes(f))
+        return Anchors(training,pitch,selected,selectedRadar,gold,radar,red,green,if(withAxes)axes(f) else null)
     }
     /** Anti-aliased rings often fragment into several small islands. Only merge one tight cloud. */
     private fun mergeIcon(parts:List<Blob>,maxW:Float,maxH:Float):Blob? {

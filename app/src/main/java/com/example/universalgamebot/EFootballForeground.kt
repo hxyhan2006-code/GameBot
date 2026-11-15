@@ -1,12 +1,18 @@
 package com.example.universalgamebot
 
 /** OS window metadata only. A cached package alone never authorizes input. */
-data class EFootballWindow(val id:Int,val focused:Boolean,val active:Boolean,val application:Boolean,val rootPackage:String?)
+data class EFootballWindow(val id:Int,val focused:Boolean,val active:Boolean,val application:Boolean,val rootPackage:String?,val accessibilityOverlay:Boolean=false)
 class EFootballForeground {
     @Volatile private var targetWindowId=-1
     @Volatile var diagnostic="no foreground evidence";private set
     fun announced(pkg:String?,windowId:Int){targetWindowId=if(pkg==EFootballTrainingSession.TARGET && windowId>=0)windowId else -1}
     fun reset(){targetWindowId=-1;diagnostic="foreground evidence reset"}
+    fun resolveWithOwnedOverlay(rootPackage:String?,rootWindowId:Int,windows:List<EFootballWindow>,overlayId:Int,ownerPackage:String):String? {
+        val overlay=if(overlayId>=0)windows.singleOrNull{it.id==overlayId && it.accessibilityOverlay && !it.focused} else null
+        if(overlay==null)return resolve(rootPackage,windows)
+        val root=if(rootWindowId==overlay.id && rootPackage==ownerPackage)null else rootPackage
+        return resolve(root,windows.filter{it.id!=overlay.id})
+    }
     fun resolve(rootPackage:String?,windows:List<EFootballWindow>):String? {
         if(rootPackage!=null){diagnostic="active root=$rootPackage";return rootPackage}
         val focused=windows.filter{it.focused}.singleOrNull()

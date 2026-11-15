@@ -98,4 +98,15 @@ class EFootballControllerTest {
         pkg="com.android.settings";b.dispatch();assertEquals(0,b.physical)
         pkg=EFootballTrainingSession.TARGET;feed(c,3);assertTrue(b.queue.isEmpty())
     }
+    @Test fun frameCounterBeforeTelemetryCallbackCannotLoseBadgeRecency(){
+        val run=EFootballReadout.begin()
+        try{
+            val b=Backend();val c=controller(b);feed(c,1);feed(c,2);b.dispatch().done(true)
+            EFootballReadout.frame(run,observation(2),10,"test",c)
+            assertEquals(1L,EFootballReadout.snapshot.commands)
+            assertEquals(0L,EFootballReadout.snapshot.lastSentNs)
+            EFootballReadout.tally(run,1,1,0)
+            assertTrue(EFootballReadout.snapshot.lastSentNs>0)
+        }finally{EFootballReadout.stop(run,"test complete")}
+    }
 }

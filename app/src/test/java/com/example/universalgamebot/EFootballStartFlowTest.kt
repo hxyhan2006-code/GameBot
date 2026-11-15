@@ -5,6 +5,10 @@ import org.junit.Test
 
 class EFootballStartFlowTest {
     private val start=10_000_000_000L
+    private fun arm(g:EFootballRunGate,sourceNs:Long){
+        assertNull(g.scene(EFootballScene.TRAINING_LIVE,sourceNs))
+        assertNull(g.scene(EFootballScene.TRAINING_LIVE,sourceNs+200_000_000L))
+    }
     private fun words()=listOf(
         EFootballWord("Practice List",310f,279f),EFootballWord("Command List",650f,279f),EFootballWord("Camera",970f,279f),
         EFootballWord("Play Settings",310f,430f),EFootballWord("Audio",650f,430f),EFootballWord("Quit Training",970f,430f),EFootballWord("Back",170f,539f))
@@ -15,16 +19,16 @@ class EFootballStartFlowTest {
         assertNull(g.scene(EFootballScene.UNKNOWN,start+45_000_000_000L))
         assertNull(g.check(EFootballTrainingSession.TARGET,start+45_000_000_000L))
         assertFalse(g.armed)
-        assertNull(g.scene(EFootballScene.TRAINING_LIVE,start+46_000_000_000L))
+        arm(g,start+46_000_000_000L)
         assertTrue(g.armed)
         assertNull(g.check(EFootballTrainingSession.TARGET,start+165_000_000_000L))
-        assertNotNull(g.check(EFootballTrainingSession.TARGET,start+166_000_000_000L))
+        assertNotNull(g.check(EFootballTrainingSession.TARGET,start+166_200_000_000L))
     }
     @Test fun startupExpiresAndFocusLossAfterArmingCannotResume(){
         assertNotNull(EFootballRunGate(start).check(null,start+60_000_000_000L))
-        val g=EFootballRunGate(start);g.scene(EFootballScene.TRAINING_LIVE,start+1)
-        assertNotNull(g.check(null,start+2))
-        assertNotNull(g.check(EFootballTrainingSession.TARGET,start+3))
+        val g=EFootballRunGate(start);arm(g,start+1)
+        assertNotNull(g.check(null,start+300_000_000L))
+        assertNotNull(g.check(EFootballTrainingSession.TARGET,start+301_000_000L))
         assertNotNull(EFootballRunGate(start).scene(EFootballScene.MATCH,start+1))
     }
     @Test fun menuNeedsAllSixTilesAndBackInTheirActualRegions(){
@@ -85,7 +89,7 @@ class EFootballStartFlowTest {
         assertFalse(health.expired(start+45_000_000_000L,gate.armed))
         health.leaveBeforePlay();assertEquals(0L,health.enteredNs)
         health.enter(start+46_000_000_000L);health.fresh(start+46_100_000_000L)
-        gate.scene(EFootballScene.TRAINING_LIVE,start+46_100_000_000L)
+        arm(gate,start+46_100_000_000L)
         assertFalse(health.expired(start+49_100_000_000L,gate.armed))
         assertTrue(health.expired(start+49_100_000_001L,gate.armed))
     }

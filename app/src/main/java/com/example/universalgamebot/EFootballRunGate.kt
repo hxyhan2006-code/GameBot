@@ -4,6 +4,9 @@ package com.example.universalgamebot
 class EFootballRunGate(private val startedNs:Long) {
     init {require(startedNs>0)}
     private var terminal:String?=null
+    private var readySinceNs=0L
+    private var lastReadyNs=0L
+    private var readyFrames=0
     @Volatile var liveStartedNs=0L;private set
     val armed:Boolean get()=liveStartedNs>0
     @Synchronized fun check(pkg:String?,nowNs:Long):String? {
@@ -18,11 +21,18 @@ class EFootballRunGate(private val startedNs:Long) {
         if(reason!=null)terminal=reason
         return reason
     }
-    @Synchronized fun scene(scene:EFootballScene,sourceNs:Long):String? {
+    @Synchronized fun scene(scene:EFootballScene,sourceNs:Long,ready:Boolean=true):String? {
         terminal?.let{return it}
         if(scene==EFootballScene.MATCH || (armed && scene!=EFootballScene.TRAINING_LIVE)) {
             terminal=if(scene==EFootballScene.MATCH)"match outside Free Training" else "training scene lost; no automatic resume"
-        } else if(!armed && scene==EFootballScene.TRAINING_LIVE)liveStartedNs=sourceNs
+        } else if(!armed) {
+            if(scene!=EFootballScene.TRAINING_LIVE || !ready){readyFrames=0;readySinceNs=0;lastReadyNs=0}
+            else if(sourceNs>lastReadyNs){
+                if(readyFrames==0)readySinceNs=sourceNs
+                lastReadyNs=sourceNs;readyFrames++
+                if(readyFrames>=2 && sourceNs-readySinceNs>=200_000_000L)liveStartedNs=sourceNs
+            }
+        }
         return terminal
     }
 }

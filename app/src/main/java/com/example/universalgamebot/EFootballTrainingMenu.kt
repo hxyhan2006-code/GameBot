@@ -3,7 +3,7 @@ package com.example.universalgamebot
 /** Only this six-tile Free Training pause screen permits one startup Back press. */
 data class EFootballTrainingMenu(val sourceNs:Long,val geometryId:Long,val back:EFootballScreenPoint) {
     companion object {
-        fun read(words:List<EFootballWord>,w:Int,h:Int,sourceNs:Long,geometryId:Long):EFootballTrainingMenu? {
+        fun read(words:List<EFootballWord>,w:Int,h:Int,sourceNs:Long,geometryId:Long,screenWidth:Int=w,screenHeight:Int=h):EFootballTrainingMenu? {
             fun locate(name:String,l:Float,t:Float,r:Float,b:Float):EFootballWord? = words.singleOrNull {
                 it.text.lowercase().filter(Char::isLetter)==name && it.x in w*l..w*r && it.y in h*t..h*b
             }
@@ -17,7 +17,7 @@ data class EFootballTrainingMenu(val sourceNs:Long,val geometryId:Long,val back:
                 if(locate(name,rect[0],rect[1],rect[2],rect[3])==null)return null
             }
             val back=locate("back",.05f,.85f,.28f,.98f) ?: return null
-            return EFootballTrainingMenu(sourceNs,geometryId,EFootballScreenPoint(back.x,back.y))
+            return EFootballTrainingMenu(sourceNs,geometryId,EFootballScreenPoint(back.x*screenWidth/w,back.y*screenHeight/h))
         }
     }
 }

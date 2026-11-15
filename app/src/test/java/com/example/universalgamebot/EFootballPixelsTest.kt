@@ -66,4 +66,22 @@ class EFootballPixelsTest {
         for(y in (f.height*.55f).toInt() until f.height)for(x in 0 until (f.width*.35f).toInt())f.rgb[y*f.width+x]=0
         assertNotNull(EFootballPixels().read(f).axes)
     }
+    @Test fun resizedRealFrameMapsButtonsBackToNativeScreenCoordinates(){
+        val im=BitmapFactory.decodeStream(javaClass.getResourceAsStream("/efootball/training.jpg"))
+        val rgb=IntArray(im.width*im.height);im.getPixels(rgb,0,im.width,0,0,im.width,im.height)
+        val buffer=java.nio.ByteBuffer.allocate(im.width*im.height*4)
+        for(i in rgb.indices)buffer.putInt(i*4,(rgb[i] shl 8) or 255)
+        val f=SampledFrame()
+        assertTrue(EFootballImageSampler.sample(buffer,im.width*4,4,im.width,im.height,f))
+        val k=1440f/1920f
+        val words=listOf(EFootballWord("Pass",1465f*k,733f*k),EFootballWord("Shoot",1717f*k,484f*k),
+            EFootballWord("Through",1521f*k,533f*k),EFootballWord("Dash",1702f*k,713f*k))
+        val p=EFootballPerception(1,1,EFootballDirection.RIGHT,true,EFootballTrainingConfig(allowPartialCoverage=true))
+        val o=p.read(f,10_000_000_000L,words,im.width,im.height)
+        assertNotNull(p.lastDiagnostic,o.controls);assertNotNull(p.lastDiagnostic,o.bearing)
+        assertEquals(1465f,o.controls!!.pass.x,1f)
+        assertEquals(733f,o.controls.pass.y,1f)
+        assertEquals(1920*.16f,o.controls.stickOrigin.x,1f)
+        assertTrue(p.lastDiagnostic.contains("preset approximation"))
+    }
 }

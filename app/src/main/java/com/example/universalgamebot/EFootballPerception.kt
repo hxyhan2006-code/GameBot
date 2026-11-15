@@ -12,9 +12,9 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
     private var tracks=emptyList<EFootballPlayer>()
     private var previousNs=0L
     var lastDiagnostic="waiting"; private set
-    fun read(f:SampledFrame,sourceNs:Long,words:List<EFootballWord>):EFootballPilotObservation {
+    fun read(f:SampledFrame,sourceNs:Long,words:List<EFootballWord>,screenWidth:Int=f.width,screenHeight:Int=f.height):EFootballPilotObservation {
         sequence++
-        val a=pixels.read(f);val hud=EFootballHud.read(words,f.width,f.height)
+        val a=pixels.read(f,withAxes=false);val hud=EFootballHud.read(words,f.width,f.height)
         fun norm(b:EFootballPixels.Blob)=EFootballPoint((b.x-a.radar.left)/a.radar.width,(b.y-a.radar.top)/a.radar.height)
         val selected=a.radarSelected?.let(::norm)?.takeIf {it.valid()}
         val ball=a.ball?.let(::norm)?.takeIf {it.valid()}
@@ -49,30 +49,31 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
             a.selected==null->"solid controlled-player marker not established"
             selected==null->"controlled-player radar marker not established"
             ball==null->"ball colour marker not established"
-            a.axes==null->"camera pitch axes not established"
-            else->"partial radar observation (${players.size} players); approximate Dynamic Wide steering; confidence scores are heuristic"
+            else->"partial radar (${players.size} players); camera=Dynamic Wide preset approximation (not calibrated)"
         }
         val tokens=words.filter{it.x>=f.width*.70f && it.y>=f.height*.35f}.take(12).joinToString("|"){it.text}
         lastDiagnostic+="; control OCR=[$tokens]"
         val controls=if(usable && hud!=null) {
-            val b=hud.buttons
+            val sx=screenWidth.toFloat()/f.width;val sy=screenHeight.toFloat()/f.height
+            val b=hud.buttons.mapValues {(_,p)->EFootballScreenPoint(p.x*sx,p.y*sy)}
             val pass=b[if(hud.attack)"pass" else "switch"]!!
             val shoot=b[if(!hud.attack)"tackle" else if(hud.canShoot)"shoot" else "clear"]!!
             val through=b[if(hud.attack)"through" else "matchup"]!!
             val dash=b["dash"] ?: b["pressure"]!!
             // Invisible floating stick: an explicit owner's input preset, not a visually detected stick.
             EFootballControlEvidence(generation,sequence,sourceNs,geometryId,
-                EFootballScreenPoint(f.width*.16f,f.height*.76f),f.height*.10f,
-                Box(f.width*.05f,f.height*.55f,f.width*.35f,f.height*.94f),
-                Box(f.width*.70f,f.height*.35f,f.width.toFloat(),f.height*.96f),
+                EFootballScreenPoint(screenWidth*.16f,screenHeight*.76f),screenHeight*.10f,
+                Box(screenWidth*.05f,screenHeight*.55f,screenWidth*.35f,screenHeight*.94f),
+                Box(screenWidth*.70f,screenHeight*.35f,screenWidth.toFloat(),screenHeight*.96f),
                 pass,shoot,dash,through,pass,null,true)
         } else null
         val d=policy.decide(frame)
         val target=when(val i=d.intent) {is EFootballTrainingIntent.Move->i.target;is EFootballTrainingIntent.Pass->i.target
             is EFootballTrainingIntent.Shoot->i.target;else->null}
         val active=players.find {it.id==selectedId}
-        val bearing=if(target!=null && active!=null && a.axes!=null) {
-            val (dx,dy)=a.axes.bearing(target.x-active.position.x,target.y-active.position.y)
+        val bearing=if(target!=null && active!=null) {
+            // An explicit camera-preset approximation, not an invented line measurement.
+            val (dx,dy)=EFootballPixels.Axes(0f,0f,true).bearing(target.x-active.position.x,target.y-active.position.y)
             if(hypot(dx,dy)>.0001f) EFootballActionBearing(generation,sequence,sourceNs,geometryId,target,dx,dy) else null
         } else null
         return EFootballPilotObservation(frame,controls,bearing)

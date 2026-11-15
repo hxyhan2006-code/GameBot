@@ -20,6 +20,7 @@ class BotAccessibilityService : AccessibilityService() {
 
     private val main = Handler(Looper.getMainLooper())
     private val efootballWindowEvidence=EFootballForeground()
+    private var efootballBadge:EFootballStatusBadge?=null
     private val pending = AtomicBoolean(false)
     @Volatile private var pendingSince = 0L
 
@@ -30,7 +31,8 @@ class BotAccessibilityService : AccessibilityService() {
         DebugMonitor.log("Accessibility connected, canRetrieveContent=$canRead")
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if(event?.eventType==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)
+        val badgeEvent=event!=null && isOwnBadgeWindow(event.windowId) && event.packageName?.toString()==packageName
+        if(event?.eventType==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && !badgeEvent)
             efootballWindowEvidence.announced(event.packageName?.toString(),event.windowId)
         val observer=board2048ScopeObserver
         val readOnly=readOnlyScopeObserver
@@ -41,17 +43,19 @@ class BotAccessibilityService : AccessibilityService() {
             val announced=event.packageName?.toString()
             observer?.invoke(Board2048Session.eventPackage(foreground,announced))
             readOnly?.invoke(foreground,announced)
-            efootballScopeObserver?.invoke(efootballForeground(),announced)
+            val ef=efootballForeground()
+            efootballScopeObserver?.invoke(ef,if(badgeEvent)ef else announced)
         }
     }
     override fun onInterrupt() { efootballWindowEvidence.reset(); board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null) }
-    override fun onDestroy() { efootballWindowEvidence.reset(); board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null); instance = null; super.onDestroy() }
+    override fun onDestroy() { efootballBadge?.close();efootballBadge=null;efootballWindowEvidence.reset(); board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null); instance = null; super.onDestroy() }
 
     fun postMain(r: Runnable) { main.post(r) }
 
     /** ปิดบริการตัวเอง (API 24+): ใช้ตอนเลิกทดสอบ เพราะแอปการเงินบางแอป (เช่น Dime) ไม่ยอมให้ใช้งานถ้ามี Accessibility ของแอปนอก Store เปิดอยู่ */
     fun turnOff() {
         DebugMonitor.log("Accessibility turned off from the app")
+        efootballBadge?.close();efootballBadge=null
         efootballWindowEvidence.reset()
         board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null)
         instance = null
@@ -62,17 +66,29 @@ class BotAccessibilityService : AccessibilityService() {
     fun activePackage(): String? = try { rootInActiveWindow?.packageName?.toString() } catch (e: Exception) { null }
 
     /** Surface-based games can temporarily have no root. Revalidate the focused OS window ID. */
+    internal fun showEfootballStatus(){
+        if(efootballBadge==null)efootballBadge=EFootballStatusBadge(this)
+        efootballBadge!!.show()
+    }
+    private fun isOwnBadgeWindow(id:Int):Boolean = efootballBadge?.ownsWindow(id)==true && try{
+        windows.any{it.id==id && it.type==AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY && !it.isFocused}
+    }catch(e:Exception){false}
     fun efootballForeground():String? {
-        val pkg=activePackage()
-        if(pkg!=null)return efootballWindowEvidence.resolve(pkg,emptyList())
         return try {
-            efootballWindowEvidence.resolve(null,windows.map { w ->
-                val root=w.root
-                val name=root?.packageName?.toString()
-                @Suppress("DEPRECATION") root?.recycle()
-                EFootballWindow(w.id,w.isFocused,w.isActive,w.type==AccessibilityWindowInfo.TYPE_APPLICATION,name)
-            })
-        } catch(e:Exception){efootballWindowEvidence.resolve(null,emptyList())}
+            val root=rootInActiveWindow
+            val pkg=root?.packageName?.toString();val rootId=root?.windowId ?: -1
+            @Suppress("DEPRECATION") root?.recycle()
+            val badgeRoot=pkg==packageName && efootballBadge?.ownsWindow(rootId)==true
+            if(pkg!=null && !badgeRoot)return efootballWindowEvidence.resolve(pkg,emptyList())
+            val evidence=windows.map{w->
+                val node=w.root;val name=node?.packageName?.toString()
+                @Suppress("DEPRECATION") node?.recycle()
+                EFootballWindow(w.id,w.isFocused,w.isActive,w.type==AccessibilityWindowInfo.TYPE_APPLICATION,name,
+                    w.type==AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY)
+            }
+            val badgeId=evidence.singleOrNull{efootballBadge?.ownsWindow(it.id)==true}?.id ?: -1
+            efootballWindowEvidence.resolveWithOwnedOverlay(pkg,rootId,evidence,badgeId,packageName)
+        }catch(e:Exception){efootballWindowEvidence.resolve(null,emptyList())}
     }
     fun efootballFocusDescription()=efootballWindowEvidence.diagnostic
 
