@@ -22,13 +22,27 @@ internal class EFootballOcrInput(f:SampledFrame) {
         tiles=listOf(header,through,shot,pass,dash)
         width=tiles.maxOf{it.x+it.w*it.scale};height=tiles.maxOf{it.y+it.h*it.scale}
         rgb=IntArray(width*height){-1}
-        for(tile in tiles)for(y in 0 until tile.h*tile.scale)for(x in 0 until tile.w*tile.scale){
-            val c=f.rgb[(tile.top+y/tile.scale)*f.width+tile.left+x/tile.scale]
-            val r=c shr 16 and 255;val g=c shr 8 and 255;val b=c and 255
-            // White translucent labels raise all channels; grass mainly raises green.
-            // Inversion presents dark letters on a light background even in shadow.
-            val v=if(tile.scale==1)(r*77+g*150+b*29)/256 else 255-((minOf(r,g,b)-20)*4).coerceIn(0,255)
-            rgb[(tile.y+y)*width+tile.x+x]=-0x1000000 or (v shl 16) or (v shl 8) or v
+        for(tile in tiles){
+            val stride=tile.w+1;val sum=IntArray(stride*(tile.h+1))
+            fun channel(x:Int,y:Int):Int {
+                val c=f.rgb[(tile.top+y)*f.width+tile.left+x]
+                val r=c shr 16 and 255;val g=c shr 8 and 255;val b=c and 255
+                return if(tile.scale==1)(r*77+g*150+b*29)/256 else minOf(r,g,b)
+            }
+            if(tile.scale>1)for(y in 0 until tile.h)for(x in 0 until tile.w)
+                sum[(y+1)*stride+x+1]=channel(x,y)+sum[y*stride+x+1]+sum[(y+1)*stride+x]-sum[y*stride+x]
+            for(y in 0 until tile.h*tile.scale)for(x in 0 until tile.w*tile.scale){
+                val sx=x/tile.scale;val sy=y/tile.scale;val c=channel(sx,sy)
+                val v=if(tile.scale==1)c else {
+                    val l=(sx-8).coerceAtLeast(0);val r=(sx+9).coerceAtMost(tile.w)
+                    val t=(sy-8).coerceAtLeast(0);val b=(sy+9).coerceAtMost(tile.h)
+                    val average=(sum[b*stride+r]-sum[t*stride+r]-sum[b*stride+l]+sum[t*stride+l])/((r-l)*(b-t))
+                    // Local contrast keeps both faint and opaque white glyphs distinct from
+                    // their button/grass background; absolute clipping would erase opaque labels.
+                    (200-(c-average)*5).coerceIn(0,255)
+                }
+                rgb[(tile.y+y)*width+tile.x+x]=-0x1000000 or (v shl 16) or (v shl 8) or v
+            }
         }
     }
     fun word(text:String,x:Float,y:Float):EFootballWord? {

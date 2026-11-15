@@ -66,6 +66,11 @@ class EFootballVisionReadinessTest {
         val at=(tile.y+(y-tile.top)*2)*atlas.width+tile.x+(x-tile.left)*2
         assertEquals(atlas.rgb[at],atlas.rgb[at+1]);assertEquals(atlas.rgb[at],atlas.rgb[at+atlas.width])
         assertTrue((atlas.rgb[at-2] and 255)-(atlas.rgb[at] and 255)>150)
+        // Absolute gain used to clip BOTH the opaque button and its white text to black.
+        java.util.Arrays.fill(f.rgb,0x83b883)
+        f.rgb[y*1440+x]=0xffffff
+        val opaque=EFootballOcrInput(f)
+        assertTrue("Opaque labels must survive as well as faint labels",(opaque.rgb[at-2] and 255)-(opaque.rgb[at] and 255)>150)
     }
     @Test fun badgeReadsTheFieldWhileReadinessIsIncompleteInsteadOfWaitingForAFieldAlreadySeen() {
         val s=EFootballReadout.Snapshot(running=true,armed=false,status="training")
