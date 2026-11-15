@@ -23,6 +23,7 @@ data class EFootballActionBearing(
 
 /** No fixed screen positions, invisible-stick detection requirement or radar-to-screen shortcut. */
 class EFootballControlMapping {
+    companion object {const val MOVE_MS=35L;const val MAX_GESTURE_MS=320L}
     fun plan(d: EFootballTrainingDecision, c: EFootballControlEvidence, b: EFootballActionBearing?): EFootballGesturePlan? {
         val f = d.frame
         if (!c.confirmed || c.generation != f.generation || c.sequence != f.sequence ||
@@ -34,7 +35,7 @@ class EFootballControlMapping {
             is EFootballTrainingIntent.Shoot -> i.target
             is EFootballTrainingIntent.Switch -> {
                 if (c.nextPlayerId != i.playerId) return null
-                return buttonOnly(c.switch).takeIf { it.rejection(zones(c), 180) == null }
+                return buttonOnly(c.switch).takeIf { it.rejection(zones(c), MAX_GESTURE_MS) == null }
             }
             else -> return null
         }
@@ -52,11 +53,12 @@ class EFootballControlMapping {
         }
         // Bounded strokes always lift. These timing defaults are experimental, not measured power.
         val stick = EFootballPointerStroke(0, 0, listOf(
-            EFootballGestureKeyframe(0, c.stickOrigin), EFootballGestureKeyframe(180, tip)))
+            EFootballGestureKeyframe(0, c.stickOrigin), EFootballGestureKeyframe(MOVE_MS, tip),
+            EFootballGestureKeyframe(MAX_GESTURE_MS,tip)))
         val press = button?.let { EFootballPointerStroke(1, 80, listOf(
             EFootballGestureKeyframe(0, it), EFootballGestureKeyframe(
-                if (d.intent is EFootballTrainingIntent.Move) 100 else 80, it))) }
-        return EFootballGesturePlan(listOfNotNull(stick, press)).takeIf { it.rejection(zones(c), 180) == null }
+                if (d.intent is EFootballTrainingIntent.Move) MAX_GESTURE_MS-80 else 100, it))) }
+        return EFootballGesturePlan(listOfNotNull(stick, press)).takeIf { it.rejection(zones(c), MAX_GESTURE_MS) == null }
     }
 
     fun zones(c: EFootballControlEvidence) = mapOf(0 to c.stickZone, 1 to c.buttonZone)

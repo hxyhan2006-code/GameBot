@@ -86,3 +86,13 @@ Build35: source a251919e04244264ff00dec90db8b25e137d0aa9, run43695450290 success
 - ดาวน์โหลด UniversalGameBot-build39.apk กลับมาตรวจ: ขนาด53,157,145bytes, applicationId com.example.universalgamebot, versionCode39 / 0.11.4-training-markers
 - Signer SHA256 22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947 ตรงกุญแจเดิม ผ่านapksignerสำหรับSDK36, zipalign16KB, ZIP CRC/ไม่มีชื่อซ้ำ. ไม่มี INTERNET/ACCESS_NETWORK_STATE/SYSTEM_ALERT_WINDOW และไม่มีภาพpublic test fixturesในAPK
 - APK SHA256 7300563b966a06f6fefa0a54049ac182c7cf2d64d6255ea6e8d5e400b8924e90
+
+## v0.12.0 — ระหว่างตรวจจากผลมือถือ Build39
+
+เจ้าของยืนยันบอลไม่ขยับตั้งแต่ต้นจนจบ แม้commands78/AndroidCompleted78/failures0; frames590/live588/armedtrue/pipeline155ms, waitingReasons371ครั้งคือfield triangleอ่านไม่ได้. ภาพเป็นจุดเริ่มกลางสนามกับหน้าพักการฝึก เจ้าของสั่งให้อ่านหน้านี้และBackเองทุกครั้งที่พบระหว่างรัน. เจ้าของตอบยืนยันภายหลังว่าจุดเริ่มนี้ต้องกดPassก่อน จึงยืนยันว่าการเลือกเลี้ยงอย่างเดียวไม่เริ่มเล่นจากภาพนี้ ส่วนAndroid callbacksยังไม่พิสูจน์inputเข้าเกมหรือผลการเล่น รุ่นแก้ยังต้องยืนยันสัมผัสจริงหลังPass
+
+งานแก้รอบนี้: (1) centre ball+starting formationหลายเฟรม→observed backward/forward pass candidate (2) จอยmove35msแล้วholdถึง320msจริงด้วยcontinueStrokeแทนPathเส้นเดียวที่วิ่งสม่ำเสมอจนยก (3) continuation authorize+dispatchในcontroller lockเดียว ตรวจscope/current frameอีกครั้งและrelease-onlyเมื่อต่อไม่ได้ (4) native radar role corroborationจากสองfield/radarคู่>=200ms เพื่อใช้CURRENT cursorช่วงtriangleblink ไม่แทนพิกัดเก่า (5) visual feedback/actor identity/บอลร่วมสำหรับdribble/หยุดno-response แยกจากAndroid callback (6) OCRsemantic six-tile pauseและตำแหน่งBackทุกappearanceระหว่างรัน พร้อมverified fresh-field returnและrearm ไม่ต่ออายุ2-minute deadline
+
+ไม่ขยายไปเกม/แอปอื่นหรือแมตช์จริง True foreign focus/match/geometry lossยังstop latched; unknown transitionหยุดinputทันทีและต้องพบเมนูฝึกที่รู้จักภายใน1.5วินาทีจึงรอresumeได้. ป้ายเขียวขึ้นจากmotion evidence ไม่ใช่ส่งคำสั่งสำเร็จเฉย ๆ เป็นscreen classification/OCRที่รองรับหน้านี้ ไม่ใช่การฝึกLLM/AIโมเดลใหม่
+
+ชุดตรวจที่เกี่ยวข้องในworkspaceผ่าน105กรณี ไม่มีล้ม/ข้าม และassembleDebugผ่าน (efootball-feedback40-final-reviewed.log). รวมactual Android descriptorsของ35ms→hold/second pointer, no-button release-onlyเมื่อscope/staleเปลี่ยน, callback timeout/late callback, concurrency lock, recurring menus/rearm/deadline, native-cue fallbackหลังcorroboration/หายปัจจุบันต้องบล็อก และfake Android-success+stationary visualต้องไม่เป็นmotion. ผู้ตรวจอิสระพบTOCTOUcontinuation ข้อความรอผิดเหตุการณ์ และown-MOVE missing-ballถูกนับunchangedผิด นำมาแก้พร้อมnegative regressionsและตรวจซ้ำแล้วไม่พบfindingเพิ่ม. ผลนี้ไม่ใช่สัมผัสจริงบนXiaomi ยังต้องCI/releaseและผลมือถือ

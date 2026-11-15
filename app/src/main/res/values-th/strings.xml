@@ -204,14 +204,14 @@
     <string name="ef_missing">ไม่พบ eFootball ในเครื่อง</string>
     <string name="ef_left">บุกไปทางซ้าย (ปกติไปขวา)</string>
     <string name="ef_red">ทีมเราเป็นจุดแดง/ชมพูในเรดาร์</string>
-    <string name="ef_running">กำลังทำงาน · ออกจากเกมจะหยุด</string>
+    <string name="ef_running">พบการเคลื่อนไหว · ออกจากเกมจะหยุด</string>
     <string name="ef_stopped">หยุดแล้ว · รายงานเป็นข้อมูลย้อนหลัง</string>
     <string name="ef_stats">เฟรม %1$d · พบสนามฝึก %2$d · ส่งคำสั่ง %3$d · Android ทำจบ %4$d · อายุภาพ %5$d ms</string>
-    <string name="ef_instructions">เปิดสนาม Free Training ไว้ก่อน ใช้ Virtual Pad, Smart Assist ปิด, Cursor Manual, Feint Advanced, Defending Standard, กล้อง Dynamic Wide และปุ่มภาษาอังกฤษตามตำแหน่งเดิม เลือกทิศบุกและสีจุดทีมเราให้ตรง แล้วกดเริ่มและอนุญาตแชร์ทั้งหน้าจอ แอปจะกลับเข้าเกม รอสนามได้ 60 วินาที ถ้าเป็นเมนูพักการฝึกที่รองรับ จะกด Back กลับสนามครั้งเดียว แล้วเริ่มนับเวลาควบคุมเมื่อเห็นสนามจริง\nรุ่นทดลองเลี้ยง ส่ง ยิง และคุมตัวเดิมเกมรับจากภาพที่อ่านได้ ยังไม่รองรับสกิลขั้นสูง สลับตัวอัตโนมัติ ลูกตั้งเตะ หรือเล่นแมตช์เต็ม หากปุ่มหรือบอลอ่านไม่ได้จะไม่ส่งคำสั่ง ทิศควบคุมใช้ค่าประมาณตามกล้อง Dynamic Wide ไม่ใช่การสอบเทียบจากเส้นสนาม เมื่อเริ่มเล่นแล้ว เมนู พักเกม รีเพลย์ เปลี่ยนแอปหรือหมุนจอจะหยุด เริ่มใหม่เองเมื่อต้องการ ฝึกสูงสุด 2 นาที หยุดจากการแจ้งเตือนหรือกลับหน้านี้ ไม่ใช้ Cloud ไม่บันทึกภาพ คะแนนความมั่นใจเป็นค่าประเมิน ไม่รับประกันชนะ</string>
+    <string name="ef_instructions">เปิดสนาม Free Training ใช้ Virtual Pad, Smart Assist ปิด, Cursor Manual, Feint Advanced, Defending Standard, กล้อง Dynamic Wide และปุ่มภาษาอังกฤษตำแหน่งเดิม เลือกทิศบุกกับสีจุดทีมเรา กดเริ่มและแชร์ทั้งหน้าจอ ระหว่างรันระบบจะอ่านหน้าพักการฝึกที่รองรับ แล้วกดคำว่า Back ที่พบในภาพปัจจุบัน รอยืนยันสนามสดก่อนควบคุมต่อ\nเมื่อเห็นรูปการเริ่มกลางสนาม จะเลือกส่งให้เพื่อนที่ตรวจพบ จอยใช้การลากถึงทิศแล้วค้างจริง ป้ายเขียวหมายถึงเห็นการเคลื่อนไหวหลังคำสั่ง การที่ Android ทำสัมผัสจบยังไม่ใช่ผลการเล่น หากส่งซ้ำแล้วไม่เห็นตำแหน่งเปลี่ยนจะหยุดพร้อมรายงาน เมนูอื่น รีเพลย์ ออกจากเกมหรือหมุนจอจะหยุด ยังจำกัด 2 นาที ทิศควบคุมเป็นค่าประมาณตามกล้อง Dynamic Wide ไม่ใช้ Cloud และไม่บันทึกภาพ</string>
     <string name="ef_waiting_training">กำลังรอเกมกลับเข้าสนามฝึก</string>
-    <string name="ef_reading_only">กำลังอ่านสนาม · ยังไม่ส่งคำสั่ง</string>
+    <string name="ef_reading_only">กำลังอ่านสนาม · รอเห็นการตอบสนอง</string>
     <string name="ef_badge_waiting">GameBot · รอสนาม</string>
     <string name="ef_badge_reading">GameBot · อ่านจอ</string>
-    <string name="ef_badge_active">GameBot · ส่งคำสั่ง</string>
+    <string name="ef_badge_active">GameBot · พบการเคลื่อนไหว</string>
     <string name="ef_badge_stopped">GameBot · หยุดแล้ว</string>
 </resources>

@@ -30,7 +30,9 @@ class EFootballControllerTest {
         return EFootballPilotObservation(f,c,EFootballActionBearing(4,seq,f.sourceNs,7,EFootballPoint(.60f,.5f),1f,0f))
     }
     private fun feed(c: EFootballTrainingController, seq: Long) { val o=observation(seq); now=o.frame.sourceNs; c.observe(o) }
-    private fun controller(b:Backend)=EFootballTrainingController(EFootballTrainingSession(4,7,start), b, {pkg}, {now})
+    // These tests isolate queue/callback authorization with a backend that never changes the game.
+    // EFootballFeedbackTest exercises the default visual-response guard separately.
+    private fun controller(b:Backend)=EFootballTrainingController(EFootballTrainingSession(4,7,start), b, {pkg}, {now},verifyResponse=false)
 
     @Test fun perceptionToPolicyToBackendPreservesTwoPointersAndCallbackIsNotAGoal() {
         val b=Backend(); val c=controller(b)

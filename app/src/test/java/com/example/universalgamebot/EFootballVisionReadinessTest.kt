@@ -15,7 +15,8 @@ class EFootballVisionReadinessTest {
         gate.scene(EFootballScene.TRAINING_LIVE,1_200_000_000L,true)
         gate.scene(EFootballScene.TRAINING_LIVE,1_400_000_000L,true)
         assertTrue(gate.armed)
-        assertNotNull(gate.scene(EFootballScene.UNKNOWN,1_500_000_000L,false))
+        assertNull(gate.scene(EFootballScene.UNKNOWN,1_500_000_000L,false))
+        assertFalse(gate.playing)
         assertNotNull(gate.scene(EFootballScene.TRAINING_LIVE,1_600_000_000L,true))
     }
     @Test fun gameClockNeedsActualScoreTokensOnTheSameHeaderRow() {

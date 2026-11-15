@@ -204,14 +204,14 @@
     <string name="ef_missing">eFootball is not installed</string>
     <string name="ef_left">Attack left (default: right)</string>
     <string name="ef_red">Our radar dots are red/pink</string>
-    <string name="ef_running">Running · Leaving the game stops control</string>
+    <string name="ef_running">Motion observed · Leaving the game stops control</string>
     <string name="ef_stopped">Stopped · Historical observations</string>
     <string name="ef_stats">Frames %1$d · Training %2$d · Commands %3$d · Android completed %4$d · Frame age %5$d ms</string>
-    <string name="ef_instructions">Open Free Training first. Use Virtual Pad, Smart Assist off, Manual Cursor, Advanced Feints, Standard Defending, Dynamic Wide and English default button positions. Select attack direction and our radar dot colour, start and allow the entire display. The app returns to the game and waits up to 60 seconds for the field. It can press Back once on the recognized training pause menu. The play budget starts on the field.\nExperimental dribbling, passes, shots and current-defender cover require visual evidence. Advanced skills, automatic switching, set pieces and full matches are not supported. Unreadable controls or ball block commands. Steering uses an uncalibrated Dynamic Wide preset; set that camera. After play starts, menus, pause, replay, another app or rotation stop the run. Restart manually. Limit: 2 minutes. Stop from the notification or this screen. No cloud or screenshot files. Confidence scores are heuristic. No win guarantee.</string>
+    <string name="ef_instructions">Open Free Training first. Use Virtual Pad, Smart Assist off, Manual Cursor, Advanced Feints, Standard Defending, Dynamic Wide and English default button positions. Select attack direction and our radar dot colour, start and allow the entire display. During the run, the app reads the supported training pause menu and presses the Back label it finds in the current image. It waits for a verified fresh field before controlling again.\nA centre-restart candidate uses an observed teammate for the first pass. Controls use a short move followed by a real hold. Green means visual motion was observed after input; Android completion alone is not a game result. Repeated input without observed displacement stops with a report. Other menus, replay, another app or rotation stop control. The two-minute limit remains. Steering uses an uncalibrated Dynamic Wide preset. No cloud or screenshot files.</string>
     <string name="ef_waiting_training">Waiting for the training field</string>
-    <string name="ef_reading_only">Reading field · No commands sent yet</string>
+    <string name="ef_reading_only">Reading field · Waiting for visual response</string>
     <string name="ef_badge_waiting">GameBot · Waiting</string>
     <string name="ef_badge_reading">GameBot · Reading</string>
-    <string name="ef_badge_active">GameBot · Sending input</string>
+    <string name="ef_badge_active">GameBot · Motion observed</string>
     <string name="ef_badge_stopped">GameBot · Stopped</string>
 </resources>

@@ -95,4 +95,22 @@ class EFootballMarkersTest {
         for(y in 0 until 14)for(x in y/2 until 14-y/2)if(x==y/2 || x==13-y/2)hollow.rgb[(250+y)*1440+600+x]=0x20e0e0
         assertNull(EFootballMarkers.read(hollow).selected)
     }
+    @Test fun corroboratedNativeRadarSurvivesABlinkingTriangleButNeverInventsMissingCurrentCues(){
+        val (f,radar)=frames("training-advert")
+        val words=listOf(EFootballWord("Pass",1099f,550f),EFootballWord("Clear",1288f,363f),EFootballWord("Through",1141f,400f),EFootballWord("Dash",1277f,535f))
+        val p=EFootballPerception(1,1,EFootballDirection.RIGHT,true,EFootballTrainingConfig(allowPartialCoverage=true))
+        p.read(f,10_000_000_000L,words,1920,888,radar)
+        p.read(f,10_300_000_000L,words,1920,888,radar)
+        val missing=SampledFrame.fromRgb(f.width,f.height,f.rgb.copyOf(),1)
+        for(y in (f.height*.17f).toInt() until (f.height*.76f).toInt())for(x in (f.width*.08f).toInt() until (f.width*.90f).toInt())missing.rgb[y*f.width+x]=0x408020
+        val current=p.read(missing,10_500_000_000L,words,1920,888,radar)
+        assertNotNull(p.lastDiagnostic,current.frame.selectedPlayerId);assertNotNull(p.lastDiagnostic,current.controls)
+        assertTrue(p.lastDiagnostic,p.lastDiagnostic.contains("current native radar (role corroborated)"))
+        val empty=SampledFrame.fromRgb(radar.width,radar.height,IntArray(radar.width*radar.height){0x305020},1)
+        val absent=p.read(missing,10_700_000_000L,words,1920,888,empty)
+        assertNull(absent.controls);assertNull(absent.frame.selectedPlayerId);assertNull(absent.frame.ball)
+        p.read(missing,10_900_000_000L,words+EFootballWord("17:57",40f,20f),1920,888,radar)
+        val afterUnknown=p.read(missing,11_100_000_000L,words,1920,888,radar)
+        assertNull("A new scene requires corroboration again",afterUnknown.controls)
+    }
 }

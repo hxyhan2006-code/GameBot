@@ -28,6 +28,19 @@ class EFootballTrainingPolicy(private val config: EFootballTrainingConfig = EFoo
         if (frame.possession == EFootballPossession.UNKNOWN) return neutral("possession unknown")
         if (frame.possession == EFootballPossession.LOOSE) return neutral("loose ball; do not queue kicks")
 
+        if(frame.scene==EFootballScene.TRAINING_KICKOFF){
+            if(frame.possession!=EFootballPossession.OWN || active==null || active.position.distance(ball.position)>config.pressureDistance)
+                return neutral("centre restart: controlled ball not established")
+            // A centre restart can need a backward pass. The ordinary forward-only preference
+            // must not keep dragging a player that cannot dribble until the first kick.
+            val receivers=own.filter{it.id!=active.id && it.position.distance(ball.position) in .04f..config.maxPassDistance}
+                .filter{corridorClear(ball.position,it.position,opponents)}
+            val receiver=receivers.minByOrNull{it.position.distance(ball.position)+
+                if(if(direction==EFootballDirection.RIGHT)it.position.x>ball.position.x+.02f else it.position.x<ball.position.x-.02f).4f else 0f}
+                ?: return neutral("centre restart: no observed receiver")
+            return result(EFootballTrainingIntent.Pass(receiver.id,receiver.position),"centre restart: pass to observed receiver")
+        }
+
         // The experimental visual pilot has incomplete radar coverage. Never call that a clear lane.
         if (!frame.playerCoverageConfirmed) {
             if (active == null) return neutral("partial view: selected player missing")

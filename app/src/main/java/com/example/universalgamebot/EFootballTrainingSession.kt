@@ -117,6 +117,15 @@ class EFootballTrainingSession(
 
     @Synchronized fun stop(reason: String) { terminal = reason; awaitingSwitch = null; approvedDecision = null }
 
+    @Synchronized fun trainingMenu(){
+        approvedDecision=null;inFlightDecision=null;awaitingSwitch=null;stableLiveFrames=0
+    }
+    @Synchronized fun mayContinue(d:EFootballTrainingDecision,pkg:String?,f:EFootballTrainingFrame,nowNs:Long):Boolean {
+        return terminal==null && inFlightDecision===d && scopeFailure(pkg,f,nowNs,false)==null && fresh(f,nowNs) &&
+            f.scene in liveScenes && f.controlsRecognized && f.selectedPlayerId==d.frame.selectedPlayerId &&
+            f.possession==d.frame.possession && f.shootingAvailable==d.frame.shootingAvailable
+    }
+
     private fun fresh(frame: EFootballTrainingFrame, nowNs: Long) = frame.sourceNs >= startedNs &&
         frame.sourceNs <= nowNs && nowNs - frame.sourceNs <= config.maxFrameAgeMs * 1_000_000L
 

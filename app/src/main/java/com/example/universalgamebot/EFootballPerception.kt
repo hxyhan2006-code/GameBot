@@ -8,9 +8,13 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
     private var sequence=0L
     private val pixels=EFootballPixels()
     private val policy=EFootballTrainingPolicy(config)
+    private val kickoff=EFootballKickoff()
     private var nextId=1L
     private var tracks=emptyList<EFootballPlayer>()
     private var previousNs=0L
+    private var radarRoleConfirmed=false
+    private var radarPairSinceNs=0L
+    private var radarPairFrames=0
     var lastDiagnostic="waiting"; private set
     fun read(f:SampledFrame,sourceNs:Long,words:List<EFootballWord>,screenWidth:Int=f.width,screenHeight:Int=f.height,nativeRadar:SampledFrame?=null):EFootballPilotObservation {
         sequence++
@@ -21,7 +25,17 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
         val header=EFootballHeader.read(words,f.width,f.height)
         val match=header.match || a.scoreboard
         val field=a.training && !match && !header.obstructed
-        val selectedSeen=field && a.selected!=null && selected!=null
+        if(!field){radarRoleConfirmed=false;radarPairSinceNs=0;radarPairFrames=0}
+        if(field && nativeRadar!=null && a.selected!=null && selected!=null && ball!=null && hud!=null && !radarRoleConfirmed){
+            if(radarPairSinceNs==0L || sourceNs-radarPairSinceNs>2_000_000_000L){radarPairSinceNs=sourceNs;radarPairFrames=0}
+            radarPairFrames++
+            if(radarPairFrames>=2 && sourceNs-radarPairSinceNs>=200_000_000L)radarRoleConfirmed=true
+        }
+        // The cyan radar cursor is a CURRENT controlled-player cue. Once its role is corroborated
+        // by the field triangle, a blinking field triangle must not erase a fresh unique radar cursor.
+        // No previous player/ball coordinate is used if either current radar cue is missing.
+        val nativeSelection=field && nativeRadar!=null && radarRoleConfirmed && selected!=null
+        val selectedSeen=field && selected!=null && (a.selected!=null || nativeSelection)
         val usable=selectedSeen && hud!=null
         if(sourceNs-previousNs>500_000_000L || sourceNs<=previousNs)tracks=emptyList()
         previousNs=sourceNs
@@ -41,15 +55,16 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
         }
         tracks=players.toList()
         val possession=when {hud==null->EFootballPossession.UNKNOWN;hud.attack->EFootballPossession.OWN;else->EFootballPossession.OPPONENT}
-        val frame=EFootballTrainingFrame(generation,sequence,sourceNs,geometryId,
+        val base=EFootballTrainingFrame(generation,sequence,sourceNs,geometryId,
             if(match)EFootballScene.MATCH else if(field)EFootballScene.TRAINING_LIVE else EFootballScene.UNKNOWN,direction,possession,players.toList(),
             ball?.let {EFootballBall(it,.90f)},selectedId,usable,if(usable).90f else 0f,false,shootingAvailable=hud?.canShoot==true)
+        val frame=base.copy(scene=kickoff.scene(base,selected))
         lastDiagnostic=when {
             match->"game scoreboard outside Free Training; header OCR=[${header.text}]"
             header.obstructed->"ambiguous header clock/score; screen may be covered; header OCR=[${header.text}]"
             !a.training->"training swap icon / pitch not established"
             hud==null->"four Standard control labels not read"
-            a.selected==null->"solid controlled-player marker not established"
+            !selectedSeen && a.selected==null->"controlled-player cue not established; native radar role not corroborated"
             selected==null->"controlled-player radar marker not established"
             ball==null->"ball colour marker not established"
             else->"partial radar (${players.size} players); camera=Dynamic Wide preset approximation (not calibrated)"
@@ -58,6 +73,8 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
         lastDiagnostic+="; control OCR=[$tokens]"
         lastDiagnostic+="; anchors=pitch:${"%.2f".format(java.util.Locale.ROOT,a.grass)} selected:${a.selected!=null} radarSelected:${a.radarSelected!=null} ball:${a.ball!=null} hud:${hud!=null}"
         lastDiagnostic+="; ${a.diagnostic}"
+        lastDiagnostic+="; selectedSource=${if(a.selected!=null && selectedSeen)"field+radar" else if(nativeSelection)"current native radar (role corroborated)" else "unconfirmed"}"
+        if(frame.scene==EFootballScene.TRAINING_KICKOFF)lastDiagnostic+="; centre restart candidate: pass to start"
         val controls=if(usable && hud!=null) {
             val sx=screenWidth.toFloat()/f.width;val sy=screenHeight.toFloat()/f.height
             val b=hud.buttons.mapValues {(_,p)->EFootballScreenPoint(p.x*sx,p.y*sy)}

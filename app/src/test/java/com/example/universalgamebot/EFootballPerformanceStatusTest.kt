@@ -27,15 +27,19 @@ class EFootballPerformanceStatusTest {
         assertFalse(g.armed)
         g.scene(EFootballScene.TRAINING_LIVE,start+41_200_000_000L,true)
         assertTrue(g.armed)
-        assertNotNull(g.scene(EFootballScene.PAUSED,start+42_000_000_000L))
+        assertNull(g.scene(EFootballScene.PAUSED,start+42_000_000_000L))
+        assertFalse(g.playing)
+        assertNotNull(g.check(EFootballTrainingSession.TARGET,start+43_600_000_000L))
     }
     @Test fun badgeIsNeverGreenForRunningWithoutRecentEligibleGameCommands(){
         val now=10_000_000_000L
         val s=EFootballReadout.Snapshot(running=true,armed=true)
         assertEquals(EFootballBadgeState.READING,EFootballBadgeModel.state(s,now))
         val active=s.copy(canAct=true,commands=1,lastSentNs=now-100_000_000L)
-        assertEquals(EFootballBadgeState.CONTROLLING,EFootballBadgeModel.state(active,now))
-        assertEquals(EFootballBadgeState.READING,EFootballBadgeModel.state(active,now+900_000_000L))
+        assertEquals(EFootballBadgeState.READING,EFootballBadgeModel.state(active,now))
+        val moved=active.copy(lastMotionNs=now-100_000_000L)
+        assertEquals(EFootballBadgeState.CONTROLLING,EFootballBadgeModel.state(moved,now))
+        assertEquals(EFootballBadgeState.READING,EFootballBadgeModel.state(moved,now+1_600_000_000L))
         assertEquals(EFootballBadgeState.READING,EFootballBadgeModel.state(active.copy(canAct=false),now))
         assertEquals(EFootballBadgeState.STOPPED,EFootballBadgeModel.state(active.copy(running=false),now))
         assertEquals(EFootballBadgeState.WAITING,EFootballBadgeModel.state(active.copy(armed=false),now))
