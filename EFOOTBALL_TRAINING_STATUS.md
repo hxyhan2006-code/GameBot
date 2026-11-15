@@ -1,12 +1,12 @@
 # eFootball Training — สถานะต้นแบบ
 
-เชื่อมต้นแบบ Free Training ตามคำสั่งเจ้าของแล้ว: Activity/Screen แนวนอน → MediaProjection → bundled local Latin OCR + pixel reader → perception → policy/session/controller → Android gestures → รายงานในเครื่อง. เผยแพร่ Build39 แก้จับเครื่องหมายผู้เล่นและเรดาร์แล้ว (source commit5259f36) รุ่นแก้ยังต้องยืนยันบน Xiaomi ไม่ใช่รุ่นแมตช์เต็ม
+เชื่อมต้นแบบ Free Training ตามคำสั่งเจ้าของแล้ว: Activity/Screen แนวนอน → MediaProjection → bundled local Latin OCR + pixel reader → perception → policy/session/controller → Android gestures → รายงานในเครื่อง. เผยแพร่ Build40 แก้ส่งเริ่มกลางสนาม จอยค้าง หน้าพักซ้ำ และvisual responseแล้ว (source commit9ba8f96). เจ้าของยืนยันBuild39ยังไม่เล่น รุ่นแก้ยังต้องยืนยันบน Xiaomi ไม่ใช่รุ่นแมตช์เต็ม
 
 วิธีใช้และข้อจำกัด: [EFOOTBALL_TRAINING_GUIDE.md](EFOOTBALL_TRAINING_GUIDE.md)
 
 ## ขอบเขตจริง
 
-เป้าหมายคงที่ `jp.konami.pesam`. ผู้ใช้เปิดสนาม Free Training เอง เลือกทิศบุก/สีจุดทีมในเรดาร์ เริ่มจาก GameBot แล้วอนุญาตจับภาพทั้งจอ. รอเมนู/สนามเริ่มต้น60วินาที รองรับ Back ครั้งเดียวเฉพาะเมนูฝึกหกช่องที่ยืนยันครบสองเฟรม จำกัดช่วงฝึก2นาทีเริ่มเมื่อพบสนาม. ออกจากเกม/unknown focus/หมุนจอ/พักเกม/เมนู/รีเพลย์จะหยุด ไม่ resume เอง. ไม่เปลี่ยน ArenaGate ของเกมทดสอบเดิม ไม่รองรับ PvP/ซื้อของ/เมนู
+เป้าหมายคงที่ `jp.konami.pesam`. ผู้ใช้เปิดสนาม Free Training เอง เลือกทิศบุก/สีจุดทีมในเรดาร์ เริ่มจาก GameBot แล้วอนุญาตจับภาพทั้งจอ. รอเมนู/สนามเริ่มต้น60วินาที ตั้งแต่Build40รองรับBackหนึ่งครั้งต่อappearanceของเมนูฝึกหกช่องที่ยืนยันสองเฟรม รอverified fresh fieldก่อนresumeและก่อนอนุญาตappearanceถัดไป. ยังจำกัด2นาทีนับจากเริ่มสนาม ไม่ต่ออายุด้วยmenu. ออกจากเกม/unknown focus/หมุนจอ/เมนูอื่น/รีเพลย์จะหยุดถาวรรอบนั้น ไม่resumeจากแอปอื่นเอง. ไม่เปลี่ยนArenaGateเกมทดสอบเดิม ไม่รองรับPvP/ซื้อของ/เมนูทั่วไป
 
 ไอคอน Home/Away อย่างเดียวแยก Training ไม่ได้: เพิ่ม veto สี scoreboard ปัจจุบันและ OCR นาฬิกา/คะแนนในมุมบนซ้าย. มีเทสต์ภาพแมตช์จริง แม้ใส่ตำแหน่งปุ่มแบบเดียวกับเจ้าของ. หลักฐาน4ภาพไม่ใช่การรับรองกับทุกหน้าตาเกม
 
@@ -17,7 +17,7 @@
 - ไม่สลับตัวแบบสุ่ม ไม่ใช้ Advanced feint/tackle sequence/lูกตั้งเตะจนกว่าจะจับคู่ marker และจังหวะได้. Catalogue สกิลยังไม่มีสูตรเปิดใช้
 - การอ่านสี/ความมั่นใจเป็น heuristic และตั้งแต่ Build36 การแปลงทิศใช้ preset Dynamic Wide แบบประมาณโดยไม่วัดเส้นสนามทุกเฟรม ไม่ใช่การสอบเทียบกล้องหรือโมเดลที่ฝึกจากโปรเพลเยอร์
 - OCR model อยู่ใน APK ลบ INTERNET และ ACCESS_NETWORK_STATE จาก merged manifest. ไม่มี Cloud/API/การเขียนภาพหน้าจอ
-- คำสั่งผูกกับ source frame และ controls/bearing, foreground ตรวจซ้ำตอนส่งภายใต้ lock. สัมผัสไม่ค้างข้ามคำสั่ง ช่วงละไม่เกิน180ms. Callback สัมผัสไม่ถูกนับเป็นผลการเล่น
+- คำสั่งผูกกับsource frameและcontrols/bearing, foregroundตรวจซ้ำตอนส่งภายใต้lock รวมcontinuationในBuild40. แผนจอยmove35msแล้วholdถึง320ms ไม่ค้างข้ามคำสั่ง มีrelease-only/timeout. Callbackไม่ถูกนับเป็นผลการเล่นหรือmotion
 
 ## การตรวจและสิ่งที่พบจริง
 
@@ -87,7 +87,7 @@ Build35: source a251919e04244264ff00dec90db8b25e137d0aa9, run43695450290 success
 - Signer SHA256 22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947 ตรงกุญแจเดิม ผ่านapksignerสำหรับSDK36, zipalign16KB, ZIP CRC/ไม่มีชื่อซ้ำ. ไม่มี INTERNET/ACCESS_NETWORK_STATE/SYSTEM_ALERT_WINDOW และไม่มีภาพpublic test fixturesในAPK
 - APK SHA256 7300563b966a06f6fefa0a54049ac182c7cf2d64d6255ea6e8d5e400b8924e90
 
-## v0.12.0 — ระหว่างตรวจจากผลมือถือ Build39
+## v0.12.0 — เผยแพร่ Build40 จากผลมือถือ Build39
 
 เจ้าของยืนยันบอลไม่ขยับตั้งแต่ต้นจนจบ แม้commands78/AndroidCompleted78/failures0; frames590/live588/armedtrue/pipeline155ms, waitingReasons371ครั้งคือfield triangleอ่านไม่ได้. ภาพเป็นจุดเริ่มกลางสนามกับหน้าพักการฝึก เจ้าของสั่งให้อ่านหน้านี้และBackเองทุกครั้งที่พบระหว่างรัน. เจ้าของตอบยืนยันภายหลังว่าจุดเริ่มนี้ต้องกดPassก่อน จึงยืนยันว่าการเลือกเลี้ยงอย่างเดียวไม่เริ่มเล่นจากภาพนี้ ส่วนAndroid callbacksยังไม่พิสูจน์inputเข้าเกมหรือผลการเล่น รุ่นแก้ยังต้องยืนยันสัมผัสจริงหลังPass
 
@@ -95,4 +95,10 @@ Build35: source a251919e04244264ff00dec90db8b25e137d0aa9, run43695450290 success
 
 ไม่ขยายไปเกม/แอปอื่นหรือแมตช์จริง True foreign focus/match/geometry lossยังstop latched; unknown transitionหยุดinputทันทีและต้องพบเมนูฝึกที่รู้จักภายใน1.5วินาทีจึงรอresumeได้. ป้ายเขียวขึ้นจากmotion evidence ไม่ใช่ส่งคำสั่งสำเร็จเฉย ๆ เป็นscreen classification/OCRที่รองรับหน้านี้ ไม่ใช่การฝึกLLM/AIโมเดลใหม่
 
-ชุดตรวจที่เกี่ยวข้องในworkspaceผ่าน105กรณี ไม่มีล้ม/ข้าม และassembleDebugผ่าน (efootball-feedback40-final-reviewed.log). รวมactual Android descriptorsของ35ms→hold/second pointer, no-button release-onlyเมื่อscope/staleเปลี่ยน, callback timeout/late callback, concurrency lock, recurring menus/rearm/deadline, native-cue fallbackหลังcorroboration/หายปัจจุบันต้องบล็อก และfake Android-success+stationary visualต้องไม่เป็นmotion. ผู้ตรวจอิสระพบTOCTOUcontinuation ข้อความรอผิดเหตุการณ์ และown-MOVE missing-ballถูกนับunchangedผิด นำมาแก้พร้อมnegative regressionsและตรวจซ้ำแล้วไม่พบfindingเพิ่ม. ผลนี้ไม่ใช่สัมผัสจริงบนXiaomi ยังต้องCI/releaseและผลมือถือ
+ชุดตรวจที่เกี่ยวข้องในworkspaceผ่าน105กรณี ไม่มีล้ม/ข้าม และassembleDebugผ่าน (efootball-feedback40-final-reviewed.log). รวมactual Android descriptorsของ35ms→hold/second pointer, no-button release-onlyเมื่อscope/staleเปลี่ยน, callback timeout/late callback, concurrency lock, recurring menus/rearm/deadline, native-cue fallbackหลังcorroboration/หายปัจจุบันต้องบล็อก และfake Android-success+stationary visualต้องไม่เป็นmotion. ผู้ตรวจอิสระพบTOCTOUcontinuation ข้อความรอผิดเหตุการณ์ และown-MOVE missing-ballถูกนับunchangedผิด นำมาแก้พร้อมnegative regressionsและตรวจซ้ำแล้วไม่พบfindingเพิ่ม. CI/releaseสำเร็จแล้ว ยังต้องผลสัมผัสและการเล่นบนมือถือรุ่นแก้
+
+- Build APK run43724043737 success: https://github.com/hxyhan2006-code/GameBot/actions/runs/43724043737
+- Core verification run43723808846 success. Release source9ba8f961aff41f14206c8d79fdd688eeeaf9b4b7
+- ดาวน์โหลด UniversalGameBot-build40.apk กลับมาตรวจ: ขนาด53,189,481bytes, applicationId com.example.universalgamebot, versionCode40 / 0.12.0-training-feedback
+- Signer SHA256 22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947 ตรงกุญแจเดิม ผ่านapksignerสำหรับSDK36, zipalign16KB, ZIP CRC/ไม่มีชื่อซ้ำ. ไม่มีINTERNET/ACCESS_NETWORK_STATE/SYSTEM_ALERT_WINDOW
+- APK SHA256 bc1a1ec9a30abccca42cae2383ccf6b533c9dd703bba137440c9006a6272d9a8
