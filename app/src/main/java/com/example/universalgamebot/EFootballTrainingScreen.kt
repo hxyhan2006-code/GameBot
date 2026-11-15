@@ -34,7 +34,7 @@ class EFootballTrainingScreen(context:Context,onBack:()->Unit,onStart:()->Unit,o
     }
     private fun label(value:String,size:Float,bold:Boolean=false)=TextView(context).apply {text=value;textSize=size;setTextColor(if(bold)Palette.TEXT else Palette.SOFT);if(bold)typeface=Typeface.DEFAULT_BOLD}
     fun render(s:EFootballReadout.Snapshot,accessibility:Boolean,busy:Boolean) {
-        status.setText(if(s.running)R.string.ef_running else R.string.ef_stopped)
+        status.setText(when{!s.running->R.string.ef_stopped;s.live==0->R.string.ef_waiting_training;s.commands==0L->R.string.ef_reading_only;else->R.string.ef_running})
         numbers.text=context.getString(R.string.ef_stats,s.frames,s.live,s.commands,s.completed,s.sourceAgeMs)
         start.setText(if(s.running)R.string.read2048_stop else R.string.ef_start)
         start.isEnabled=s.running || (accessibility && !busy)

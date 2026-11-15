@@ -36,3 +36,9 @@ Independent review พบและนำมาแก้: ไอคอนฝึ�
 - Signer SHA256 22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947 ตรงกุญแจเดิม; ไม่พบ INTERNET/ACCESS_NETWORK_STATE ใน permissions ของ APK
 - APK SHA256 402907829bad4bb66ad77b4ec94f5d43395ad3d7cd855ea2ce73f2e3f326cfa6
 - ยังไม่มีผล physical touch/ML Kit engine/การเล่นจริงบน Xiaomi จากเจ้าของ รุ่นนี้เป็นต้นแบบพื้นฐานตามข้อจำกัดในคู่มือ
+
+## แก้ v0.11.1 ระหว่างตรวจ
+
+เจ้าของแจ้ง Build34 ไม่เล่น โดยภาพแสดง Training Pause ตอนกลับเข้าเกมและปุ่ม Clear แทน Shoot ในสนาม. แก้การอ่าน Clear/ความสามารถยิงแยกกัน, แยก scene สนามจาก controls ที่อ่านไม่ครบ, เก็บ OCR tokens ในรายงาน, invalidated queued decision ไม่ใช่ physical failure, startup60วินาทีและเริ่มงบเล่นเมื่อพบสนามจริง. รองรับ Back ครั้งเดียวก่อนเริ่มเล่นเฉพาะเมนูหกช่องที่ยืนยันสองเฟรมสดและตรวจ foreground/geometry/อายุภาพก่อน dispatch. Watchdog แยกช่วงพักเริ่มต้นจากช่วงเล่นและ rebase เมื่อเข้าจริง ห้ามอ่านภาพแอปอื่นและห้าม auto Back หลัง arm
+
+ชุดทดสอบที่เกี่ยวข้องใน workspace ผ่าน59กรณี ไม่มีล้ม/ข้าม และ build ผ่าน (efootball-focus-final.log). Independent diff review ปิด blocker watchdog แล้วและไม่พบ blockerใหม่. เจ้าของส่งรายงานจริง3รอบ frames=0/target focus lost or unknown ยืนยันว่าหยุดก่อนอ่านภาพ จึงเพิ่ม focus-window metadata validation และ focus diagnostics; ไม่ถือว่ารายงานนี้พิสูจน์ OCR/บอล/กล้องถูกต้องแล้ว. ยังต้อง CI/release และยืนยันบนเครื่องรุ่นแก้

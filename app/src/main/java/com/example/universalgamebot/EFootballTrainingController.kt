@@ -55,6 +55,7 @@ internal class EFootballTrainingController(
         val ticket = ++activeTicket
         var authorizationAttempted = false
         var answered = false
+        var submitted = false
         try {
             backend.enqueue(plan, authorizeAndSubmit = { submit ->
                 synchronized(this) {
@@ -64,7 +65,7 @@ internal class EFootballTrainingController(
                     val allowed = !stopped && current == observation &&
                         session.reserveDispatch(decision, foreground(), current.frame, nowNs()) == null
                     if (!allowed) { lastReason = "queued command invalidated"; false }
-                    else submit().also { if (it) {dispatched++; countersChanged(dispatched,completed,failed)} }
+                    else { submitted=true; submit().also { if (it) {dispatched++; countersChanged(dispatched,completed,failed)} } }
                 }
             }, completed = { ok ->
                 synchronized(this) {
@@ -72,7 +73,7 @@ internal class EFootballTrainingController(
                     answered = true
                     queued = false
                     session.commandResult(decision.frame.sequence, decision, ok, nowNs())
-                    if (ok) completed++ else { failed++; stop("gesture rejected or cancelled") }
+                    if (ok) completed++ else if(submitted || !authorizationAttempted) { failed++; stop("gesture rejected or cancelled") }
                     countersChanged(dispatched,completed,failed)
                 }
             })

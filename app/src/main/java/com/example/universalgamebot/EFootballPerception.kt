@@ -40,8 +40,8 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
         tracks=players.toList()
         val possession=when {hud==null->EFootballPossession.UNKNOWN;hud.attack->EFootballPossession.OWN;else->EFootballPossession.OPPONENT}
         val frame=EFootballTrainingFrame(generation,sequence,sourceNs,geometryId,
-            if(scoreboardText)EFootballScene.MATCH else if(usable)EFootballScene.TRAINING_LIVE else EFootballScene.UNKNOWN,direction,possession,players.toList(),
-            ball?.let {EFootballBall(it,.90f)},selectedId,usable,if(usable).90f else 0f,false)
+            if(scoreboardText)EFootballScene.MATCH else if(a.training)EFootballScene.TRAINING_LIVE else EFootballScene.UNKNOWN,direction,possession,players.toList(),
+            ball?.let {EFootballBall(it,.90f)},selectedId,usable,if(usable).90f else 0f,false,shootingAvailable=hud?.canShoot==true)
         lastDiagnostic=when {
             scoreboardText->"scoreboard/time outside Free Training"
             !a.training->"training swap icon / pitch not established"
@@ -52,10 +52,12 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
             a.axes==null->"camera pitch axes not established"
             else->"partial radar observation (${players.size} players); approximate Dynamic Wide steering; confidence scores are heuristic"
         }
+        val tokens=words.filter{it.x>=f.width*.70f && it.y>=f.height*.35f}.take(12).joinToString("|"){it.text}
+        lastDiagnostic+="; control OCR=[$tokens]"
         val controls=if(usable && hud!=null) {
             val b=hud.buttons
             val pass=b[if(hud.attack)"pass" else "switch"]!!
-            val shoot=b[if(hud.attack)"shoot" else "tackle"]!!
+            val shoot=b[if(!hud.attack)"tackle" else if(hud.canShoot)"shoot" else "clear"]!!
             val through=b[if(hud.attack)"through" else "matchup"]!!
             val dash=b["dash"] ?: b["pressure"]!!
             // Invisible floating stick: an explicit owner's input preset, not a visually detected stick.

@@ -39,7 +39,7 @@ internal class EFootballAndroidGestures(
                 val gesture = builder.build()
                 val accepted = authorizeAndSubmit {
                     // The session's lock covers authorization AND this synchronous dispatch call.
-                    BotAccessibilityService.instance === service && service.activePackage() == EFootballTrainingSession.TARGET &&
+                    BotAccessibilityService.instance === service && service.efootballForeground() == EFootballTrainingSession.TARGET &&
                         service.dispatchGesture(gesture, object : AccessibilityService.GestureResultCallback() {
                             override fun onCompleted(g: GestureDescription?) = answer(true)
                             override fun onCancelled(g: GestureDescription?) = answer(false)

@@ -21,16 +21,25 @@ class EFootballCaptureService:Service() {
     private var perception:EFootballPerception?=null
     @Volatile private var controller:EFootballTrainingController?=null
     @Volatile private var active=false
-    @Volatile private var entered=false
+    private val captureHealth=EFootballFrameWatchdog()
+    private val entered:Boolean get()=captureHealth.enteredNs>0
     private var started=false;private var busy=false;private var id=0L
     private var width=0;private var height=0
-    private var startNs=0L;private var enteredNs=0L;private var lastSourceNs=0L;private var lastArrivalNs=0L
-    private var seenTraining=false
+    private var startNs=0L;private var lastSourceNs=0L
+    @Volatile private var gate:EFootballRunGate?=null
+    private val menuResume=EFootballMenuResume()
+    @Volatile private var resumePending=false
+    @Volatile private var resumeBarrierNs=0L
     private var rotation=0
     private val sample=SampledFrame()
+    private val scenePixels=EFootballPixels()
     private val config=EFootballTrainingConfig(maxFrameAgeMs=500,allowPartialCoverage=true)
     private val watcher:(String?,String?)->Unit={ foreground,announced ->
-        if(active && entered && (foreground!=EFootballTrainingSession.TARGET || announced!=EFootballTrainingSession.TARGET)) stopRun("target focus lost or unknown")
+        if(active)EFootballReadout.focus(id,"foreground=$foreground announced=$announced; ${BotAccessibilityService.instance?.efootballFocusDescription()}")
+        if(active && (foreground!=EFootballTrainingSession.TARGET || announced!=EFootballTrainingSession.TARGET)) {
+            if(gate?.armed==true)stopRun("target focus lost or unknown")
+            else {captureHealth.leaveBeforePlay();menuResume.observe(null);resumeBarrierNs=System.nanoTime()}
+        }
     }
     override fun attachBaseContext(base:android.content.Context) {super.attachBaseContext(LocaleHelper.wrap(base))}
     override fun onBind(intent:Intent?)=null
@@ -59,36 +68,58 @@ class EFootballCaptureService:Service() {
             ocr=EFootballOcr()
             projection=getSystemService(MediaProjectionManager::class.java).getMediaProjection(Activity.RESULT_OK,data)
             projection!!.registerCallback(object:MediaProjection.Callback(){override fun onStop(){stopRun("capture stopped")}},worker)
-            active=true;startNs=System.nanoTime();lastArrivalNs=startNs
+            startNs=System.nanoTime();gate=EFootballRunGate(startNs);active=true
             BotAccessibilityService.efootballScopeObserver=watcher
             reader=ImageReader.newInstance(width,height,PixelFormat.RGBA_8888,3)
             reader!!.setOnImageAvailableListener({source->
                 val image=try{source.acquireLatestImage()}catch(e:Exception){stopRun("image acquire failed");null}
                 if(image!=null)try {
                     if(!active || busy)return@setOnImageAvailableListener
-                    val now=System.nanoTime();val pkg=BotAccessibilityService.instance?.activePackage()
-                    if(!entered && pkg==EFootballTrainingSession.TARGET){entered=true;enteredNs=now}
+                    val now=System.nanoTime();val pkg=BotAccessibilityService.instance?.efootballForeground()
+                    EFootballReadout.focus(id,"foreground=$pkg; ${BotAccessibilityService.instance?.efootballFocusDescription()}")
+                    if(!entered && pkg==EFootballTrainingSession.TARGET)captureHealth.enter(now)
                     if(!entered)return@setOnImageAvailableListener
-                    if(pkg!=EFootballTrainingSession.TARGET){stopRun("target focus lost or unknown");return@setOnImageAvailableListener}
+                    if(pkg!=EFootballTrainingSession.TARGET){
+                        gate?.check(pkg,now)?.let{stopRun(it)}
+                        if(gate?.armed!=true)captureHealth.leaveBeforePlay()
+                        return@setOnImageAvailableListener
+                    }
                     if(image.width!=width || image.height!=height || (dimensions()!=(width to height) || rotation()!=rotation)){stopRun("capture geometry changed");return@setOnImageAvailableListener}
                     val timestamp=image.timestamp
-                    if(timestamp<=lastSourceNs || timestamp<enteredNs || now-timestamp !in 0..500_000_000L)return@setOnImageAvailableListener
-                    lastSourceNs=timestamp;lastArrivalNs=now
+                    if(timestamp<=lastSourceNs || timestamp<captureHealth.enteredNs || timestamp<=resumeBarrierNs || now-timestamp !in 0..500_000_000L)return@setOnImageAvailableListener
+                    lastSourceNs=timestamp;captureHealth.fresh(now)
                     val plane=image.planes[0]
                     if(!SampledFrame.sample(plane.buffer,plane.rowStride,plane.pixelStride,width,height,0,0,width,height,1,sample))return@setOnImageAvailableListener
                     busy=true
-                    ocr!!.read(sample){words->worker.post {
+                    ocr!!.read(sample,fullFrame=gate?.armed!=true && !scenePixels.trainingContext(sample).first){words->worker.post {
                         busy=false
                         if(!active)return@post
                         try {
-                            if(BotAccessibilityService.instance?.activePackage()!=EFootballTrainingSession.TARGET){stopRun("target lost during OCR");return@post}
+                            if(BotAccessibilityService.instance?.efootballForeground()!=EFootballTrainingSession.TARGET){
+                                if(gate?.armed==true)stopRun("target lost during OCR")
+                                else {captureHealth.leaveBeforePlay();menuResume.observe(null);resumeBarrierNs=System.nanoTime()}
+                                return@post
+                            }
+                            if(timestamp<=resumeBarrierNs)return@post
                             if(System.nanoTime()-timestamp>500_000_000L){EFootballReadout.note(id,"source too old after OCR");return@post}
+                            val menu=if(gate?.armed!=true)EFootballTrainingMenu.read(words,width,height,timestamp,geometry()) else null
+                            menuResume.observe(menu)
+                            if(menu!=null){
+                                EFootballReadout.menu(id,"training pause menu confirmed; startup Back only")
+                                resumeMenu(menu)
+                            }
                             val o=perception!!.read(sample,timestamp,words)
-                            if(seenTraining && o.frame.scene!=EFootballScene.TRAINING_LIVE){stopRun("training view lost; no automatic resume");return@post}
+                            if(resumePending){
+                                EFootballReadout.frame(id,o,(System.nanoTime()-timestamp)/1_000_000,perception!!.lastDiagnostic,controller)
+                                return@post
+                            }
+                            gate!!.scene(o.frame.scene,timestamp)?.let{
+                                EFootballReadout.frame(id,o,(System.nanoTime()-timestamp)/1_000_000,perception!!.lastDiagnostic,controller)
+                                stopRun("$it: ${perception!!.lastDiagnostic}");return@post
+                            }
                             if(o.frame.scene==EFootballScene.TRAINING_LIVE) {
-                                seenTraining=true
-                                if(controller==null)controller=EFootballTrainingController(EFootballTrainingSession(id,geometry(),enteredNs,config),
-                                    EFootballAndroidGestures(BotAccessibilityService.instance!!),{if(active && entered)BotAccessibilityService.instance?.activePackage() else null},{System.nanoTime()},countersChanged={a,b,c->EFootballReadout.tally(id,a,b,c)})
+                                if(controller==null)controller=EFootballTrainingController(EFootballTrainingSession(id,geometry(),gate!!.liveStartedNs,config),
+                                    EFootballAndroidGestures(BotAccessibilityService.instance!!),{if(active && entered)BotAccessibilityService.instance?.efootballForeground() else null},{System.nanoTime()},countersChanged={a,b,c->EFootballReadout.tally(id,a,b,c)})
                                 if(!active){controller!!.stop("run already stopped");return@post}
                                 controller!!.observe(o)
                             }
@@ -104,6 +135,26 @@ class EFootballCaptureService:Service() {
         }catch(e:Exception){fail(e)}
         return START_NOT_STICKY
     }
+    private fun resumeMenu(menu:EFootballTrainingMenu) {
+        if(resumePending || gate?.armed==true || !menuResume.ready(menu))return
+        val service=BotAccessibilityService.instance ?: return
+        resumePending=true
+        var submitted=false
+        val p=menu.back
+        val plan=EFootballGesturePlan(listOf(EFootballPointerStroke(1,0,listOf(
+            EFootballGestureKeyframe(0,p),EFootballGestureKeyframe(60,p)))))
+        EFootballAndroidGestures(service).enqueue(plan,{submit->synchronized(this){
+            val pkg=BotAccessibilityService.instance?.efootballForeground()
+            val now=System.nanoTime()
+            if(!active || gate?.armed==true || gate?.check(pkg,now)!=null || dimensions()!=(width to height) || rotation()!=rotation ||
+                !menuResume.claim(menu,pkg,geometry(),System.nanoTime()))false
+            else {submitted=true;EFootballReadout.menu(id,"startup Back submitted once");submit()}
+        }},{ok->
+            resumePending=false
+            if(ok){resumeBarrierNs=System.nanoTime();EFootballReadout.menu(id,"startup Back completed; waiting for fresh field")}
+            else if(submitted)stopRun("startup Back gesture failed; no retry")
+        })
+    }
     @Suppress("DEPRECATION") private fun rotation()=getSystemService(WindowManager::class.java).defaultDisplay.rotation
     private fun geometry()=width.toLong()*100_000+height
     private fun dimensions():Pair<Int,Int> {
@@ -116,12 +167,9 @@ class EFootballCaptureService:Service() {
         if(!active)return
         val now=System.nanoTime()
         when {
-            !entered && now-startNs>20_000_000_000L->stopRun("target not entered within 20 seconds")
-            entered && BotAccessibilityService.instance?.activePackage()!=EFootballTrainingSession.TARGET->stopRun("target focus lost or unknown")
+            gate?.check(BotAccessibilityService.instance?.efootballForeground(),now)!=null->stopRun(gate!!.check(BotAccessibilityService.instance?.efootballForeground(),now)!!)
             (dimensions()!=(width to height) || rotation()!=rotation)->stopRun("display geometry changed")
-            entered && now-enteredNs>=120_000_000_000L->stopRun("two minute training limit")
-            entered && now-lastArrivalNs>3_000_000_000L->stopRun("no fresh capture frames")
-            entered && !seenTraining && now-enteredNs>15_000_000_000L->stopRun("training field could not be established")
+            captureHealth.expired(now,gate?.armed==true)->stopRun("no fresh capture frames")
             else->{controller?.tick();if(controller?.isStopped()==true)stopRun(controller!!.lastReason)}
         }
         if(active)worker.postDelayed(this,50)

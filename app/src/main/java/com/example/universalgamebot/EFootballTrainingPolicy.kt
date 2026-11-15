@@ -38,7 +38,7 @@ class EFootballTrainingPolicy(private val config: EFootballTrainingConfig = EFoo
             }
             if (active.position.distance(ball.position)>config.pressureDistance) return neutral("partial view: selected player not on ball")
             val progress = if (direction==EFootballDirection.RIGHT) ball.position.x else 1f-ball.position.x
-            if (progress>.82f && abs(ball.position.y-.5f)<.22f) return result(EFootballTrainingIntent.Shoot(opponentGoal),
+            if (frame.shootingAvailable && progress>.82f && abs(ball.position.y-.5f)<.22f) return result(EFootballTrainingIntent.Shoot(opponentGoal),
                 "partial view: close-range attempt; unseen defenders may block")
             val receiver = own.filter { it.id!=active.id && it.position.distance(ball.position) in config.minPassDistance..config.maxPassDistance }
                 .filter { (if(direction==EFootballDirection.RIGHT)it.position.x-ball.position.x else ball.position.x-it.position.x)>.12f }
@@ -73,7 +73,7 @@ class EFootballTrainingPolicy(private val config: EFootballTrainingConfig = EFoo
         fun progress(p: EFootballPoint) = if (direction == EFootballDirection.RIGHT) p.x else 1f - p.x
         val pressured = opponents.any { it.position.distance(active.position) < config.pressureDistance }
         val shotClear = corridorClear(ball.position, opponentGoal, opponents.filterNot { it.goalkeeper })
-        if (progress(ball.position) >= config.shootingProgress && abs(ball.position.y - 0.5f) <= config.shootingHalfWidth && shotClear) {
+        if (frame.shootingAvailable && progress(ball.position) >= config.shootingProgress && abs(ball.position.y - 0.5f) <= config.shootingHalfWidth && shotClear) {
             return result(EFootballTrainingIntent.Shoot(opponentGoal), "shooting region and unblocked observed lane")
         }
 

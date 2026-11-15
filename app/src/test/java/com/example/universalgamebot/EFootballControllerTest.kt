@@ -52,6 +52,9 @@ class EFootballControllerTest {
     @Test fun newerCaptureInvalidatesCommandWaitingOnMainQueue() {
         val b=Backend(); val c=controller(b);feed(c,1);feed(c,2);feed(c,3)
         b.dispatch(); assertEquals(0,b.physical)
+        assertFalse(c.isStopped())
+        feed(c,4);assertEquals(1,b.queue.size)
+        b.dispatch();assertEquals(1,b.physical)
     }
     @Test fun oldCommandExpiresEvenWithNoFurtherCaptureFrames() {
         val b=Backend();val c=controller(b);feed(c,1);feed(c,2)

@@ -7,6 +7,7 @@ import android.graphics.Path
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityWindowInfo
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BotAccessibilityService : AccessibilityService() {
@@ -18,6 +19,7 @@ class BotAccessibilityService : AccessibilityService() {
     }
 
     private val main = Handler(Looper.getMainLooper())
+    private val efootballWindowEvidence=EFootballForeground()
     private val pending = AtomicBoolean(false)
     @Volatile private var pendingSince = 0L
 
@@ -28,6 +30,8 @@ class BotAccessibilityService : AccessibilityService() {
         DebugMonitor.log("Accessibility connected, canRetrieveContent=$canRead")
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if(event?.eventType==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)
+            efootballWindowEvidence.announced(event.packageName?.toString(),event.windowId)
         val observer=board2048ScopeObserver
         val readOnly=readOnlyScopeObserver
         if(observer==null && readOnly==null && efootballScopeObserver==null) return
@@ -37,17 +41,18 @@ class BotAccessibilityService : AccessibilityService() {
             val announced=event.packageName?.toString()
             observer?.invoke(Board2048Session.eventPackage(foreground,announced))
             readOnly?.invoke(foreground,announced)
-            efootballScopeObserver?.invoke(foreground,announced)
+            efootballScopeObserver?.invoke(efootballForeground(),announced)
         }
     }
-    override fun onInterrupt() { board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null) }
-    override fun onDestroy() { board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null); instance = null; super.onDestroy() }
+    override fun onInterrupt() { efootballWindowEvidence.reset(); board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null) }
+    override fun onDestroy() { efootballWindowEvidence.reset(); board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null); instance = null; super.onDestroy() }
 
     fun postMain(r: Runnable) { main.post(r) }
 
     /** ปิดบริการตัวเอง (API 24+): ใช้ตอนเลิกทดสอบ เพราะแอปการเงินบางแอป (เช่น Dime) ไม่ยอมให้ใช้งานถ้ามี Accessibility ของแอปนอก Store เปิดอยู่ */
     fun turnOff() {
         DebugMonitor.log("Accessibility turned off from the app")
+        efootballWindowEvidence.reset()
         board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null)
         instance = null
         try { disableSelf() } catch (e: Exception) { DebugMonitor.error("disableSelf failed: ${e.message}", e) }
@@ -55,6 +60,21 @@ class BotAccessibilityService : AccessibilityService() {
 
     /** package ของหน้าต่างที่ active (null ถ้าอ่านไม่ได้) ใช้เป็นข้อมูลประกอบ ไม่ใช่เงื่อนไขหลัก */
     fun activePackage(): String? = try { rootInActiveWindow?.packageName?.toString() } catch (e: Exception) { null }
+
+    /** Surface-based games can temporarily have no root. Revalidate the focused OS window ID. */
+    fun efootballForeground():String? {
+        val pkg=activePackage()
+        if(pkg!=null)return efootballWindowEvidence.resolve(pkg,emptyList())
+        return try {
+            efootballWindowEvidence.resolve(null,windows.map { w ->
+                val root=w.root
+                val name=root?.packageName?.toString()
+                @Suppress("DEPRECATION") root?.recycle()
+                EFootballWindow(w.id,w.isFocused,w.isActive,w.type==AccessibilityWindowInfo.TYPE_APPLICATION,name)
+            })
+        } catch(e:Exception){efootballWindowEvidence.resolve(null,emptyList())}
+    }
+    fun efootballFocusDescription()=efootballWindowEvidence.diagnostic
 
     fun tap(x: Float, y: Float, source: String, onDone: ((Boolean, String) -> Unit)? = null): Boolean {
         val path = Path().apply { moveTo(x, y); lineTo(x + 0.5f, y + 0.5f) }

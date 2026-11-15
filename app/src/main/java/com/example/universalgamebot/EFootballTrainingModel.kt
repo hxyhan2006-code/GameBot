@@ -37,7 +37,8 @@ data class EFootballTrainingFrame(
     val selectedPlayerId: Long?,
     val controlsRecognized: Boolean,
     val teamConfidence: Float,
-    val playerCoverageConfirmed: Boolean = false
+    val playerCoverageConfirmed: Boolean = false,
+    val shootingAvailable: Boolean = true
 )
 
 /** Values are provisional policy parameters, not measurements validated on the owner's phone. */

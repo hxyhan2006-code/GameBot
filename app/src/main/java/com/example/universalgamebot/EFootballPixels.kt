@@ -10,11 +10,10 @@ class EFootballPixels {
     data class Axes(val horizontalSlope:Float,val verticalSlope:Float,val verticalEstimated:Boolean=false) {
         fun bearing(dx:Float,dy:Float):Pair<Float,Float> = (dx*1.5f + dy*verticalSlope*.7f) to (dx*1.5f*horizontalSlope + dy*.7f)
     }
-    fun read(f:SampledFrame):Anchors {
+    fun trainingContext(f:SampledFrame):Pair<Boolean,Float> {
         require(f.step==1 && f.originX==0 && f.originY==0)
         val w=f.width;val h=f.height
         fun c(x:Int,y:Int)=f.rgb[y*w+x]
-        val radar=Box(w*.443f,h*.801f,w*.557f,h*.948f)
         var grass=0;var samples=0
         for(y in (h*.18f).toInt() until (h*.75f).toInt() step 8) for(x in (w*.05f).toInt() until (w*.70f).toInt() step 8) {
             val v=c(x,y);val r=v shr 16 and 255;val g=v shr 8 and 255;val b=v and 255
@@ -37,6 +36,12 @@ class EFootballPixels {
         // Current KONAMI scoreboard: reject even if its Home/Away icon resembles Free Training.
         val scoreboard=yellow>scoreSamples*.025f
         val training=!scoreboard && pitch>.40f && cyan>=3 && pink>=3 && light>n*.12f
+        return training to pitch
+    }
+    fun read(f:SampledFrame):Anchors {
+        val w=f.width;val h=f.height
+        val radar=Box(w*.443f,h*.801f,w*.557f,h*.948f)
+        val (training,pitch)=trainingContext(f)
         if(!training)return Anchors(false,pitch,null,null,null,radar,emptyList(),emptyList(),null)
         val selected=blobs(f,Box(w*.08f,h*.17f,w*.90f,h*.76f),::cyan)
             .filter { it.w in (w*.003f).toInt().coerceAtLeast(3)..(w*.035f).toInt() &&

@@ -36,7 +36,11 @@ class EFootballTrainingSession(
         scopeFailure(packageName, frame, nowNs, emergency)?.let { return stop(it) }
         if (inFlightDecision != null) {
             if (nowNs - dispatchedAtNs > config.commandTimeoutMs * 1_000_000L) return stop("command callback timeout")
-            if (!fresh(frame, nowNs) || frame.scene !in liveScenes || !frame.controlsRecognized) return stop("play evidence lost while gesture in flight")
+            if (!fresh(frame, nowNs) || frame.scene !in liveScenes) return stop("play evidence lost while gesture in flight")
+            if (!frame.controlsRecognized) {
+                stableLiveFrames=0
+                return EFootballTrainingDecision(frame,EFootballTrainingIntent.Wait("controls temporarily unreadable; bounded gesture finishing"),"controls temporarily unreadable; bounded gesture finishing")
+            }
             return EFootballTrainingDecision(frame, EFootballTrainingIntent.Wait("command still in flight"), "command still in flight")
         }
         awaitingSwitch?.let { (_, beganNs) ->

@@ -5,7 +5,7 @@ object EFootballReadout {
     data class Snapshot(val running:Boolean=false,val generation:Long=0,val status:String="not started",
         val frames:Int=0,val live:Int=0,val commands:Long=0,val completed:Long=0,val failed:Long=0,
         val sourceAgeMs:Long=0,val diagnostic:String="",val decision:String="",val players:Int=0,
-        val ball:EFootballPoint?=null,val selected:Long?=null)
+        val ball:EFootballPoint?=null,val selected:Long?=null,val startupMenu:String="not observed",val focus:String="not observed")
     private var counter=0L
     @Volatile var snapshot=Snapshot(); private set
     private val history=ArrayDeque<String>()
@@ -18,6 +18,8 @@ object EFootballReadout {
             sourceAgeMs=age,diagnostic=diagnostic,decision=c?.lastReason ?: "waiting",players=o.frame.players.size,
             ball=o.frame.ball?.position,selected=o.frame.selectedPlayerId)
     }
+    @Synchronized fun focus(id:Long,text:String){if(snapshot.running && snapshot.generation==id)snapshot=snapshot.copy(focus=text)}
+    @Synchronized fun menu(id:Long,text:String){if(snapshot.running && snapshot.generation==id)snapshot=snapshot.copy(startupMenu=text)}
     @Synchronized fun tally(id:Long,sent:Long,done:Long,fail:Long){
         if(snapshot.generation!=id)return
         snapshot=snapshot.copy(commands=sent,completed=done,failed=fail)
@@ -26,6 +28,6 @@ object EFootballReadout {
     @Synchronized fun note(id:Long,text:String){if(snapshot.running && snapshot.generation==id)snapshot=snapshot.copy(diagnostic=text)}
     @Synchronized internal fun stop(id:Long,reason:String,c:EFootballTrainingController?=null) {if(snapshot.running && snapshot.generation==id){snapshot=snapshot.copy(running=false,status=reason,commands=c?.dispatched ?: snapshot.commands,completed=c?.completed ?: snapshot.completed,failed=c?.failed ?: snapshot.failed)
         history.addLast(report());while(history.size>10)history.removeFirst()}}
-    fun report():String=snapshot.let {s->"EFOOTBALL EXPERIMENTAL TRAINING\ntarget=${EFootballTrainingSession.TARGET}\nrunning=${s.running} status=${s.status}\nframes=${s.frames} live=${s.live} sourceAgeMs=${s.sourceAgeMs}\ncommands=${s.commands} AndroidCompleted=${s.completed} failures=${s.failed}\nplayers=${s.players} selected=${s.selected} ball=${s.ball}\nvision=${s.diagnostic}\ndecision=${s.decision}\nPartial visual estimates. No match results or successful kicks inferred from gestures. Stopped observations are historical. No cloud calls or screenshot files."}
+    fun report():String=snapshot.let {s->"EFOOTBALL EXPERIMENTAL TRAINING\ntarget=${EFootballTrainingSession.TARGET}\nrunning=${s.running} status=${s.status}\nframes=${s.frames} live=${s.live} sourceAgeMs=${s.sourceAgeMs}\ncommands=${s.commands} AndroidCompleted=${s.completed} failures=${s.failed}\nplayers=${s.players} selected=${s.selected} ball=${s.ball}\nfocus=${s.focus}\nstartupMenu=${s.startupMenu}\nvision=${s.diagnostic}\ndecision=${s.decision}\nPartial visual estimates. No match results or successful kicks inferred from gestures. Stopped observations are historical. No cloud calls or screenshot files."}
     @Synchronized fun historyReport()=history.joinToString("\n\n")+if(snapshot.running)"\n\n"+report() else ""
 }
