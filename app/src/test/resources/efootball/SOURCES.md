@@ -8,6 +8,10 @@ physical input. Original video time offsets:
 
 - training.jpg: 4s; menu.jpg: 2s, https://www.reddit.com/r/pesmobile/comments/1x5sfjm/double_touch_not_working/
   video: https://v.redd.it/jkh0we98yfvh1/CMAF_1080.mp4?source=fallback
+- training-advert.jpg / training-radar-noise.jpg: later frames from the same training video,
+  approximately 7s / 10.5s (sampled at 2 fps over 3–11s). The first contains cyan advertising
+  alongside the actual player triangle; the second has separated gold radar fragments/noise.
+  Used for native-radar and marker regression, not as evidence of the owner's phone input.
 - replay.jpg: 2s, https://www.reddit.com/r/pesmobile/comments/1xjacfp/may_i_know_why_the_defender_stopped_and_moving/
   video: https://v.redd.it/f5mpszyflkyh1/CMAF_1080.mp4?source=fallback
 - match.jpg: 3s, https://www.reddit.com/r/pesmobile/comments/1usj8vo/offline_input_delay_proof_pressure_button_doesnt/

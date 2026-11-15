@@ -32,6 +32,7 @@ class EFootballCaptureService:Service() {
     @Volatile private var resumeBarrierNs=0L
     private var rotation=0
     private val sample=SampledFrame()
+    private val radarSample=SampledFrame()
     private val scenePixels=EFootballPixels()
     private val config=EFootballTrainingConfig(maxFrameAgeMs=500,allowPartialCoverage=true)
     private val watcher:(String?,String?)->Unit={ foreground,announced ->
@@ -91,6 +92,8 @@ class EFootballCaptureService:Service() {
                     lastSourceNs=timestamp;captureHealth.fresh(now)
                     val plane=image.planes[0]
                     if(!EFootballImageSampler.sample(plane.buffer,plane.rowStride,plane.pixelStride,width,height,sample))return@setOnImageAvailableListener
+                    if(!EFootballImageSampler.sampleRadar(plane.buffer,plane.rowStride,plane.pixelStride,width,height,radarSample)){
+                        EFootballReadout.note(id,"native radar sample unavailable");return@setOnImageAvailableListener}
                     val ocrStartedNs=System.nanoTime()
                     busy=true
                     ocr!!.read(sample,fullFrame=gate?.armed!=true && !scenePixels.trainingContext(sample).first){words->worker.post {
@@ -112,7 +115,7 @@ class EFootballCaptureService:Service() {
                                 EFootballReadout.menu(id,"training pause menu confirmed; startup Back only")
                                 resumeMenu(menu)
                             }
-                            val o=perception!!.read(sample,timestamp,words,width,height)
+                            val o=perception!!.read(sample,timestamp,words,width,height,radarSample)
                             if(resumePending){
                                 EFootballReadout.frame(id,o,(System.nanoTime()-timestamp)/1_000_000,perception!!.lastDiagnostic,controller)
                                 return@post

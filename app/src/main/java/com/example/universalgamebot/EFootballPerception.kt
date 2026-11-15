@@ -12,9 +12,9 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
     private var tracks=emptyList<EFootballPlayer>()
     private var previousNs=0L
     var lastDiagnostic="waiting"; private set
-    fun read(f:SampledFrame,sourceNs:Long,words:List<EFootballWord>,screenWidth:Int=f.width,screenHeight:Int=f.height):EFootballPilotObservation {
+    fun read(f:SampledFrame,sourceNs:Long,words:List<EFootballWord>,screenWidth:Int=f.width,screenHeight:Int=f.height,nativeRadar:SampledFrame?=null):EFootballPilotObservation {
         sequence++
-        val a=pixels.read(f,withAxes=false);val hud=EFootballHud.read(words,f.width,f.height)
+        val a=pixels.read(f,withAxes=false,nativeRadar=nativeRadar);val hud=EFootballHud.read(words,f.width,f.height)
         fun norm(b:EFootballPixels.Blob)=EFootballPoint((b.x-a.radar.left)/a.radar.width,(b.y-a.radar.top)/a.radar.height)
         val selected=a.radarSelected?.let(::norm)?.takeIf {it.valid()}
         val ball=a.ball?.let(::norm)?.takeIf {it.valid()}
@@ -57,6 +57,7 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
         val tokens=words.filter{it.x>=f.width*.70f && it.y>=f.height*.35f}.take(12).joinToString("|"){it.text}
         lastDiagnostic+="; control OCR=[$tokens]"
         lastDiagnostic+="; anchors=pitch:${"%.2f".format(java.util.Locale.ROOT,a.grass)} selected:${a.selected!=null} radarSelected:${a.radarSelected!=null} ball:${a.ball!=null} hud:${hud!=null}"
+        lastDiagnostic+="; ${a.diagnostic}"
         val controls=if(usable && hud!=null) {
             val sx=screenWidth.toFloat()/f.width;val sy=screenHeight.toFloat()/f.height
             val b=hud.buttons.mapValues {(_,p)->EFootballScreenPoint(p.x*sx,p.y*sy)}

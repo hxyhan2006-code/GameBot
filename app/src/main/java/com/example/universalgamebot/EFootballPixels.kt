@@ -4,9 +4,10 @@ import kotlin.math.*
 
 /** Pixel heuristics, NOT calibrated probabilities. No hidden game state or game text tree. */
 class EFootballPixels {
-    data class Blob(val x: Float,val y: Float,val w:Int,val h:Int,val count:Int)
+    data class Blob(val x: Float,val y: Float,val w:Int,val h:Int,val count:Int,
+        val left:Int=(x-(w-1)/2f).roundToInt(),val top:Int=(y-(h-1)/2f).roundToInt())
     data class Anchors(val training:Boolean,val grass:Float,val selected:Blob?,val radarSelected:Blob?,
-        val ball:Blob?,val radar:Box,val red:List<Blob>,val green:List<Blob>,val axes:Axes?,val scoreboard:Boolean=false)
+        val ball:Blob?,val radar:Box,val red:List<Blob>,val green:List<Blob>,val axes:Axes?,val scoreboard:Boolean=false,val diagnostic:String="")
     data class Context(val training:Boolean,val pitch:Float,val scoreboard:Boolean)
     data class Axes(val horizontalSlope:Float,val verticalSlope:Float,val verticalEstimated:Boolean=false) {
         fun bearing(dx:Float,dy:Float):Pair<Float,Float> = (dx*1.5f + dy*verticalSlope*.7f) to (dx*1.5f*horizontalSlope + dy*.7f)
@@ -42,57 +43,16 @@ class EFootballPixels {
         val training=!scoreboard && pitch>.40f && cyan>=3 && pink>=3 && light>n*.12f
         return Context(training,pitch,scoreboard)
     }
-    fun read(f:SampledFrame,withAxes:Boolean=true):Anchors {
+    fun read(f:SampledFrame,withAxes:Boolean=true,nativeRadar:SampledFrame?=null):Anchors {
         val w=f.width;val h=f.height
-        val radar=Box(w*.443f,h*.801f,w*.557f,h*.948f)
+        val radar=if(nativeRadar==null)EFootballRadar.region(w,h) else Box(0f,0f,nativeRadar.width.toFloat(),nativeRadar.height.toFloat())
         val (training,pitch,scoreboard)=context(f)
         if(!training)return Anchors(false,pitch,null,null,null,radar,emptyList(),emptyList(),null,scoreboard)
-        val selected=blobs(f,Box(w*.08f,h*.17f,w*.90f,h*.76f),::cyan)
-            .filter { it.w in (w*.003f).toInt().coerceAtLeast(3)..(w*.035f).toInt() &&
-                it.h in (h*.006f).toInt().coerceAtLeast(3)..(h*.06f).toInt() && it.count>it.w*it.h*.4f }
-            .singleOrNull()
-        val selectedRadar=mergeIcon(blobs(f,radar,::cyan).filter { it.count>=3 },w*.014f,h*.034f)
-        val gold=mergeIcon(blobs(f,radar) { v -> val r=v shr 16 and 255;val g=v shr 8 and 255;val b=v and 255
-            r>150 && g>115 && b<g*.70f && r>g*.95f }
-            .filter { it.count>=2 && it.w<=w*.012f && it.h<=h*.025f },w*.012f,h*.028f)
-        val red=blobs(f,radar) { v ->val r=v shr 16 and 255;val g=v shr 8 and 255;val b=v and 255
-            r>65 && r>g*1.25f && r>b*1.05f }.filter { it.count>=2 && it.w<=w*.012f && it.h<=h*.025f }
-        val green=blobs(f,radar) { v ->val r=v shr 16 and 255;val g=v shr 8 and 255;val b=v and 255
-            g>140 && g>r*1.15f && g>b*1.1f }.filter { it.count>=2 && it.w<=w*.012f && it.h<=h*.025f }
-        return Anchors(training,pitch,selected,selectedRadar,gold,radar,red,green,if(withAxes)axes(f) else null)
-    }
-    /** Anti-aliased rings often fragment into several small islands. Only merge one tight cloud. */
-    private fun mergeIcon(parts:List<Blob>,maxW:Float,maxH:Float):Blob? {
-        if(parts.isEmpty())return null
-        val l=parts.minOf {it.x-it.w/2f};val r=parts.maxOf {it.x+it.w/2f}
-        val t=parts.minOf {it.y-it.h/2f};val b=parts.maxOf {it.y+it.h/2f}
-        if(r-l>maxW || b-t>maxH)return null
-        val n=parts.sumOf {it.count}
-        return Blob(parts.sumOf {(it.x*it.count).toDouble()}.toFloat()/n,
-            parts.sumOf {(it.y*it.count).toDouble()}.toFloat()/n,(r-l).toInt()+1,(b-t).toInt()+1,n)
-    }
-    private fun cyan(v:Int):Boolean { val r=v shr 16 and 255;val g=v shr 8 and 255;val b=v and 255
-        return g>140 && b>130 && r<min(g,b)*.70f && abs(g-b)<100 }
-
-    private fun blobs(f:SampledFrame,zone:Box,predicate:(Int)->Boolean):List<Blob> {
-        val left=zone.left.toInt().coerceAtLeast(0);val top=zone.top.toInt().coerceAtLeast(0)
-        val right=zone.right.toInt().coerceAtMost(f.width);val bottom=zone.bottom.toInt().coerceAtMost(f.height)
-        val w=right-left;val h=bottom-top;if(w<=0||h<=0)return emptyList()
-        val mask=BooleanArray(w*h) { i->predicate(f.rgb[(top+i/w)*f.width+left+i%w]) }
-        val queue=IntArray(w*h);val out=ArrayList<Blob>()
-        for(i in mask.indices) if(mask[i]) {
-            var take=0;var put=1;queue[0]=i;mask[i]=false
-            var minX=w;var maxX=0;var minY=h;var maxY=0;var sx=0L;var sy=0L
-            while(take<put) {
-                val at=queue[take++];val x=at%w;val y=at/w
-                minX=min(minX,x);maxX=max(maxX,x);minY=min(minY,y);maxY=max(maxY,y);sx+=x;sy+=y
-                for(dy in -1..1) for(dx in -1..1) {val nx=x+dx;val ny=y+dy
-                    if(nx in 0 until w && ny in 0 until h) {val ni=ny*w+nx;if(mask[ni]){mask[ni]=false;queue[put++]=ni}}
-                }
-            }
-            out+=Blob(left+sx.toFloat()/put,top+sy.toFloat()/put,maxX-minX+1,maxY-minY+1,put)
-        }
-        return out
+        val marker=EFootballMarkers.read(f)
+        val icons=EFootballRadar.read(nativeRadar ?: f,radar)
+        return Anchors(training,pitch,marker.selected,icons.selected,icons.ball,radar,icons.red,icons.green,
+            if(withAxes)axes(f) else null,false,
+            "fieldCyan=${marker.colourCandidates} triangles=${marker.triangles}; ${icons.diagnostic} source=${if(nativeRadar==null)"analysis" else "native"}")
     }
     /** Estimate two pitch-line directions; refuse a camera bearing when no long line exists. */
     private fun axes(f:SampledFrame):Axes? {
