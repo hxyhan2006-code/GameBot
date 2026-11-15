@@ -1,6 +1,6 @@
 # eFootball Training — สถานะต้นแบบ
 
-เชื่อมต้นแบบ Free Training ตามคำสั่งเจ้าของแล้ว: Activity/Screen แนวนอน → MediaProjection → bundled local Latin OCR + pixel reader → perception → policy/session/controller → Android gestures → รายงานในเครื่อง. เผยแพร่ Build35 แล้ว (source commita251919) ไม่อ้างว่าผ่านบน Xiaomi หรือเล่นแมตช์เต็มแล้ว
+เชื่อมต้นแบบ Free Training ตามคำสั่งเจ้าของแล้ว: Activity/Screen แนวนอน → MediaProjection → bundled local Latin OCR + pixel reader → perception → policy/session/controller → Android gestures → รายงานในเครื่อง. เผยแพร่ Build36 พร้อมป้ายสถานะแล้ว (source commit66a3a03) รุ่นแก้ยังต้องยืนยันบน Xiaomi ไม่ใช่รุ่นแมตช์เต็ม
 
 วิธีใช้และข้อจำกัด: [EFOOTBALL_TRAINING_GUIDE.md](EFOOTBALL_TRAINING_GUIDE.md)
 
@@ -15,7 +15,7 @@
 - เลี้ยง ส่ง ยิงระยะใกล้ และคุมพื้นที่ด้วยตัวปัจจุบันตามภาพที่อ่านได้
 - คง `playerCoverageConfirmed=false` ใน visual pilot และเปิดนโยบาย partial coverage เฉพาะ config ของ runtime นี้. ค่าเริ่มต้นของ policy/session ยังคงบล็อกเมื่อ coverage ไม่ครบ. ไม่อ้างว่าเลนว่างจากการไม่เห็นตัวบล็อก
 - ไม่สลับตัวแบบสุ่ม ไม่ใช้ Advanced feint/tackle sequence/lูกตั้งเตะจนกว่าจะจับคู่ marker และจังหวะได้. Catalogue สกิลยังไม่มีสูตรเปิดใช้
-- การอ่านสี/ความมั่นใจเป็น heuristic และการแปลงทิศจากเส้นสนามเป็น approximation สำหรับ Dynamic Wide; ไม่ใช่โมเดลที่ฝึกจากโปรเพลเยอร์
+- การอ่านสี/ความมั่นใจเป็น heuristic และตั้งแต่ Build36 การแปลงทิศใช้ preset Dynamic Wide แบบประมาณโดยไม่วัดเส้นสนามทุกเฟรม ไม่ใช่การสอบเทียบกล้องหรือโมเดลที่ฝึกจากโปรเพลเยอร์
 - OCR model อยู่ใน APK ลบ INTERNET และ ACCESS_NETWORK_STATE จาก merged manifest. ไม่มี Cloud/API/การเขียนภาพหน้าจอ
 - คำสั่งผูกกับ source frame และ controls/bearing, foreground ตรวจซ้ำตอนส่งภายใต้ lock. สัมผัสไม่ค้างข้ามคำสั่ง ช่วงละไม่เกิน180ms. Callback สัมผัสไม่ถูกนับเป็นผลการเล่น
 
@@ -45,6 +45,12 @@ Independent review พบและนำมาแก้: ไอคอนฝึ�
 
 Build35: source a251919e04244264ff00dec90db8b25e137d0aa9, run43695450290 success, core verification43695436302 success. ดาวน์โหลด asset UniversalGameBot-build35.apk กลับมาตรวจจริง: versionCode35 / 0.11.1-training-startflow, ขนาด53,105,877bytes ลายเซ็นเดิม22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947, ไม่มี INTERNET/ACCESS_NETWORK_STATE. APK SHA256 7aaa598d1972a2f16ebfa2e9952d5155cdbf8a0b50393cda5d3a4cb427418657
 
-## v0.11.2 ระหว่างตรวจ
+## v0.11.2 — เผยแพร่ Build36
 
-กำลังแก้จากรายงาน Build35: transient live1ก่อนPauseทำให้armเร็วเกินไป และรอบที่กลับสนามสำเร็จ55เฟรมมี0commandsเพราะsource stale/camera axes gate. เพิ่มภาพวิเคราะห์1440กว้าง+native-coordinate mapping, Dynamic Wide preset approximationโดยไม่วัดเส้นทุกเฟรม, stable readiness2เฟรม/200ms, ป้าย passive GameBotแยกwaiting/reading/recent-sending/stoppedกับdiagnostic pipeline timing. ไม่เพิ่มfreshness500ms ไม่อ้างผลมือถือหรือผลยิง/การเคลื่อนไหวจริงจากAndroid callback. ชุดที่เกี่ยวข้องใน workspace ผ่าน66กรณี ไม่มีล้ม/ข้าม และ assemble ผ่าน (efootball-status-final.log). Independent review หลังแก้ lifecycle ป้ายและข้อความ preset ไม่พบ blocker. รอ CI/release แล้วต้องยืนยัน latency/gesture/overlay บนโทรศัพท์จริง
+แก้จากรายงาน Build35: transient live1ก่อนPauseทำให้armเร็วเกินไป และรอบที่กลับสนามสำเร็จ55เฟรมมี0commandsเพราะsource stale/camera axes gate. เพิ่มภาพวิเคราะห์1440กว้าง+native-coordinate mapping, Dynamic Wide preset approximationโดยไม่วัดเส้นทุกเฟรม, stable readiness2เฟรม/200ms, ป้าย passive GameBotแยกwaiting/reading/recent-sending/stoppedกับdiagnostic pipeline timing. ไม่เพิ่มfreshness500ms ไม่อ้างผลมือถือหรือผลยิง/การเคลื่อนไหวจริงจากAndroid callback. ชุดที่เกี่ยวข้องใน workspace ผ่าน66กรณี ไม่มีล้ม/ข้าม และ assemble ผ่าน (efootball-status-final.log). Independent review หลังแก้ lifecycle ป้ายและข้อความ preset ไม่พบ blocker. CI/release สำเร็จแล้ว ยังต้องยืนยัน latency/gesture/overlay บนโทรศัพท์จริง
+
+- Build APK run43701660326 success: https://github.com/hxyhan2006-code/GameBot/actions/runs/43701660326
+- Core verification run43701460407 success. Release source66a3a03f2946e29d2ad1a83e7c4fc5188297090e
+- ดาวน์โหลด UniversalGameBot-build36.apk จาก Release กลับมาตรวจ: ขนาด53,124,377bytes, applicationId com.example.universalgamebot, versionCode36 / 0.11.2-training-status
+- Signer SHA256 22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947 ตรงกุญแจเดิม ไม่พบ INTERNET/ACCESS_NETWORK_STATE/SYSTEM_ALERT_WINDOW
+- APK SHA256 233827a659a50b3d2fb664392e0b7d3ff130f5d63e3a2b7c7d94f167a20091e4
