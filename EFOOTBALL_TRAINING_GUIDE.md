@@ -1,6 +1,8 @@
 # eFootball — ต้นแบบควบคุม Free Training
 
-สถานะ: เชื่อม capture → local OCR/pixels → policy/session → Android gesture → รายงานแล้ว กำลังตรวจและสร้างรุ่นทดลอง ยังไม่ใช่บอทระดับโปรหรือรุ่นเล่นแมตช์เต็ม ไม่มีการอ้างว่าทดสอบ Xiaomi แล้ว
+สถานะ: เชื่อม capture → local OCR/pixels → policy/session → Android gesture → รายงานแล้ว เผยแพร่ Build34 แล้ว ยังไม่ใช่บอทระดับโปรหรือรุ่นเล่นแมตช์เต็ม ไม่มีการอ้างว่าทดสอบ Xiaomi แล้ว
+
+ดาวน์โหลด: [UniversalGameBot Build34](https://github.com/hxyhan2006-code/GameBot/releases/download/build-34/UniversalGameBot-build34.apk) — ติดตั้งทับแอปเดิม ไม่ต้องติดตั้ง fixture ใหม่สำหรับ eFootball
 
 ## ใช้งานหนึ่งรอบ
 

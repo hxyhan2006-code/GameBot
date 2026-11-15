@@ -1,6 +1,6 @@
 # eFootball Training — สถานะต้นแบบ
 
-เชื่อมต้นแบบ Free Training ตามคำสั่งเจ้าของแล้ว: Activity/Screen แนวนอน → MediaProjection → bundled local Latin OCR + pixel reader → perception → policy/session/controller → Android gestures → รายงานในเครื่อง. ยังอยู่ระหว่างตรวจเพื่อปล่อยรุ่นทดลอง ไม่อ้างว่าผ่านบน Xiaomi หรือเล่นแมตช์เต็มแล้ว
+เชื่อมต้นแบบ Free Training ตามคำสั่งเจ้าของแล้ว: Activity/Screen แนวนอน → MediaProjection → bundled local Latin OCR + pixel reader → perception → policy/session/controller → Android gestures → รายงานในเครื่อง. เผยแพร่ Build34 แล้ว (source commit65a5574) ไม่อ้างว่าผ่านบน Xiaomi หรือเล่นแมตช์เต็มแล้ว
 
 วิธีใช้และข้อจำกัด: [EFOOTBALL_TRAINING_GUIDE.md](EFOOTBALL_TRAINING_GUIDE.md)
 
@@ -26,3 +26,13 @@
 Independent review พบและนำมาแก้: ไอคอนฝึกมีในแมตช์ด้วย, markerวงเดียวแตกหลายcomponentทำให้ไม่ออกคำสั่ง, การใช้จอย/ส่วนโค้งแทนเส้นสนาม, และ telemetryท้ายรอบหายเมื่อ callbackตามหลังภาพสุดท้าย. ผลรอบสุดท้ายจะรายงานแยกจากการทดสอบบนมือถือ
 
 ไม่มีการอ้างว่าโหมดฝึกได้รับอนุญาตบอทภายนอกจาก Konami โดยอัตโนมัติ เงื่อนไขผู้ให้บริการที่เคยคุยยังเป็นข้อจำกัดแยกจากการไม่แก้ไฟล์เกม
+
+## Build34 — ตรวจไฟล์เผยแพร่แล้ว
+
+- GitHub Actions Build APK run43689586878 success: https://github.com/hxyhan2006-code/GameBot/actions/runs/43689586878
+- Verify core run43689567927 success. เทสต์ทั้งโปรเจกต์ใน workspace199กรณี ไม่มี failed/error/skipped
+- Release target65a55741202c4d6219adb1df97dedbbb9940f2d7; ไฟล์ UniversalGameBot-build34.apk ขนาด53,071,585bytes
+- ดาวน์โหลด APK จาก Release กลับมาตรวจจริง: applicationId com.example.universalgamebot, versionCode34, versionName0.11.0-efootball-training
+- Signer SHA256 22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947 ตรงกุญแจเดิม; ไม่พบ INTERNET/ACCESS_NETWORK_STATE ใน permissions ของ APK
+- APK SHA256 402907829bad4bb66ad77b4ec94f5d43395ad3d7cd855ea2ce73f2e3f326cfa6
+- ยังไม่มีผล physical touch/ML Kit engine/การเล่นจริงบน Xiaomi จากเจ้าของ รุ่นนี้เป็นต้นแบบพื้นฐานตามข้อจำกัดในคู่มือ
