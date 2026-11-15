@@ -38,7 +38,7 @@ class EFootballControllerTest {
         feed(c,2); assertEquals(1,b.queue.size)
         val p=b.dispatch(); assertEquals(1,b.physical)
         assertEquals(listOf(0,1),p.plan.strokes.map {it.pointer})
-        assertEquals(35L,p.plan.strokes[1].startsMs)
+        assertEquals(80L,p.plan.strokes[1].startsMs)
         feed(c,3); assertTrue(b.queue.isEmpty()) // No overlap while the Android command is in flight.
         p.done(true); assertEquals(1L,c.completed)
         feed(c,4); assertEquals(1,b.queue.size)

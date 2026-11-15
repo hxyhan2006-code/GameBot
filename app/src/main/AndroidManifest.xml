@@ -1,10 +1,14 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+ <uses-permission android:name="android.permission.INTERNET" tools:node="remove"/>
+ <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove"/>
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
- <queries><package android:name="com.example.gamebotbricktest"/><package android:name="com.example.gamebot2048test"/></queries>
+ <queries><package android:name="jp.konami.pesam"/><package android:name="com.example.gamebotbricktest"/><package android:name="com.example.gamebot2048test"/></queries>
  <application android:theme="@android:style/Theme.Material.NoActionBar" android:label="@string/app_name" android:allowBackup="false">
   <activity android:name=".ProfileSelectActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+  <activity android:name=".EFootballTrainingActivity" android:exported="false" android:screenOrientation="sensorLandscape"/>
+  <service android:name=".EFootballCaptureService" android:exported="false" android:foregroundServiceType="mediaProjection"/>
   <activity android:name=".BrickReaderActivity" android:exported="false"/>
   <service android:name=".ReadOnlyGameCaptureService" android:exported="false" android:foregroundServiceType="mediaProjection"/>
   <activity android:name=".Board2048Activity" android:exported="false"/>

@@ -199,6 +199,14 @@ class ProfileSelectActivity : Activity() {
             list.addView(row, lp())
         }
         section(R.string.read2048_external_group)
+        val efCard=LinearLayout(this).apply {
+            orientation=LinearLayout.VERTICAL;setPadding(dp(16),dp(16),dp(16),dp(16))
+            background=roundRect(Palette.CARD,16,Palette.CARD_LINE);isClickable=true;isFocusable=true
+            setOnClickListener{startActivity(Intent(this@ProfileSelectActivity,EFootballTrainingActivity::class.java))}
+            addView(TextView(this@ProfileSelectActivity).apply{setText(R.string.ef_title);textSize=16f;typeface=Typeface.DEFAULT_BOLD;setTextColor(Palette.TEXT)})
+            addView(TextView(this@ProfileSelectActivity).apply{setText(R.string.ef_subtitle);textSize=13f;setTextColor(Palette.MUTED)},lp(4))
+        }
+        list.addView(efCard,lp(4))
         val external = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(14), dp(16), dp(14), dp(16))

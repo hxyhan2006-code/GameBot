@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Universal Game Bot</string>
     <string name="service_label">Game Bot Touch Controller</string>
-    <string name="accessibility_description">ใช้แตะหน้าจอให้เกมทดสอบในแอปนี้เท่านั้น เปิดเฉพาะตอนทดสอบ</string>
+    <string name="accessibility_description">ใช้ควบคุมเฉพาะเกมทดสอบและสนาม Free Training ที่รองรับและผู้ใช้เริ่มเอง เปิดเฉพาะตอนใช้งานโหมดเหล่านี้</string>
 
     <string name="lang_switch">EN</string>
     <string name="score_fmt">คะแนน: %d</string>
@@ -18,7 +18,7 @@
     <string name="toast_emergency">หยุดฉุกเฉินแล้ว</string>
     <string name="toast_copied">คัดลอกรายงาน Debug แล้ว</string>
     <string name="mistakes_fmt">พลาด: %d</string>
-    <string name="select_subtitle">เลือกเกมทดสอบที่รองรับ</string>
+    <string name="select_subtitle">เลือกเกมหรือโหมดฝึกที่รองรับ</string>
     <string name="cloud_status">Cloud Vision: ปิด - ไม่มีการส่งภาพหน้าจอออกนอกเครื่องเด็ดขาด</string>
     <string name="arena_hint_bullseye">แตะเป้าวงกลมซ้อน (ขาว-ดำ) อย่าแตะตัวหลอก</string>
     <string name="arena_hint_swipe">ปัดลูกบอลสีเหลืองขึ้นไปในโซนสีฟ้า</string>
@@ -39,7 +39,7 @@
     <string name="btn_done">เสร็จ</string>
     <string name="sheet_acc_on">เปิดอยู่</string>
     <string name="sheet_acc_off">ปิดอยู่</string>
-    <string name="sheet_acc_on_sub">บอทพร้อมแตะจอ เฉพาะเกมทดสอบในแอปนี้</string>
+    <string name="sheet_acc_on_sub">พร้อมสำหรับเกมทดสอบและสนาม Free Training ที่รองรับและผู้ใช้เริ่มเองเท่านั้น</string>
     <string name="sheet_acc_off_sub">บอทแตะจอไม่ได้ ต้องเปิดก่อนทดสอบ</string>
     <string name="sheet_acc_warn">แอปธนาคารและแอปการเงิน (เช่น Dime) อาจไม่ยอมให้เข้าใช้ถ้ายังเปิดอยู่ ปิดทุกครั้งหลังทดสอบเสร็จ</string>
     <string name="btn_open_acc_settings">เปิดหน้าตั้งค่า Accessibility</string>
@@ -196,4 +196,16 @@
     <string name="brick_values">ลูกบอล (x,y): %1$s\nไม้รับ (x,y): %2$s\nอิฐที่ตรวจพบ: %3$d\nภาพ: %4$d · พบสองวัตถุ: %5$d · ประมาณการเคลื่อนที่: %6$d</string>
     <string name="brick_motion">ความเร็วประมาณจากภาพล่าสุด: x=%1$d y=%2$d พิกเซล/วินาที (ขวา/ลงเป็นบวก)</string>
     <string name="brick_error">อ่านไม่สำเร็จ · คัดลอกรายงานเพื่อดูสาเหตุ</string>
+    <string name="ef_title">eFootball · ฝึกซ้อมทดลอง</string>
+    <string name="ef_subtitle">อ่านภาพในเครื่องและควบคุมสนามฝึก · สูงสุด 2 นาที</string>
+    <string name="ef_start">เริ่มควบคุมสนามฝึก</string>
+    <string name="ef_copy">คัดลอกรายงานการฝึก</string>
+    <string name="ef_notification">ทดลองควบคุมสนามฝึก · แตะหยุดได้ทันที</string>
+    <string name="ef_missing">ไม่พบ eFootball ในเครื่อง</string>
+    <string name="ef_left">บุกไปทางซ้าย (ปกติไปขวา)</string>
+    <string name="ef_red">ทีมเราเป็นจุดแดง/ชมพูในเรดาร์</string>
+    <string name="ef_running">กำลังทำงาน · ออกจากเกมจะหยุด</string>
+    <string name="ef_stopped">หยุดแล้ว · รายงานเป็นข้อมูลย้อนหลัง</string>
+    <string name="ef_stats">เฟรม %1$d · พบสนามฝึก %2$d · ส่งคำสั่ง %3$d · Android ทำจบ %4$d · อายุภาพ %5$d ms</string>
+    <string name="ef_instructions">เปิดสนาม Free Training ไว้ก่อน ใช้ Virtual Pad, Smart Assist ปิด, Cursor Manual, Feint Advanced, Defending Standard, กล้อง Dynamic Wide และปุ่มภาษาอังกฤษตามตำแหน่งเดิม เลือกทิศบุกและสีจุดทีมเราให้ตรง แล้วกดเริ่มและอนุญาตแชร์ทั้งหน้าจอ แอปจะกลับเข้าเกม รอได้ไม่เกิน 20 วินาที\nรุ่นทดลองเลี้ยง ส่ง ยิง และคุมตัวเดิมเกมรับจากภาพที่อ่านได้ ยังไม่รองรับสกิลขั้นสูง สลับตัวอัตโนมัติ ลูกตั้งเตะ หรือเล่นแมตช์เต็ม หากปุ่ม/บอล/กล้องอ่านไม่ได้จะไม่ส่งคำสั่ง เมนู พักเกม รีเพลย์ เปลี่ยนแอปหรือหมุนจอจะหยุด เริ่มใหม่เองเมื่อต้องการ ฝึกสูงสุด 2 นาที หยุดจากการแจ้งเตือนหรือกลับหน้านี้ ไม่ใช้ Cloud ไม่บันทึกภาพ คะแนนความมั่นใจเป็นค่าประเมิน ไม่รับประกันชนะ</string>
 </resources>

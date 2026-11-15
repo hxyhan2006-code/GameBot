@@ -43,6 +43,7 @@ data class EFootballTrainingFrame(
 /** Values are provisional policy parameters, not measurements validated on the owner's phone. */
 data class EFootballTrainingConfig(
     val maxFrameAgeMs: Long = 200,
+    val allowPartialCoverage: Boolean = false,
     val minConfidence: Float = 0.85f,
     val switchTimeoutMs: Long = 900,
     val commandTimeoutMs: Long = 1000,

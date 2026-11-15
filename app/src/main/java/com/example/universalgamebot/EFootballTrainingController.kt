@@ -18,16 +18,17 @@ internal class EFootballTrainingController(
     private val backend: EFootballGestureBackend,
     private val foreground: () -> String?,
     private val nowNs: () -> Long,
-    private val mapping: EFootballControlMapping = EFootballControlMapping()
+    private val mapping: EFootballControlMapping = EFootballControlMapping(),
+    private val countersChanged: (Long,Long,Long)->Unit = {_,_,_->}
 ) {
     private var latest: EFootballPilotObservation? = null
     private var queued = false
     private var activeTicket = 0L
     private var stopped = false
-    var lastReason: String = "not started"; private set
-    var dispatched = 0L; private set
-    var completed = 0L; private set
-    var failed = 0L; private set
+    @Volatile var lastReason: String = "not started"; private set
+    @Volatile var dispatched = 0L; private set
+    @Volatile var completed = 0L; private set
+    @Volatile var failed = 0L; private set
 
     @Synchronized fun observe(value: EFootballPilotObservation) {
         if (stopped) return
@@ -63,7 +64,7 @@ internal class EFootballTrainingController(
                     val allowed = !stopped && current == observation &&
                         session.reserveDispatch(decision, foreground(), current.frame, nowNs()) == null
                     if (!allowed) { lastReason = "queued command invalidated"; false }
-                    else submit().also { if (it) dispatched++ }
+                    else submit().also { if (it) {dispatched++; countersChanged(dispatched,completed,failed)} }
                 }
             }, completed = { ok ->
                 synchronized(this) {
@@ -72,6 +73,7 @@ internal class EFootballTrainingController(
                     queued = false
                     session.commandResult(decision.frame.sequence, decision, ok, nowNs())
                     if (ok) completed++ else { failed++; stop("gesture rejected or cancelled") }
+                    countersChanged(dispatched,completed,failed)
                 }
             })
         } catch (e: Exception) { queued = false; failed++; stop("gesture backend exception: ${e.javaClass.simpleName}") }
@@ -90,6 +92,8 @@ internal class EFootballTrainingController(
         lastReason = d.reason
         if (d.intent is EFootballTrainingIntent.Stop) stop(d.reason)
     }
+
+    @Synchronized fun isStopped()=stopped
 
     @Synchronized fun stop(reason: String) {
         stopped = true

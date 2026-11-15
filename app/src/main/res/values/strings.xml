@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Universal Game Bot</string>
     <string name="service_label">Game Bot Touch Controller</string>
-    <string name="accessibility_description">Controls taps for the user-started local test game. Enable only while testing.</string>
+    <string name="accessibility_description">Controls only user-started supported test games and Free Training. Enable only while using these modes.</string>
 
     <string name="lang_switch">ไทย</string>
     <string name="score_fmt">Score: %d</string>
@@ -18,7 +18,7 @@
     <string name="toast_emergency">Emergency stop!</string>
     <string name="toast_copied">Debug report copied</string>
     <string name="mistakes_fmt">Misses: %d</string>
-    <string name="select_subtitle">Choose a supported test game</string>
+    <string name="select_subtitle">Choose a supported game or training mode</string>
     <string name="cloud_status">Cloud Vision: OFF - no screenshot ever leaves this phone</string>
     <string name="arena_hint_bullseye">Tap the bullseye (white-black rings), not the decoys</string>
     <string name="arena_hint_swipe">Swipe the yellow ball up into the blue zone</string>
@@ -39,7 +39,7 @@
     <string name="btn_done">Done</string>
     <string name="sheet_acc_on">On</string>
     <string name="sheet_acc_off">Off</string>
-    <string name="sheet_acc_on_sub">The bot can tap the screen, in this app\'s test games only</string>
+    <string name="sheet_acc_on_sub">Ready for supported test games and user-started Free Training only</string>
     <string name="sheet_acc_off_sub">The bot cannot tap. Turn it on before testing</string>
     <string name="sheet_acc_warn">Banking and finance apps (e.g. Dime) may refuse to open while this is on. Turn it off after every test.</string>
     <string name="btn_open_acc_settings">Open Accessibility settings</string>
@@ -196,4 +196,16 @@
     <string name="brick_values">Ball (x,y): %1$s\nPaddle (x,y): %2$s\nBricks detected: %3$d\nFrames: %4$d · both objects found: %5$d · motion estimates: %6$d</string>
     <string name="brick_motion">Last visual velocity estimate: x=%1$d y=%2$d px/s (right/down positive)</string>
     <string name="brick_error">Reading failed · copy the report for details</string>
+    <string name="ef_title">eFootball · Experimental training</string>
+    <string name="ef_subtitle">Local vision and training controls · 2 minute limit</string>
+    <string name="ef_start">Start training control</string>
+    <string name="ef_copy">Copy training report</string>
+    <string name="ef_notification">Experimental training control · Stop available</string>
+    <string name="ef_missing">eFootball is not installed</string>
+    <string name="ef_left">Attack left (default: right)</string>
+    <string name="ef_red">Our radar dots are red/pink</string>
+    <string name="ef_running">Running · Leaving the game stops control</string>
+    <string name="ef_stopped">Stopped · Historical observations</string>
+    <string name="ef_stats">Frames %1$d · Training %2$d · Commands %3$d · Android completed %4$d · Frame age %5$d ms</string>
+    <string name="ef_instructions">Open Free Training first. Use Virtual Pad, Smart Assist off, Manual Cursor, Advanced Feints, Standard Defending, Dynamic Wide and English default button positions. Select attack direction and our radar dot colour, start and allow the entire display. The app returns to the game and waits up to 20 seconds.\nExperimental dribbling, passes, shots and current-defender cover require visual evidence. Advanced skills, automatic switching, set pieces and full matches are not supported. Unreadable controls, ball or camera block commands. Menus, pause, replay, another app or rotation stop the run. Restart manually. Limit: 2 minutes. Stop from the notification or this screen. No cloud or screenshot files. Confidence scores are heuristic. No win guarantee.</string>
 </resources>

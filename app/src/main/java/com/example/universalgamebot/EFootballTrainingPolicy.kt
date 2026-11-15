@@ -13,7 +13,7 @@ class EFootballTrainingPolicy(private val config: EFootballTrainingConfig = EFoo
             return neutral("scene has no verified live-play routine")
         }
         if (!frame.controlsRecognized || !trusted(frame.teamConfidence)) return neutral("controls or team uncertain")
-        if (!frame.playerCoverageConfirmed) return neutral("player coverage incomplete; empty lanes not established")
+        if (!frame.playerCoverageConfirmed && !config.allowPartialCoverage) return neutral("player coverage incomplete; empty lanes not established")
         val direction = frame.attackDirection ?: return neutral("attack direction unknown")
         val ball = frame.ball?.takeIf { trusted(it.confidence) && it.position.valid() } ?: return neutral("ball uncertain")
         // Dropping an uncertain defender would manufacture an apparently empty passing lane.
@@ -27,6 +27,29 @@ class EFootballTrainingPolicy(private val config: EFootballTrainingConfig = EFoo
         val opponentGoal = EFootballPoint(1f - ownGoal.x, 0.5f)
         if (frame.possession == EFootballPossession.UNKNOWN) return neutral("possession unknown")
         if (frame.possession == EFootballPossession.LOOSE) return neutral("loose ball; do not queue kicks")
+
+        // The experimental visual pilot has incomplete radar coverage. Never call that a clear lane.
+        if (!frame.playerCoverageConfirmed) {
+            if (active == null) return neutral("partial view: selected player missing")
+            if (frame.possession == EFootballPossession.OPPONENT) {
+                val cover = EFootballPoint(ball.position.x*.8f+ownGoal.x*.2f, ball.position.y*.8f+.1f)
+                return result(EFootballTrainingIntent.Move(cover, false, active.position.distance(ball.position)<config.pressureDistance),
+                    "partial view: cover with current player; no speculative switch")
+            }
+            if (active.position.distance(ball.position)>config.pressureDistance) return neutral("partial view: selected player not on ball")
+            val progress = if (direction==EFootballDirection.RIGHT) ball.position.x else 1f-ball.position.x
+            if (progress>.82f && abs(ball.position.y-.5f)<.22f) return result(EFootballTrainingIntent.Shoot(opponentGoal),
+                "partial view: close-range attempt; unseen defenders may block")
+            val receiver = own.filter { it.id!=active.id && it.position.distance(ball.position) in config.minPassDistance..config.maxPassDistance }
+                .filter { (if(direction==EFootballDirection.RIGHT)it.position.x-ball.position.x else ball.position.x-it.position.x)>.12f }
+                .filter { corridorClear(ball.position,it.position,opponents) }
+                .maxByOrNull { if(direction==EFootballDirection.RIGHT)it.position.x else 1f-it.position.x }
+            if(receiver!=null) return result(EFootballTrainingIntent.Pass(receiver.id,receiver.position),
+                "partial view: forward receiver observed; interception risk remains")
+            val dx=if(direction==EFootballDirection.RIGHT).08f else -.08f
+            return result(EFootballTrainingIntent.Move(EFootballPoint((ball.position.x+dx).coerceIn(.02f,.98f),
+                (ball.position.y*.85f+.075f).coerceIn(.05f,.95f)),false), "partial view: controlled advance")
+        }
 
         if (frame.possession == EFootballPossession.OPPONENT) {
             // Approach from the goal side rather than dragging the nearest defender into every chase.

@@ -83,7 +83,7 @@ class EFootballTrainingSession(
         if (!fresh(basis, nowNs) || !fresh(current, nowNs)) return "command expired"
         if (current.sequence < basis.sequence || current.sourceNs < basis.sourceNs) return "current evidence predates decision"
         if (current.scene !in liveScenes || current.scene != basis.scene || !current.controlsRecognized) return "scene or controls changed"
-        if (!current.playerCoverageConfirmed) return "player coverage lost"
+        if (!current.playerCoverageConfirmed && !config.allowPartialCoverage) return "player coverage lost"
         if (current.attackDirection != basis.attackDirection || current.selectedPlayerId != basis.selectedPlayerId || current.possession != basis.possession) return "player, direction or possession changed"
         if (!current.teamConfidence.isFinite() || current.teamConfidence < config.minConfidence || current.teamConfidence > 1f) return "team uncertain"
         if (decision.intent is EFootballTrainingIntent.Neutral || decision.intent is EFootballTrainingIntent.Wait || decision.intent is EFootballTrainingIntent.Stop) return "decision has no physical action"

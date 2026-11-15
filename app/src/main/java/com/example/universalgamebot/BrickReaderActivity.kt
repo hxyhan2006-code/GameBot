@@ -24,7 +24,7 @@ class BrickReaderActivity:Activity() {
         setContentView(screen); screen.requestApplyInsets()
     }
     private fun startRead() {
-        if(permissionPending || BotState.running || Board2048Readout.snapshot.running || BrickReadout.snapshot.running) { Toast.makeText(this,R.string.read2048_busy,Toast.LENGTH_LONG).show(); return }
+        if(permissionPending || EFootballReadout.snapshot.running || BotState.running || Board2048Readout.snapshot.running || BrickReadout.snapshot.running) { Toast.makeText(this,R.string.read2048_busy,Toast.LENGTH_LONG).show(); return }
         if(BotAccessibilityService.instance==null) { Toast.makeText(this,R.string.toast_need_accessibility,Toast.LENGTH_LONG).show(); return }
         if(packageManager.getLaunchIntentForPackage(ReadOnlyGameSession.TARGET)==null) { Toast.makeText(this,R.string.brick_missing,Toast.LENGTH_LONG).show(); return }
         try {

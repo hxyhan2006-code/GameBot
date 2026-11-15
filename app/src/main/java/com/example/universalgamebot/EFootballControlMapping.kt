@@ -53,9 +53,9 @@ class EFootballControlMapping {
         // Bounded strokes always lift. These timing defaults are experimental, not measured power.
         val stick = EFootballPointerStroke(0, 0, listOf(
             EFootballGestureKeyframe(0, c.stickOrigin), EFootballGestureKeyframe(180, tip)))
-        val press = button?.let { EFootballPointerStroke(1, 35, listOf(
+        val press = button?.let { EFootballPointerStroke(1, 80, listOf(
             EFootballGestureKeyframe(0, it), EFootballGestureKeyframe(
-                if (d.intent is EFootballTrainingIntent.Move) 145 else 80, it))) }
+                if (d.intent is EFootballTrainingIntent.Move) 100 else 80, it))) }
         return EFootballGesturePlan(listOfNotNull(stick, press)).takeIf { it.rejection(zones(c), 180) == null }
     }
 

@@ -42,7 +42,7 @@ class ReadOnlyGameCaptureService:Service() {
         if(intent?.action=="STOP") { stopRead("stopped by user"); return START_NOT_STICKY }
         if(started)return START_NOT_STICKY
         started=true
-        if(BotState.running || Board2048Readout.snapshot.running || BrickReadout.snapshot.running || BotAccessibilityService.instance==null) {
+        if(EFootballReadout.snapshot.running || BotState.running || Board2048Readout.snapshot.running || BrickReadout.snapshot.running || BotAccessibilityService.instance==null) {
             fail("requires idle bot/readers and Accessibility"); return START_NOT_STICKY
         }
         val data:Intent?=if(Build.VERSION.SDK_INT>=33) intent?.getParcelableExtra("data",Intent::class.java) else {
@@ -108,7 +108,7 @@ class ReadOnlyGameCaptureService:Service() {
         override fun run() {
             if(!active)return
             val now=SystemClock.elapsedRealtime()
-            if(BotState.running || Board2048Readout.snapshot.running || session.access(BotAccessibilityService.instance?.activePackage(),now)==ReadOnlyGameSession.Access.STOP) { stopRead("scope lost or deadline"); return }
+            if(EFootballReadout.snapshot.running || BotState.running || Board2048Readout.snapshot.running || session.access(BotAccessibilityService.instance?.activePackage(),now)==ReadOnlyGameSession.Access.STOP) { stopRead("scope lost or deadline"); return }
             if(dimensions()!=(width to height)) { stopRead("display geometry changed"); return }
             if((BrickReadout.snapshot.last==null && now-startedAt>10_000) || (BrickReadout.snapshot.last!=null && lastFrame>0L && now-lastFrame>3000)) { fail("no fresh capture frames"); return }
             worker.postDelayed(this,100)

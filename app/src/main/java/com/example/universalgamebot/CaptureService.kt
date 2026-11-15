@@ -77,6 +77,7 @@ class CaptureService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "STOP") { EmergencyStop.trigger("stop from notification"); stopSelf(); return START_NOT_STICKY }
         if (running) return START_NOT_STICKY
+        if (EFootballReadout.snapshot.running) { stopSelf(); return START_NOT_STICKY }
         DebugMonitor.resetCounters()
         EmergencyStop.reset()
         OverlayState.clear()
