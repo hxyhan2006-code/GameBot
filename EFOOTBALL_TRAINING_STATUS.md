@@ -54,3 +54,11 @@ Build35: source a251919e04244264ff00dec90db8b25e137d0aa9, run43695450290 success
 - ดาวน์โหลด UniversalGameBot-build36.apk จาก Release กลับมาตรวจ: ขนาด53,124,377bytes, applicationId com.example.universalgamebot, versionCode36 / 0.11.2-training-status
 - Signer SHA256 22f12cc3a50a14c72e9570f8789f5ef47c2e51515d85ffc5d631c07b35044947 ตรงกุญแจเดิม ไม่พบ INTERNET/ACCESS_NETWORK_STATE/SYSTEM_ALERT_WINDOW
 - APK SHA256 233827a659a50b3d2fb664392e0b7d3ff130f5d63e3a2b7c7d94f167a20091e4
+
+## v0.11.3 — ระหว่างตรวจจากผลมือถือ Build36
+
+เจ้าของยืนยันยังไม่เล่น frames74/live69/commands0/armedfalse. Backสำเร็จและpipeline319ms (OCR262ms) จึงไม่ใช่ภาพช้าเกิน500msในรอบนี้. เฟรมสุดท้ายมี controlOCR=[4Through|Pass|Clear|Da] และหยุดscoreboard/time; ภาพเจ้าของเป็นสนามฝึก และปัดดูเวลา/แบต. โค้ดเก่ารับ clockเดี่ยวจากหัวจอเป็นMATCH จึงมีช่องให้แถบระบบถูกตีความเป็นแมตช์ แต่รายงานเก่าไม่ได้เก็บข้อความหัวจอจริง ห้ามอ้างว่ารู้คำ OCR สุดท้ายแน่นอน
+
+รุ่นแก้แยก headerclockที่ไม่มีคะแนนเป็นUNKNOWN (ยังไม่ส่งคำสั่ง) แทนMATCH; pixel scoreboard และ clock+คะแนนยังปฏิเสธแมตช์. เปลี่ยน preprocessing เป็นสี่ช่องปุ่มStandardขยาย2xและยกcontrastก่อนML Kit โดย mappingกลับพิกัดต้นทาง. รองรับDa/DasเฉพาะมุมDashและต้องมีอีกสามปุ่มครบ. เพิ่มwaitingReasons, anchor diagnostics, ocrInput dimensions, ป้ายอ่านจอขณะเห็นสนามแต่ยังไม่พร้อม. ไม่เปลี่ยนfocus/freshness/startup Back/play deadline/stop latch และไม่มีการauto-resumeหลังเริ่มเล่น
+
+ชุดที่เกี่ยวข้องใน workspace ผ่าน74กรณี ไม่มีล้ม/ข้าม และ assembleDebug ผ่าน (efootball-vision37-final.log). รวม regression เวลาโทรศัพท์/clock+score/score-only, reported OCR tokensบนpublic training pixels, tile mapping/contrast, waitingReasons และป้ายก่อนarm. Independent diff review ไม่พบblocker; ข้อสังเกต score-only ได้เพิ่มการบล็อกUNKNOWNและตรวจซ้ำแล้ว. ผลนี้ไม่ใช่การรันML Kit engineบนXiaomi ไม่ได้ทดสอบสัมผัสจริงหรือรับรองว่าปุ่ม20%จะอ่านได้ รอ CI/release

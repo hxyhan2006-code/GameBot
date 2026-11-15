@@ -104,7 +104,7 @@ class EFootballCaptureService:Service() {
                             }
                             if(timestamp<=resumeBarrierNs)return@post
                             val ocrDoneNs=System.nanoTime()
-                            EFootballReadout.pipeline(id,"input=${width}x$height analysis=${sample.width}x${sample.height} preOCR=${(ocrStartedNs-now)/1_000_000}ms OCR=${(ocrDoneNs-ocrStartedNs)/1_000_000}ms")
+                            EFootballReadout.pipeline(id,"input=${width}x$height analysis=${sample.width}x${sample.height} ocrInput=${ocr!!.inputDescription} preOCR=${(ocrStartedNs-now)/1_000_000}ms OCR=${(ocrDoneNs-ocrStartedNs)/1_000_000}ms")
                             if(System.nanoTime()-timestamp>500_000_000L){EFootballReadout.note(id,"source too old after OCR");return@post}
                             val menu=if(gate?.armed!=true)EFootballTrainingMenu.read(words,sample.width,sample.height,timestamp,geometry(),width,height) else null
                             menuResume.observe(menu)
@@ -118,7 +118,7 @@ class EFootballCaptureService:Service() {
                                 return@post
                             }
                             val age=(System.nanoTime()-timestamp)/1_000_000
-                            EFootballReadout.pipeline(id,"input=${width}x$height analysis=${sample.width}x${sample.height} preOCR=${(ocrStartedNs-now)/1_000_000}ms OCR=${(ocrDoneNs-ocrStartedNs)/1_000_000}ms vision=${(System.nanoTime()-ocrDoneNs)/1_000_000}ms total=${age}ms")
+                            EFootballReadout.pipeline(id,"input=${width}x$height analysis=${sample.width}x${sample.height} ocrInput=${ocr!!.inputDescription} preOCR=${(ocrStartedNs-now)/1_000_000}ms OCR=${(ocrDoneNs-ocrStartedNs)/1_000_000}ms vision=${(System.nanoTime()-ocrDoneNs)/1_000_000}ms total=${age}ms")
                             val ready=age<=500 && o.frame.controlsRecognized && o.frame.selectedPlayerId!=null && o.frame.ball!=null
                             gate!!.scene(o.frame.scene,timestamp,ready)?.let{
                                 EFootballReadout.frame(id,o,(System.nanoTime()-timestamp)/1_000_000,perception!!.lastDiagnostic,controller)

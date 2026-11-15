@@ -16,7 +16,7 @@ internal enum class EFootballBadgeState { WAITING,READING,CONTROLLING,STOPPED }
 internal object EFootballBadgeModel {
     fun state(s:EFootballReadout.Snapshot,nowNs:Long):EFootballBadgeState=when {
         !s.running->EFootballBadgeState.STOPPED
-        !s.armed->EFootballBadgeState.WAITING
+        !s.armed && s.status!="training"->EFootballBadgeState.WAITING
         s.canAct && s.commands>0 && s.lastSentNs>0 && nowNs-s.lastSentNs in 0..800_000_000L->EFootballBadgeState.CONTROLLING
         else->EFootballBadgeState.READING
     }

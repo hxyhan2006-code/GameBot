@@ -8,7 +8,10 @@ data class EFootballHud(val attack:Boolean,val buttons:Map<String,EFootballScree
             val buttons=HashMap<String,EFootballScreenPoint>()
             for(word in words) {
                 if(word.x<w*.70f || word.y<h*.35f || word.x>=w || word.y>=h*.96f)continue
-                val key=word.text.lowercase().filter {it.isLetter()}
+                val normalized=word.text.lowercase().filter {it.isLetter()}
+                // Observed on-device: faint Dash read as "Da". Only this fixed corner alias;
+                // the other three labels and the Standard arrangement must still be present.
+                val key=if(normalized in setOf("da","das") && word.x in w*.85f..w*.99f && word.y in h*.70f..h*.94f)"dash" else normalized
                 if(key in setOf("pass","shoot","through","dash","switch","matchup","tackle","pressure","clear")) {
                     if(buttons.containsKey(key)) return null
                     buttons[key]=EFootballScreenPoint(word.x,word.y)

@@ -18,9 +18,11 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
         fun norm(b:EFootballPixels.Blob)=EFootballPoint((b.x-a.radar.left)/a.radar.width,(b.y-a.radar.top)/a.radar.height)
         val selected=a.radarSelected?.let(::norm)?.takeIf {it.valid()}
         val ball=a.ball?.let(::norm)?.takeIf {it.valid()}
-        val scoreboardText=words.any {it.x<f.width*.55f && it.y<f.height*.18f &&
-            Regex("[0-9]{1,3}[:\\-][0-9]{1,2}").containsMatchIn(it.text)}
-        val usable=!scoreboardText && a.training && a.selected!=null && selected!=null && hud!=null
+        val header=EFootballHeader.read(words,f.width,f.height)
+        val match=header.match || a.scoreboard
+        val field=a.training && !match && !header.obstructed
+        val selectedSeen=field && a.selected!=null && selected!=null
+        val usable=selectedSeen && hud!=null
         if(sourceNs-previousNs>500_000_000L || sourceNs<=previousNs)tracks=emptyList()
         previousNs=sourceNs
         val assigned=HashSet<Long>()
@@ -31,7 +33,7 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
             val id=old?.id ?: nextId++;assigned+=id;players+=EFootballPlayer(id,team,p,.90f);return id
         }
         var selectedId:Long?=null
-        if(usable && selected!=null) selectedId=track(selected,EFootballTeam.OWN)
+        if(selectedSeen && selected!=null) selectedId=track(selected,EFootballTeam.OWN)
         for((color,blobs) in listOf(true to a.red,false to a.green)) for(b in blobs) {
             val p=norm(b)
             if(!p.valid() || (selected!=null && p.distance(selected)<.055f))continue
@@ -40,10 +42,11 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
         tracks=players.toList()
         val possession=when {hud==null->EFootballPossession.UNKNOWN;hud.attack->EFootballPossession.OWN;else->EFootballPossession.OPPONENT}
         val frame=EFootballTrainingFrame(generation,sequence,sourceNs,geometryId,
-            if(scoreboardText)EFootballScene.MATCH else if(a.training)EFootballScene.TRAINING_LIVE else EFootballScene.UNKNOWN,direction,possession,players.toList(),
+            if(match)EFootballScene.MATCH else if(field)EFootballScene.TRAINING_LIVE else EFootballScene.UNKNOWN,direction,possession,players.toList(),
             ball?.let {EFootballBall(it,.90f)},selectedId,usable,if(usable).90f else 0f,false,shootingAvailable=hud?.canShoot==true)
         lastDiagnostic=when {
-            scoreboardText->"scoreboard/time outside Free Training"
+            match->"game scoreboard outside Free Training; header OCR=[${header.text}]"
+            header.obstructed->"ambiguous header clock/score; screen may be covered; header OCR=[${header.text}]"
             !a.training->"training swap icon / pitch not established"
             hud==null->"four Standard control labels not read"
             a.selected==null->"solid controlled-player marker not established"
@@ -53,6 +56,7 @@ class EFootballPerception(private val generation:Long,private val geometryId:Lon
         }
         val tokens=words.filter{it.x>=f.width*.70f && it.y>=f.height*.35f}.take(12).joinToString("|"){it.text}
         lastDiagnostic+="; control OCR=[$tokens]"
+        lastDiagnostic+="; anchors=pitch:${"%.2f".format(java.util.Locale.ROOT,a.grass)} selected:${a.selected!=null} radarSelected:${a.radarSelected!=null} ball:${a.ball!=null} hud:${hud!=null}"
         val controls=if(usable && hud!=null) {
             val sx=screenWidth.toFloat()/f.width;val sy=screenHeight.toFloat()/f.height
             val b=hud.buttons.mapValues {(_,p)->EFootballScreenPoint(p.x*sx,p.y*sy)}

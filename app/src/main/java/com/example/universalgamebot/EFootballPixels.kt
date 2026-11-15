@@ -6,11 +6,15 @@ import kotlin.math.*
 class EFootballPixels {
     data class Blob(val x: Float,val y: Float,val w:Int,val h:Int,val count:Int)
     data class Anchors(val training:Boolean,val grass:Float,val selected:Blob?,val radarSelected:Blob?,
-        val ball:Blob?,val radar:Box,val red:List<Blob>,val green:List<Blob>,val axes:Axes?)
+        val ball:Blob?,val radar:Box,val red:List<Blob>,val green:List<Blob>,val axes:Axes?,val scoreboard:Boolean=false)
+    data class Context(val training:Boolean,val pitch:Float,val scoreboard:Boolean)
     data class Axes(val horizontalSlope:Float,val verticalSlope:Float,val verticalEstimated:Boolean=false) {
         fun bearing(dx:Float,dy:Float):Pair<Float,Float> = (dx*1.5f + dy*verticalSlope*.7f) to (dx*1.5f*horizontalSlope + dy*.7f)
     }
     fun trainingContext(f:SampledFrame):Pair<Boolean,Float> {
+        val c=context(f);return c.training to c.pitch
+    }
+    private fun context(f:SampledFrame):Context {
         require(f.step==1 && f.originX==0 && f.originY==0)
         val w=f.width;val h=f.height
         fun c(x:Int,y:Int)=f.rgb[y*w+x]
@@ -36,13 +40,13 @@ class EFootballPixels {
         // Current KONAMI scoreboard: reject even if its Home/Away icon resembles Free Training.
         val scoreboard=yellow>scoreSamples*.025f
         val training=!scoreboard && pitch>.40f && cyan>=3 && pink>=3 && light>n*.12f
-        return training to pitch
+        return Context(training,pitch,scoreboard)
     }
     fun read(f:SampledFrame,withAxes:Boolean=true):Anchors {
         val w=f.width;val h=f.height
         val radar=Box(w*.443f,h*.801f,w*.557f,h*.948f)
-        val (training,pitch)=trainingContext(f)
-        if(!training)return Anchors(false,pitch,null,null,null,radar,emptyList(),emptyList(),null)
+        val (training,pitch,scoreboard)=context(f)
+        if(!training)return Anchors(false,pitch,null,null,null,radar,emptyList(),emptyList(),null,scoreboard)
         val selected=blobs(f,Box(w*.08f,h*.17f,w*.90f,h*.76f),::cyan)
             .filter { it.w in (w*.003f).toInt().coerceAtLeast(3)..(w*.035f).toInt() &&
                 it.h in (h*.006f).toInt().coerceAtLeast(3)..(h*.06f).toInt() && it.count>it.w*it.h*.4f }

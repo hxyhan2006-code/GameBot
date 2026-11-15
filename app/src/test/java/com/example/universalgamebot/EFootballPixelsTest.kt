@@ -59,7 +59,11 @@ class EFootballPixelsTest {
         assertNotEquals(EFootballScene.TRAINING_LIVE,o.frame.scene);assertNull(o.controls)
         val t=read("training")
         val veto=p.read(t,200,words+EFootballWord("44:52",400f,40f))
-        assertEquals(EFootballScene.MATCH,veto.frame.scene);assertNull(veto.controls)
+        // A lone clock might be Android's clock: block input without inventing a match.
+        assertEquals(EFootballScene.UNKNOWN,veto.frame.scene);assertNull(veto.controls)
+        val scored=p.read(t,300,words+listOf(EFootballWord("44:52",400f,40f),
+            EFootballWord("0",180f,40f),EFootballWord("1",230f,40f)))
+        assertEquals(EFootballScene.MATCH,scored.frame.scene);assertNull(scored.controls)
     }
     @Test fun maskingTheJoystickDoesNotRemoveThePitchAxisEvidence() {
         val f=read("training")
@@ -83,5 +87,37 @@ class EFootballPixelsTest {
         assertEquals(733f,o.controls.pass.y,1f)
         assertEquals(1920*.16f,o.controls.stickOrigin.x,1f)
         assertTrue(p.lastDiagnostic.contains("preset approximation"))
+    }
+    @Test fun reportedClearAndTruncatedDashCanProduceInputOnRealTrainingPixelsButNotWithAHeaderClock(){
+        val f=read("training")
+        val words=listOf(EFootballWord("Pass",1465f,733f),EFootballWord("Clear",1717f,484f),
+            EFootballWord("4Through",1521f,533f),EFootballWord("Da",1702f,713f))
+        val config=EFootballTrainingConfig(allowPartialCoverage=true)
+        val p=EFootballPerception(1,1,EFootballDirection.RIGHT,true,config)
+        val now=10_100_000_000L
+        val ready=p.read(f,now,words)
+        assertNotNull(p.lastDiagnostic,ready.controls);assertNotNull(p.lastDiagnostic,ready.bearing)
+        assertNotNull(ready.frame.selectedPlayerId);assertFalse(ready.frame.shootingAvailable)
+        val clock=p.read(f,now+100_000_000L,words+EFootballWord("17:57",40f,20f))
+        assertEquals(EFootballScene.UNKNOWN,clock.frame.scene);assertNull(clock.controls);assertNull(clock.bearing)
+        assertFalse(p.lastDiagnostic,p.lastDiagnostic.contains("outside Free Training"))
+        val resumed=p.read(f,now+200_000_000L,words)
+        assertNotNull(p.lastDiagnostic,resumed.controls)
+        assertTrue(EFootballTrainingPolicy(config).decide(resumed.frame).intent is EFootballTrainingIntent.Move ||
+            EFootballTrainingPolicy(config).decide(resumed.frame).intent is EFootballTrainingIntent.Pass)
+    }
+    @Test fun waitingReasonsRetainTheEarlierBlockerWhenTheLastFrameIsObstructed(){
+        val f=read("training");val p=EFootballPerception(1,1,EFootballDirection.RIGHT,true,EFootballTrainingConfig(allowPartialCoverage=true))
+        val id=EFootballReadout.begin()
+        val missing=p.read(f,10_000_000_000L,emptyList())
+        EFootballReadout.frame(id,missing,319,p.lastDiagnostic,null)
+        assertNotNull("Player evidence must not disappear just because button OCR is incomplete",EFootballReadout.snapshot.selected)
+        assertTrue(EFootballReadout.report().contains("1x four Standard control labels not read"))
+        val clock=p.read(f,10_100_000_000L,listOf(EFootballWord("17:57",40f,20f)))
+        EFootballReadout.frame(id,clock,319,p.lastDiagnostic,null)
+        EFootballReadout.stop(id,"test stopped")
+        assertTrue(EFootballReadout.report().contains("1x four Standard control labels not read"))
+        assertTrue(EFootballReadout.report().contains("1x ambiguous header clock/score"))
+        assertTrue(EFootballReadout.report().contains("header OCR=[17:57]"))
     }
 }
