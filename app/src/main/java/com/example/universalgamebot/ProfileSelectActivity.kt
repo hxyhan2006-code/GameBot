@@ -113,6 +113,16 @@ class ProfileSelectActivity : Activity() {
         }, LinearLayout.LayoutParams(dp(40), dp(40)))
         root.addView(header, lp())
 
+        val modes = LinearLayout(this).apply { setPadding(dp(16), 0, dp(16), dp(8)) }
+        modes.addView(actionButton("Vision Bot", Palette.CARD, Palette.TEXT) {
+            BotAccessibilityService.instance?.closeClicker()
+            showTab(Tab.PROFILES)
+        }, LinearLayout.LayoutParams(0, -2, 1f).apply { rightMargin = dp(8) })
+        modes.addView(actionButton("Auto Clicker", Palette.CARD, Palette.TEXT) {
+            startActivity(Intent(this, ClickerHomeActivity::class.java))
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        root.addView(modes, lp())
+
         content = FrameLayout(this)
         root.addView(content, LinearLayout.LayoutParams(-1, 0, 1f))
 
@@ -202,7 +212,10 @@ class ProfileSelectActivity : Activity() {
         val efCard=LinearLayout(this).apply {
             orientation=LinearLayout.VERTICAL;setPadding(dp(16),dp(16),dp(16),dp(16))
             background=roundRect(Palette.CARD,16,Palette.CARD_LINE);isClickable=true;isFocusable=true
-            setOnClickListener{startActivity(Intent(this@ProfileSelectActivity,EFootballTrainingActivity::class.java))}
+            setOnClickListener {
+                BotAccessibilityService.instance?.closeClicker()
+                startActivity(Intent(this@ProfileSelectActivity, EFootballTrainingActivity::class.java))
+            }
             addView(TextView(this@ProfileSelectActivity).apply{setText(R.string.ef_title);textSize=16f;typeface=Typeface.DEFAULT_BOLD;setTextColor(Palette.TEXT)})
             addView(TextView(this@ProfileSelectActivity).apply{setText(R.string.ef_subtitle);textSize=13f;setTextColor(Palette.MUTED)},lp(4))
         }
@@ -212,7 +225,10 @@ class ProfileSelectActivity : Activity() {
             setPadding(dp(14), dp(16), dp(14), dp(16))
             background = roundRect(Palette.CARD, 16, Palette.CARD_LINE)
             isClickable = true; isFocusable = true
-            setOnClickListener { startActivity(Intent(this@ProfileSelectActivity, Board2048Activity::class.java)) }
+            setOnClickListener {
+                BotAccessibilityService.instance?.closeClicker()
+                startActivity(Intent(this@ProfileSelectActivity, Board2048Activity::class.java))
+            }
         }
         val tile = FrameLayout(this).apply { background = roundRect(Palette.ACCENT_TINT, 12) }
         tile.addView(IconView(this, Icon.GRID, Palette.ACCENT), FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))
@@ -226,7 +242,10 @@ class ProfileSelectActivity : Activity() {
         val brickCard=LinearLayout(this).apply {
             gravity=Gravity.CENTER_VERTICAL; setPadding(dp(14),dp(16),dp(14),dp(16))
             background=roundRect(Palette.CARD,16,Palette.CARD_LINE); isClickable=true; isFocusable=true
-            setOnClickListener { startActivity(Intent(this@ProfileSelectActivity,BrickReaderActivity::class.java)) }
+            setOnClickListener {
+                BotAccessibilityService.instance?.closeClicker()
+                startActivity(Intent(this@ProfileSelectActivity, BrickReaderActivity::class.java))
+            }
         }
         val brickTile=FrameLayout(this).apply { background=roundRect(Palette.ACCENT_TINT,12) }
         brickTile.addView(IconView(this,Icon.BOXES,Palette.ACCENT),FrameLayout.LayoutParams(dp(22),dp(22),Gravity.CENTER))
@@ -244,7 +263,10 @@ class ProfileSelectActivity : Activity() {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(14), dp(14), dp(14), dp(14))
                 background = roundRect(Palette.CARD, 16, Palette.CARD_LINE)
-                setOnClickListener { startActivity(Intent(this@ProfileSelectActivity, MainActivity::class.java).putExtra("profile", p.id)) }
+                setOnClickListener {
+                    BotAccessibilityService.instance?.closeClicker()
+                    startActivity(Intent(this@ProfileSelectActivity, MainActivity::class.java).putExtra("profile", p.id))
+                }
             }
             val tile = FrameLayout(this).apply { background = roundRect(Palette.ACCENT_TINT, 12) }
             tile.addView(IconView(this, profileIcon(p.id), Palette.ACCENT), FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER))

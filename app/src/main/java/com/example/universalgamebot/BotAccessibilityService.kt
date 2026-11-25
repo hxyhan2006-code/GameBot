@@ -3,7 +3,10 @@ package com.example.universalgamebot
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.GestureDescription
+import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Path
+import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
@@ -19,6 +22,121 @@ class BotAccessibilityService : AccessibilityService() {
     }
 
     private val main = Handler(Looper.getMainLooper())
+    private val gestureSlot = GestureSlot()
+    private var clicker: ClickerOverlay? = null
+
+    fun showClicker(): Boolean {
+        if (clicker != null) return true
+        val stoppedCapture = listOf(
+            CaptureService::class.java,
+            EFootballCaptureService::class.java,
+            Board2048CaptureService::class.java,
+            ReadOnlyGameCaptureService::class.java
+        ).map { stopService(Intent(this, it)) }.any { it }
+        if (stoppedCapture || !gestureSlot.enterClicker()) return false
+        val overlay = ClickerOverlay(this)
+        clicker = overlay
+        if (overlay.open()) return true
+        closeClicker()
+        return false
+    }
+
+    fun closeClicker() {
+        val overlay = clicker ?: return
+        clicker = null
+        overlay.close { gestureSlot.leaveClicker() }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        clicker?.displayChanged()
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        closeClicker()
+        if (instance === this) instance = null
+        return super.onUnbind(intent)
+    }
+
+    internal fun focusedApplication(): String? = focusedApplication(null, 0, 0)
+
+    internal fun canPressIn(expected: String, x: Int, y: Int): Boolean =
+        focusedApplication(expected, x, y) == expected
+
+    private fun focusedApplication(expected: String?, x: Int, y: Int): String? = try {
+        val visible = windows
+        val focus = visible.firstOrNull { it.isFocused && it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
+        val root = focus?.root
+        val name = root?.packageName?.toString()
+        @Suppress("DEPRECATION")
+        root?.recycle()
+        if (expected == null) name
+        else if (name != expected || focus == null) null
+        else {
+            val bounds = Rect()
+            focus.getBoundsInScreen(bounds)
+            name.takeIf {
+                bounds.contains(x, y) && visible.none { other ->
+                    if (other.layer <= focus.layer) false
+                    else {
+                        other.getBoundsInScreen(bounds)
+                        bounds.contains(x, y)
+                    }
+                }
+            }
+        }
+    } catch (e: Exception) {
+        null
+    }
+
+    internal fun submitClicker(gesture: GestureDescription, onDone: (Boolean) -> Unit): Boolean =
+        dispatchTracked(gesture, object : GestureResultCallback() {
+            override fun onCompleted(g: GestureDescription?) = onDone(true)
+            override fun onCancelled(g: GestureDescription?) = onDone(false)
+        }, autoClicker = true)
+
+    internal fun dispatchVisionGesture(gesture: GestureDescription, callback: GestureResultCallback): Boolean =
+        dispatchTracked(gesture, callback, autoClicker = false)
+
+    private fun dispatchTracked(
+        gesture: GestureDescription,
+        callback: GestureResultCallback,
+        autoClicker: Boolean
+    ): Boolean {
+        check(Looper.myLooper() == Looper.getMainLooper())
+        if (instance !== this || !gestureSlot.acquire(autoClicker)) return false
+        var pending = true
+        lateinit var timeout: Runnable
+        fun finish(ok: Boolean, notify: Boolean = true) {
+            if (!pending) return
+            pending = false
+            main.removeCallbacks(timeout)
+            gestureSlot.release(autoClicker)
+            if (notify) {
+                if (ok) callback.onCompleted(gesture) else callback.onCancelled(gesture)
+            }
+        }
+        timeout = Runnable {
+            DebugMonitor.skip("gesture callback timed out")
+            finish(false)
+        }
+        val accepted = try {
+            dispatchGesture(gesture, object : GestureResultCallback() {
+                override fun onCompleted(g: GestureDescription?) = finish(true)
+                override fun onCancelled(g: GestureDescription?) = finish(false)
+            }, main)
+        } catch (e: Exception) {
+            DebugMonitor.error("dispatchGesture failed: ${e.message}", e)
+            false
+        }
+        if (accepted) {
+            val duration = (0 until gesture.strokeCount).maxOf { i ->
+                gesture.getStroke(i).let { it.startTime + it.duration }
+            }
+            main.postDelayed(timeout, duration + 3000L)
+        } else finish(false, notify = false)
+        return accepted
+    }
     private val efootballWindowEvidence=EFootballForeground()
     private var efootballBadge:EFootballStatusBadge?=null
     private val pending = AtomicBoolean(false)
@@ -31,6 +149,7 @@ class BotAccessibilityService : AccessibilityService() {
         DebugMonitor.log("Accessibility connected, canRetrieveContent=$canRead")
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        clicker?.windowChanged()
         val badgeEvent=event!=null && isOwnBadgeWindow(event.windowId) && event.packageName?.toString()==packageName
         if(event?.eventType==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && !badgeEvent)
             efootballWindowEvidence.announced(event.packageName?.toString(),event.windowId)
@@ -47,14 +166,15 @@ class BotAccessibilityService : AccessibilityService() {
             efootballScopeObserver?.invoke(ef,if(badgeEvent)ef else announced)
         }
     }
-    override fun onInterrupt() { efootballWindowEvidence.reset(); board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null) }
-    override fun onDestroy() { efootballBadge?.close();efootballBadge=null;efootballWindowEvidence.reset(); board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null); instance = null; super.onDestroy() }
+    override fun onInterrupt() { clicker?.stop(); efootballWindowEvidence.reset(); board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null) }
+    override fun onDestroy() { closeClicker(); efootballBadge?.close();efootballBadge=null;efootballWindowEvidence.reset(); board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null); instance = null; super.onDestroy() }
 
     fun postMain(r: Runnable) { main.post(r) }
 
     /** ปิดบริการตัวเอง (API 24+): ใช้ตอนเลิกทดสอบ เพราะแอปการเงินบางแอป (เช่น Dime) ไม่ยอมให้ใช้งานถ้ามี Accessibility ของแอปนอก Store เปิดอยู่ */
     fun turnOff() {
         DebugMonitor.log("Accessibility turned off from the app")
+        closeClicker()
         efootballBadge?.close();efootballBadge=null
         efootballWindowEvidence.reset()
         board2048ScopeObserver?.invoke(null); readOnlyScopeObserver?.invoke(null,null); efootballScopeObserver?.invoke(null,null)
@@ -118,7 +238,7 @@ class BotAccessibilityService : AccessibilityService() {
         main.post {
             try {
                 val gesture = GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, durationMs)).build()
-                val accepted = dispatchGesture(gesture, object : GestureResultCallback() {
+                val accepted = dispatchVisionGesture(gesture, object : GestureResultCallback() {
                     override fun onCompleted(g: GestureDescription?) {
                         pending.set(false)
                         DebugMonitor.gesturesOk.incrementAndGet()
@@ -133,7 +253,7 @@ class BotAccessibilityService : AccessibilityService() {
                         DebugMonitor.error("gesture cancelled [$desc]")
                         onDone?.invoke(false, "cancelled by system")
                     }
-                }, null)
+                })
                 if (!accepted) {
                     pending.set(false)
                     DebugMonitor.gesturesFailed.incrementAndGet()

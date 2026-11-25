@@ -83,7 +83,7 @@ internal class EFootballAndroidGestures(
         override fun onCancelled(g:GestureDescription?){if(pending===run){run.first=null;trace("Android gesture cancelled");finish(run,false)}}
     }
     private fun send(g:GestureDescription,cb:AccessibilityService.GestureResultCallback)=
-        dispatch?.invoke(g,cb) ?: (BotAccessibilityService.instance===service && service.dispatchGesture(g,cb,main))
+        dispatch?.invoke(g,cb) ?: (BotAccessibilityService.instance===service && service.dispatchVisionGesture(g,cb))
     private fun path(a:EFootballScreenPoint,b:EFootballScreenPoint)=Path().apply{moveTo(a.x,a.y);lineTo(b.x,b.y)}
     private fun simple(s:EFootballPointerStroke)=GestureDescription.StrokeDescription(path(s.keyframes.first().position,s.keyframes.last().position),s.startsMs,s.keyframes.last().elapsedMs,false)
     /** Ends only a pointer previously accepted by Android. No new DOWN/button on another screen. */

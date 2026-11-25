@@ -88,7 +88,7 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
                 post(Runnable { onDone(false, why) })
             }
             try {
-                val accepted = svc.dispatchGesture(gesture, object : AccessibilityService.GestureResultCallback() {
+                val accepted = svc.dispatchVisionGesture(gesture, object : AccessibilityService.GestureResultCallback() {
                     override fun onCompleted(g: GestureDescription?) {
                         synchronized(this@ContinuousGestureExecutor) {
                             inFlight = false
@@ -101,7 +101,7 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
                         }
                     }
                     override fun onCancelled(g: GestureDescription?) { failed("cancelled by system") }
-                }, null)
+                })
                 if (!accepted) failed("dispatchGesture=false")
             } catch (e: Exception) { failed("exception: ${e.message}") }
         })
@@ -120,10 +120,10 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
             inFlight = true
             svc.postMain(Runnable {
                 try {
-                    val accepted = svc.dispatchGesture(g, object : AccessibilityService.GestureResultCallback() {
+                    val accepted = svc.dispatchVisionGesture(g, object : AccessibilityService.GestureResultCallback() {
                         override fun onCompleted(g: GestureDescription?) { inFlight = false }
                         override fun onCancelled(g: GestureDescription?) { inFlight = false }
-                    }, null)
+                    })
                     if (!accepted) inFlight = false
                 } catch (e: Exception) { inFlight = false; DebugMonitor.error("release gesture failed: ${e.message}", e) }
             })

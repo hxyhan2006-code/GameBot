@@ -57,10 +57,10 @@ object Board2048GestureExecutor {
                     }
                 }
                 val gesture = GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, 180)).build()
-                val accepted = service.dispatchGesture(gesture, object : AccessibilityService.GestureResultCallback() {
+                val accepted = service.dispatchVisionGesture(gesture, object : AccessibilityService.GestureResultCallback() {
                     override fun onCompleted(g: GestureDescription?) { done(true, "completed") }
                     override fun onCancelled(g: GestureDescription?) { done(false, "cancelled by system") }
-                }, null)
+                })
                 if (!accepted) done(false, "dispatchGesture rejected")
             } catch (e: Exception) { done(false, "${e.javaClass.simpleName}: ${e.message}") }
         }

@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Universal Game Bot</string>
     <string name="service_label">Game Bot Touch Controller</string>
-    <string name="accessibility_description">ใช้ควบคุมเฉพาะเกมทดสอบและสนาม Free Training ที่รองรับและผู้ใช้เริ่มเอง เปิดเฉพาะตอนใช้งานโหมดเหล่านี้</string>
+    <string name="accessibility_description">ใช้ควบคุมเฉพาะเกมทดสอบและสนาม Free Training ที่รองรับและผู้ใช้เริ่มเอง เปิดเฉพาะตอนใช้งานโหมดเหล่านี้ ใช้แตะหน้าจอในโหมด Auto Clicker เมื่อคุณกดเริ่มด้วย</string>
 
     <string name="lang_switch">EN</string>
     <string name="score_fmt">คะแนน: %d</string>
@@ -214,4 +214,31 @@
     <string name="ef_badge_reading">GameBot · อ่านจอ</string>
     <string name="ef_badge_active">GameBot · พบการเคลื่อนไหว</string>
     <string name="ef_badge_stopped">GameBot · หยุดแล้ว</string>
+    <string name="clicker_open">เปิดแถบควบคุมลอย</string>
+    <string name="clicker_busy">เปิดแถบควบคุมไม่ได้ ลองอีกครั้งหลังการแตะปัจจุบันจบ</string>
+    <string name="clicker_play">เริ่ม</string>
+    <string name="clicker_pause">พัก</string>
+    <string name="clicker_add">เพิ่มจุด</string>
+    <string name="clicker_remove">ลบจุดที่เลือกหรือจุดสุดท้าย</string>
+    <string name="clicker_settings">ตั้งค่า Auto Clicker</string>
+    <string name="clicker_close">ปิดแถบควบคุม</string>
+    <string name="clicker_collapse">ย่อหรือขยายแถบควบคุม</string>
+    <string name="clicker_failed">Auto Clicker หยุดแล้ว ตรวจว่าจุดคลิกไม่อยู่ใต้แถบควบคุม</string>
+    <string name="clicker_delay">เวลารอหลังคลิก (มิลลิวินาที)</string>
+    <string name="clicker_seconds">กรอกเวลารอเป็นวินาที</string>
+    <string name="clicker_press">ระยะเวลากด (มิลลิวินาที)</string>
+    <string name="clicker_target">จุดที่ %1$d</string>
+    <string name="clicker_invalid_delay">กรอกเวลารอตั้งแต่ 0 ถึง 24 ชั่วโมง ละเอียดได้ถึงมิลลิวินาที</string>
+    <string name="clicker_invalid_press">กรอก 1 ถึง %1$d มิลลิวินาที</string>
+    <string name="clicker_multi">หลายจุด (Multi Target)</string>
+    <string name="clicker_rounds">จำนวนรอบ (0 = ไม่จำกัด)</string>
+    <string name="clicker_invalid_rounds">กรอก 0 หรือจำนวนเต็มบวก</string>
+    <string name="clicker_load">โหลดโปรไฟล์</string>
+    <string name="clicker_save">บันทึกโปรไฟล์</string>
+    <string name="clicker_name">ชื่อโปรไฟล์</string>
+    <string name="clicker_replace">บันทึกทับโปรไฟล์เดิมหรือไม่</string>
+    <string name="clicker_no_profiles">ยังไม่มีโปรไฟล์ที่บันทึกไว้</string>
+    <string name="clicker_delay_seconds">เวลารอหลังคลิก (วินาที)</string>
+    <string name="clicker_stop">หยุด</string>
+    <string name="clicker_foreground">เปิดเกมก่อนกดเริ่ม</string>
 </resources>

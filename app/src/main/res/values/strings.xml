@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Universal Game Bot</string>
     <string name="service_label">Game Bot Touch Controller</string>
-    <string name="accessibility_description">Controls only user-started supported test games and Free Training. Enable only while using these modes.</string>
+    <string name="accessibility_description">Controls only user-started supported test games and Free Training. Enable only while using these modes. Also sends taps in Auto Clicker when you start it.</string>
 
     <string name="lang_switch">ไทย</string>
     <string name="score_fmt">Score: %d</string>
@@ -214,4 +214,31 @@
     <string name="ef_badge_reading">GameBot · Reading</string>
     <string name="ef_badge_active">GameBot · Motion observed</string>
     <string name="ef_badge_stopped">GameBot · Stopped</string>
+    <string name="clicker_open">Show floating controls</string>
+    <string name="clicker_busy">Could not open controls. Try again after the current gesture ends.</string>
+    <string name="clicker_play">Play</string>
+    <string name="clicker_pause">Pause</string>
+    <string name="clicker_add">Add target</string>
+    <string name="clicker_remove">Remove selected or last target</string>
+    <string name="clicker_settings">Auto Clicker settings</string>
+    <string name="clicker_close">Close controls</string>
+    <string name="clicker_collapse">Collapse or expand controls</string>
+    <string name="clicker_failed">Auto Clicker stopped. Check that no target is under the controls.</string>
+    <string name="clicker_delay">Delay after pressing (ms)</string>
+    <string name="clicker_seconds">Enter delay in seconds</string>
+    <string name="clicker_press">Press duration (ms)</string>
+    <string name="clicker_target">Target %1$d</string>
+    <string name="clicker_invalid_delay">Enter a delay from 0 to 24 hours, in whole milliseconds.</string>
+    <string name="clicker_invalid_press">Enter 1 to %1$d milliseconds.</string>
+    <string name="clicker_multi">Multi Target</string>
+    <string name="clicker_rounds">Rounds (0 = unlimited)</string>
+    <string name="clicker_invalid_rounds">Enter 0 or a positive whole number.</string>
+    <string name="clicker_load">Load profile</string>
+    <string name="clicker_save">Save profile</string>
+    <string name="clicker_name">Profile name</string>
+    <string name="clicker_replace">Replace profile?</string>
+    <string name="clicker_no_profiles">No saved profiles.</string>
+    <string name="clicker_delay_seconds">Delay after pressing (seconds)</string>
+    <string name="clicker_stop">Stop</string>
+    <string name="clicker_foreground">Open the game before pressing Play.</string>
 </resources>
