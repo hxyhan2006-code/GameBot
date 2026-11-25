@@ -12,6 +12,7 @@ internal data class ClickProfile(
 internal class ClickerSequence(
     private val schedule: (Runnable, Long) -> Unit,
     private val cancel: (Runnable) -> Unit,
+    private val now: () -> Long,
     private val press: (ClickTarget, valid: () -> Boolean, done: (Boolean) -> Unit) -> Boolean,
     private val changed: (failed: Boolean) -> Unit
 ) {
@@ -27,7 +28,17 @@ internal class ClickerSequence(
     private var index = 0
     private var completedRounds = 0
     private var finishedRoundLimit = false
-    private val step = Runnable { send() }
+    private var dueAt: Long? = null
+    private var remainingDelay = 0L
+    private val step = Runnable {
+        dueAt = null
+        send()
+    }
+
+    private fun waitForStep(delay: Long) {
+        dueAt = now() + delay
+        schedule(step, delay)
+    }
 
     fun play(profile: ClickProfile) {
         if (state == State.RUNNING || inFlight) return
@@ -38,12 +49,15 @@ internal class ClickerSequence(
         }
         state = State.RUNNING
         changed(false)
-        schedule(step, 0)
+        waitForStep(remainingDelay)
+        remainingDelay = 0
     }
 
     fun pause() {
         if (state != State.RUNNING) return
         state = State.PAUSED
+        remainingDelay = dueAt?.let { (it - now()).coerceAtLeast(0) } ?: 0L
+        dueAt = null
         cancel(step)
         changed(false)
     }
@@ -52,6 +66,8 @@ internal class ClickerSequence(
 
     private fun stop(failed: Boolean) {
         generation++
+        dueAt = null
+        remainingDelay = 0
         cancel(step)
         state = State.STOPPED
         index = 0
@@ -83,7 +99,11 @@ internal class ClickerSequence(
                 index = 0
                 if (rounds != 0) finishedRoundLimit = ++completedRounds == rounds
             }
-            if (state == State.RUNNING) schedule(step, target.delayMs) else changed(false)
+            if (state == State.RUNNING) waitForStep(target.delayMs)
+            else {
+                remainingDelay = target.delayMs
+                changed(false)
+            }
         }
         if (!accepted) {
             inFlight = false

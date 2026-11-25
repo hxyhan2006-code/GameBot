@@ -40,6 +40,7 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
     private var selected = -1
     private var gamePackage: String? = null
     private var closed = false
+    private var afterClose: (() -> Unit)? = null
     private var registered = false
     private var collapsed = false
     private var dialog: AlertDialog? = null
@@ -62,14 +63,21 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
     private lateinit var play: Button
     private lateinit var add: Button
     private lateinit var remove: Button
-    private val sequence = ClickerSequence(
+    private val sequence: ClickerSequence = ClickerSequence(
         { task, delay -> handler.postDelayed(task, delay) },
         { task -> handler.removeCallbacks(task) },
+        android.os.SystemClock::uptimeMillis,
         ::press
     ) { failed ->
+        if (closed && !sequenceIsInFlight()) {
+            afterClose?.invoke()
+            afterClose = null
+        }
         refresh()
         if (failed && unlocked()) message(R.string.clicker_failed)
     }
+
+    private fun sequenceIsInFlight(): Boolean = sequence.inFlight
 
     fun open(): Boolean = try {
         val handle = button("≡", R.string.clicker_collapse) {
@@ -122,8 +130,9 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
         if (sequence.state == ClickerSequence.State.RUNNING && gamePackage != service.focusedApplication()) stop()
     }
 
-    fun close() {
+    fun close(onSettled: () -> Unit) {
         closed = true
+        afterClose = onSettled
         stop()
         dialog?.dismiss()
         if (registered) service.unregisterReceiver(screenOff)
@@ -154,12 +163,32 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
         if (x >= panelLocation[0] && x < panelLocation[0] + panel.width &&
             y >= panelLocation[1] && y < panelLocation[1] + panel.height) return false
         val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
-        val gesture = GestureDescription.Builder()
-            .addStroke(GestureDescription.StrokeDescription(path, 0, target.pressMs)).build()
-        return service.submit(gesture, autoClicker = true, valid = { valid() && sameGame() }) { ok, reason ->
-            if (!ok && valid()) DebugMonitor.log("Auto Clicker: $reason")
-            done(ok)
+        fun playing() = valid() && sameGame()
+
+        // Accessibility has no direct cancellation call. A continued stroke can
+        // be ended at the next segment boundary without injecting a new down.
+        fun send(previous: GestureDescription.StrokeDescription?, remaining: Long): Boolean {
+            val continuing = playing()
+            if (!continuing && previous == null) return false
+            val duration = if (continuing) minOf(remaining, PRESS_SEGMENT_MS) else 1L
+            val willContinue = continuing && remaining > duration
+            val stroke = if (previous == null) {
+                GestureDescription.StrokeDescription(path, 0, duration, willContinue)
+            } else {
+                previous.continueStroke(path, 0, duration, willContinue)
+            }
+            val gesture = GestureDescription.Builder().addStroke(stroke).build()
+            return service.submit(gesture, autoClicker = true) { ok, reason ->
+                if (!ok && playing()) DebugMonitor.log("Auto Clicker: $reason")
+                if (ok && willContinue) {
+                    if (!send(stroke, remaining - duration)) done(false)
+                } else {
+                    done(ok && continuing)
+                }
+            }
         }
+
+        return send(null, target.pressMs)
     }
 
     private fun refresh() {
@@ -453,5 +482,8 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
 
     private fun message(id: Int) { Toast.makeText(ui, id, Toast.LENGTH_SHORT).show() }
 
-    private companion object { const val MAX_DELAY = 86_400_000L }
+    private companion object {
+        const val MAX_DELAY = 86_400_000L
+        const val PRESS_SEGMENT_MS = 200L
+    }
 }

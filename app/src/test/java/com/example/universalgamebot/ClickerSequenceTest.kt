@@ -8,10 +8,12 @@ class ClickerSequenceTest {
         var scheduled: Pair<Runnable, Long>? = null
         var result: ((Boolean) -> Unit)? = null
         var valid: (() -> Boolean)? = null
+        var now = 0L
         val sent = mutableListOf<ClickTarget>()
         val sequence = ClickerSequence(
             { task, delay -> assertNull(scheduled); scheduled = task to delay },
             { task -> if (scheduled?.first == task) scheduled = null },
+            { now },
             { target, allowed, done ->
                 assertNull(result)
                 sent += target
@@ -26,6 +28,7 @@ class ClickerSequenceTest {
             val next = checkNotNull(scheduled)
             assertEquals(delay, next.second)
             scheduled = null
+            now += delay
             next.first.run()
         }
 
@@ -90,10 +93,12 @@ class ClickerSequenceTest {
         runner.sequence.play(profile)
         runner.step(0)
         runner.complete()
+        runner.now += 300
         runner.sequence.pause()
         assertNull(runner.scheduled)
+        runner.now += 5000
         runner.sequence.play(profile)
-        runner.step(0)
+        runner.step(700)
         runner.complete(false)
         assertNull(runner.scheduled)
         assertEquals(ClickerSequence.State.STOPPED, runner.sequence.state)

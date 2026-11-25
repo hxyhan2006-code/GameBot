@@ -31,9 +31,9 @@ class BotAccessibilityService : AccessibilityService() {
     }
 
     fun closeClicker() {
-        clicker?.close()
+        val overlay = clicker ?: return
         clicker = null
-        gestures.leaveClicker()
+        overlay.close { gestures.leaveClicker() }
     }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
@@ -123,7 +123,7 @@ class BotAccessibilityService : AccessibilityService() {
             DebugMonitor.gesturesSent.incrementAndGet()
             DebugMonitor.gestureState = "Dispatched"
         }
-        main.post {
+        val dispatch = Runnable {
             var finished = false
             lateinit var watchdog: Runnable
             fun finish(ok: Boolean, reason: String) {
@@ -141,7 +141,7 @@ class BotAccessibilityService : AccessibilityService() {
             watchdog = Runnable { finish(false, "gesture callback timed out") }
             if (instance !== this || !valid()) {
                 finish(false, "no longer active")
-                return@post
+                return@Runnable
             }
             val accepted = try {
                 dispatchGesture(gesture, object : GestureResultCallback() {
@@ -159,6 +159,8 @@ class BotAccessibilityService : AccessibilityService() {
                 main.postDelayed(watchdog, duration + 3000L)
             } else finish(false, "dispatchGesture=false")
         }
+        if (autoClicker && Looper.myLooper() == Looper.getMainLooper()) dispatch.run()
+        else main.post(dispatch)
         return true
     }
 }
