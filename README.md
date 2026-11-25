@@ -1,10 +1,16 @@
-# Universal Game Bot v0.6.0 (local proof of concept)
+# Universal Game Bot v0.7.0 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
 **Quick start:** open the **Releases** page, download the newest `UniversalGameBot-buildN.apk` and install it.
 
 An Android Kotlin project for a single Xiaomi 15T Pro or another Android 10+ phone. This is **not a compiled APK**. It demonstrates a complete local observe → decide → tap loop in a built-in green-target game. No API key, internet, root, or PC is needed to **run** the resulting APK; a build environment is needed to **compile** it.
+
+## Basic Auto Clicker
+
+Open **Auto Clicker** on the GameBot home screen and enable the existing accessibility service. Show the floating controls, then switch to the game. Drag a numbered marker to place it or tap it to edit its delay and press duration. In settings, enable **Multi Target** for multiple points and set the round count. Use 0 for unlimited rounds. Save or load named profiles from the same settings.
+
+Targets run in number order. Each delay starts after Android reports that the corresponding press finished. Editing markers disappear during playback and the panel stays touchable. Keep the panel clear of the click positions. Screen lock and rotation stop playback. After rotating, check the markers before restarting. Tap **Vision Bot** to close the floating controls and return to the built-in test games.
 
 ## Build (Android Studio)
 1. Install Android Studio on a computer, open this folder, and allow Gradle sync. Use JDK 17 and Android SDK 35.
@@ -28,7 +34,7 @@ An Android Kotlin project for a single Xiaomi 15T Pro or another Android 10+ pho
 
 ## Limitations
 - Local color detector, not a trained AI model. This is the deterministic on-device part of the proposed Hybrid system. Online AI inference is deliberately **not implemented** in v0.1.
-- Controls **only its own test game**, by checking the foreground package name. No third-party game automation is enabled.
+- Vision Bot controls only the built-in test games, using the foreground package and arena bounds.
 - MediaProjection may be stopped by Android; grant permission again to restart. Android 14+ requires new consent for each projection session.
 - Capture dimensions and gesture coordinate mapping can vary with orientation, display scaling, navigation bars, and HyperOS. Test in portrait mode with normal display scaling first.
 - Accessibility and capture permission are sensitive. No screenshots are saved or uploaded.

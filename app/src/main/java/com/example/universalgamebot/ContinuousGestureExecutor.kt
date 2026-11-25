@@ -1,6 +1,5 @@
 package com.example.universalgamebot
 
-import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.os.SystemClock
@@ -75,34 +74,24 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
         val sentHeld = next
         val ex = endX; val ey = endY
         inFlight = true
-        DebugMonitor.gesturesSent.incrementAndGet()
-        DebugMonitor.gestureState = "Dispatched"
-        svc.postMain(Runnable {
-            fun failed(why: String) {
-                inFlight = false; held = null
-                lastDoneAt = SystemClock.elapsedRealtime()
-                ControlGestureStats.record(kind, tapVariant, false, gapMs)
-                DebugMonitor.gesturesFailed.incrementAndGet()
-                DebugMonitor.gestureState = "Failed ($why)"
-                DebugMonitor.error("continuous gesture failed: $why [${cmd.describe()}]")
-                onDone(false, why)
-            }
-            try {
-                val accepted = svc.dispatchGesture(gesture, object : AccessibilityService.GestureResultCallback() {
-                    override fun onCompleted(g: GestureDescription?) {
-                        inFlight = false
-                        lastDoneAt = SystemClock.elapsedRealtime()
-                        ControlGestureStats.record(kind, tapVariant, true, gapMs)
-                        if (releasing) held = null else { held = sentHeld; lastX = ex; lastY = ey; if (closing) liftNow() }
-                        DebugMonitor.gesturesOk.incrementAndGet()
-                        DebugMonitor.gestureState = "Success"
-                        onDone(true, "completed")
-                    }
-                    override fun onCancelled(g: GestureDescription?) { failed("cancelled by system") }
-                }, null)
-                if (!accepted) failed("dispatchGesture=false")
-            } catch (e: Exception) { failed("exception: ${e.message}") }
-        })
+        val accepted = svc.submit(gesture, valid = {
+            !EmergencyStop.triggered && ArenaGate.info?.rect == arena.rect &&
+                svc.activePackage().let { it == null || it == appPackage }
+        }) { ok, reason ->
+            lastDoneAt = SystemClock.elapsedRealtime()
+            ControlGestureStats.record(kind, tapVariant, ok, gapMs)
+            if (ok && !releasing) { held = sentHeld; lastX = ex; lastY = ey }
+            else held = null
+            inFlight = false
+            if (ok && closing) liftNow()
+            if (!ok) DebugMonitor.error("continuous gesture failed: $reason [${cmd.describe()}]")
+            onDone(ok, reason)
+        }
+        if (!accepted) {
+            inFlight = false
+            held = null
+            return "gesture busy"
+        }
         return null
     }
 
@@ -115,9 +104,11 @@ class ContinuousGestureExecutor(private val appPackage: String, private val post
         try {
             val path = Path().apply { moveTo(lastX, lastY); lineTo(lastX + 0.5f, lastY) }
             val g = GestureDescription.Builder().addStroke(prev.continueStroke(path, 0, TAP_MS, false)).build()
-            svc.postMain(Runnable {
-                try { svc.dispatchGesture(g, null, null) } catch (e: Exception) { DebugMonitor.error("release gesture failed: ${e.message}", e) }
-            })
+            svc.submit(g, valid = {
+                ArenaGate.info != null && svc.activePackage().let { it == null || it == appPackage }
+            }) { ok, reason ->
+                if (!ok) DebugMonitor.error("release gesture failed: $reason")
+            }
         } catch (e: Exception) { DebugMonitor.error("release gesture build failed: ${e.message}", e) }
     }
 
