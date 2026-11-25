@@ -44,6 +44,16 @@ class ClickerSequenceTest {
     private val two = ClickTarget(.3f, .4f, 30000, 125)
     private val three = ClickTarget(.5f, .6f, 2000, 20)
 
+    @Test fun addingMorePointsEnablesMultiTargetWithoutChangingExistingPoints() {
+        val initial = ClickProfile(targets = emptyList(), rounds = 2)
+        val first = initial.withAddedTarget(one)
+        assertFalse(first.multi)
+        val all = first.withAddedTarget(two).withAddedTarget(three)
+        assertTrue(all.multi)
+        assertEquals(listOf(one, two, three), all.targets)
+        assertEquals(2, all.rounds)
+    }
+
     @Test fun followsCallbackOrderDelaysAndRoundLimit() {
         val runner = Runner()
         runner.sequence.play(ClickProfile(listOf(one, two, three), multi = true, rounds = 2))

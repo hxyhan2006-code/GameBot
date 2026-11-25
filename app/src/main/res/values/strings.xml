@@ -223,7 +223,7 @@
     <string name="clicker_settings">Auto Clicker settings</string>
     <string name="clicker_close">Close controls</string>
     <string name="clicker_collapse">Collapse or expand controls</string>
-    <string name="clicker_failed">Auto Clicker stopped. Check that no target is under the controls.</string>
+    <string name="clicker_failed">Android could not complete the click. Press Play to try again.</string>
     <string name="clicker_delay">Delay after pressing (ms)</string>
     <string name="clicker_seconds">Enter delay in seconds</string>
     <string name="clicker_press">Press duration (ms)</string>
@@ -241,4 +241,9 @@
     <string name="clicker_delay_seconds">Delay after pressing (seconds)</string>
     <string name="clicker_stop">Stop</string>
     <string name="clicker_foreground">Open the game before pressing Play.</string>
+    <string name="clicker_panel_covers_target">Move the floating controls away from the target.</string>
+    <string name="clicker_focus_changed">Auto Clicker stopped because the game is no longer in focus.</string>
+    <string name="clicker_outside_game">Move the target inside the game window.</string>
+    <string name="clicker_window_covers_target">Another window covers the target. Close it or move the target.</string>
+    <string name="clicker_load_failed">The profile could not be loaded.</string>
 </resources>

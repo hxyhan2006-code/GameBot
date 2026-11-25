@@ -38,6 +38,7 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
     private val profiles = ClickerProfiles(service)
     private var profile = ClickProfile()
     private var selected = -1
+    private var failureMessage = R.string.clicker_failed
     private var gamePackage: String? = null
     private var closed = false
     private var afterClose: (() -> Unit)? = null
@@ -74,7 +75,7 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
             afterClose = null
         }
         refresh()
-        if (failed && unlocked()) message(R.string.clicker_failed)
+        if (failed && unlocked()) message(failureMessage)
     }
 
     private fun sequenceIsInFlight(): Boolean = sequence.inFlight
@@ -97,7 +98,7 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
                 } else {
                     if (gamePackage != foreground) stop()
                     gamePackage = foreground
-                    sequence.play(profile)
+                    sequence.play(profile, settleMs = 50)
                 }
             }
         }
@@ -127,7 +128,12 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
     }
 
     fun windowChanged() {
-        if (sequence.state == ClickerSequence.State.RUNNING && gamePackage != service.focusedApplication()) stop()
+        if (sequence.state != ClickerSequence.State.RUNNING) return
+        val foreground = service.focusedApplication()
+        if (gamePackage != foreground) {
+            stop()
+            if (unlocked()) message(R.string.clicker_focus_changed)
+        }
     }
 
     fun close(onSettled: () -> Unit) {
@@ -152,16 +158,29 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
     private fun unlocked() = power.isInteractive && !keyguard.isKeyguardLocked
 
     private fun press(target: ClickTarget, valid: () -> Boolean, done: (Boolean) -> Unit): Boolean {
+        failureMessage = R.string.clicker_failed
         val game = gamePackage ?: return false
         val size = screenSize()
         val x = position(target.x, size.x)
         val y = position(target.y, size.y)
         val panelLocation = IntArray(2)
-        panel.getLocationOnScreen(panelLocation)
-        if (x >= panelLocation[0] && x < panelLocation[0] + panel.width &&
-            y >= panelLocation[1] && y < panelLocation[1] + panel.height) return false
         val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
-        fun playing() = valid() && unlocked() && service.canPressIn(game, x, y)
+        fun playing(): Boolean {
+            if (!valid() || !unlocked()) return false
+            panel.getLocationOnScreen(panelLocation)
+            if (x >= panelLocation[0] && x < panelLocation[0] + panel.width &&
+                y >= panelLocation[1] && y < panelLocation[1] + panel.height) {
+                failureMessage = R.string.clicker_panel_covers_target
+                return false
+            }
+            failureMessage = when (service.checkClickerWindow(game, x, y)) {
+                BotAccessibilityService.ClickerWindowCheck.ALLOWED -> return true
+                BotAccessibilityService.ClickerWindowCheck.FOCUS_CHANGED -> R.string.clicker_focus_changed
+                BotAccessibilityService.ClickerWindowCheck.OUTSIDE_GAME -> R.string.clicker_outside_game
+                BotAccessibilityService.ClickerWindowCheck.COVERED -> R.string.clicker_window_covers_target
+            }
+            return false
+        }
 
         // Accessibility has no direct cancellation call. A continued stroke can
         // be ended at the next segment boundary without injecting a new down.
@@ -177,11 +196,14 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
             }
             val gesture = GestureDescription.Builder().addStroke(stroke).build()
             return service.submitClicker(gesture) { ok ->
-                if (!ok && playing()) DebugMonitor.log("Auto Clicker gesture cancelled")
+                if (!ok) {
+                    failureMessage = R.string.clicker_failed
+                    DebugMonitor.log("Auto Clicker gesture cancelled")
+                }
                 if (ok && willContinue) {
                     if (!send(stroke, remaining - duration)) done(false)
                 } else {
-                    done(ok)
+                    done(ok && (continuing || sequence.state != ClickerSequence.State.RUNNING))
                 }
             }
         }
@@ -203,16 +225,33 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
         play.text = if (running) "Ⅱ" else "▶"
         play.contentDescription = ui.getString(if (running) R.string.clicker_pause else R.string.clicker_play)
         play.isEnabled = running || (!sequence.inFlight && profile.targets.isNotEmpty())
-        add.isEnabled = !active && (profile.multi || profile.targets.isEmpty())
+        add.isEnabled = !active
         remove.isEnabled = !active && profile.targets.isNotEmpty()
     }
 
     private fun addTarget() {
         stop()
-        val offset = (profile.targets.size % 7 - 3) * .045f
-        profile = profile.copy(targets = profile.targets + ClickTarget(.5f + offset, .5f + offset))
+        profile = profile.withAddedTarget(nextTarget())
         selected = profile.targets.lastIndex
         rebuildMarkers()
+    }
+
+    private fun nextTarget(): ClickTarget {
+        val size = screenSize()
+        val spacing = markerSize + ui.dp(4)
+        val centerX = size.x / 2
+        val centerY = size.y / 2
+        val occupied = profile.targets.map { position(it.x, size.x) to position(it.y, size.y) }
+        val candidates = sequence {
+            for (y in markerSize / 2 until size.y - markerSize / 2 step spacing) {
+                for (x in markerSize / 2 until size.x - markerSize / 2 step spacing) yield(x to y)
+            }
+        }
+        val point = ((sequenceOf(centerX to centerY) + candidates).filter { (x, y) ->
+            occupied.none { (oldX, oldY) -> abs(oldX - x) < spacing && abs(oldY - y) < spacing }
+        }).minByOrNull { (x, y) -> abs(x - centerX) + abs(y - centerY) } ?: (centerX to centerY)
+        return ClickTarget(point.first.toFloat() / (size.x - 1).coerceAtLeast(1),
+            point.second.toFloat() / (size.y - 1).coerceAtLeast(1))
     }
 
     private fun removeTarget() {
@@ -239,6 +278,7 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
         profile.targets.forEachIndexed { index, target ->
             if (!profile.multi && index != 0) return@forEachIndexed
             val lp = windowParams(markerSize, markerSize).apply {
+                setTitle(EDIT_MARKER_TITLE)
                 x = position(target.x, size.x) - markerSize / 2
                 y = position(target.y, size.y) - markerSize / 2
                 flags = flags or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
@@ -366,7 +406,7 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
         if (names.isEmpty()) { message(R.string.clicker_no_profiles); return }
         show(AlertDialog.Builder(ui).setTitle(R.string.clicker_load).setItems(names) { _, index ->
             val loaded = profiles.load(names[index])
-            if (loaded == null) message(R.string.clicker_failed)
+            if (loaded == null) message(R.string.clicker_load_failed)
             else {
                 profile = loaded
                 selected = -1
@@ -480,7 +520,8 @@ internal class ClickerOverlay(private val service: BotAccessibilityService) {
 
     private fun message(id: Int) { Toast.makeText(ui, id, Toast.LENGTH_SHORT).show() }
 
-    private companion object {
+    companion object {
+        const val EDIT_MARKER_TITLE = "GameBot Auto Clicker target"
         const val MAX_DELAY = 86_400_000L
         const val PRESS_SEGMENT_MS = 200L
     }

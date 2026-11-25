@@ -15,7 +15,7 @@ android {
         minSdk = 29
         targetSdk = 35
         versionCode = buildNumber
-        versionName = "0.13.0-basic-auto-clicker"
+        versionName = "0.13.1-basic-auto-clicker"
     }
 
     // กุญแจเซ็นชุดเดียวทุกครั้ง (keystore/debug.keystore) ห้ามเปลี่ยน/ลบ ไม่งั้นติดตั้งทับไม่ได้

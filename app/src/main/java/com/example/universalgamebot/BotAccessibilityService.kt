@@ -7,6 +7,8 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Path
 import android.graphics.Rect
+import android.graphics.Region
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
@@ -58,35 +60,53 @@ class BotAccessibilityService : AccessibilityService() {
         return super.onUnbind(intent)
     }
 
-    internal fun focusedApplication(): String? = focusedApplication(null, 0, 0)
-
-    internal fun canPressIn(expected: String, x: Int, y: Int): Boolean =
-        focusedApplication(expected, x, y) == expected
-
-    private fun focusedApplication(expected: String?, x: Int, y: Int): String? = try {
-        val visible = windows
-        val focus = visible.firstOrNull { it.isFocused && it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
-        val root = focus?.root
-        val name = root?.packageName?.toString()
+    private fun AccessibilityWindowInfo.appPackage(): String? {
+        val node = root
+        val name = node?.packageName?.toString()
         @Suppress("DEPRECATION")
-        root?.recycle()
-        if (expected == null) name
-        else if (name != expected || focus == null) null
-        else {
-            val bounds = Rect()
-            focus.getBoundsInScreen(bounds)
-            name.takeIf {
-                bounds.contains(x, y) && visible.none { other ->
-                    if (other.layer <= focus.layer) false
-                    else {
-                        other.getBoundsInScreen(bounds)
-                        bounds.contains(x, y)
-                    }
-                }
-            }
-        }
+        node?.recycle()
+        return name
+    }
+
+    internal fun focusedApplication(): String? = try {
+        windows.firstOrNull {
+            it.isFocused && it.type == AccessibilityWindowInfo.TYPE_APPLICATION
+        }?.appPackage()
     } catch (e: Exception) {
         null
+    }
+
+    internal enum class ClickerWindowCheck { ALLOWED, FOCUS_CHANGED, OUTSIDE_GAME, COVERED }
+
+    internal fun checkClickerWindow(expected: String, x: Int, y: Int): ClickerWindowCheck {
+        try {
+            val visible = windows
+            val focus = visible.firstOrNull {
+                it.isFocused && it.type == AccessibilityWindowInfo.TYPE_APPLICATION
+            } ?: return ClickerWindowCheck.FOCUS_CHANGED
+            if (focus.appPackage() != expected) return ClickerWindowCheck.FOCUS_CHANGED
+
+            val bounds = Rect()
+            val region = Region()
+            fun contains(window: AccessibilityWindowInfo): Boolean {
+                if (Build.VERSION.SDK_INT >= 30) {
+                    window.getRegionInScreen(region)
+                    return region.contains(x, y)
+                }
+                window.getBoundsInScreen(bounds)
+                return bounds.contains(x, y)
+            }
+            if (!contains(focus)) return ClickerWindowCheck.OUTSIDE_GAME
+            if (visible.any { other ->
+                    other.layer > focus.layer && contains(other) &&
+                        !(other.type == AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY &&
+                            other.title?.toString() == ClickerOverlay.EDIT_MARKER_TITLE &&
+                            other.appPackage() == packageName)
+                }) return ClickerWindowCheck.COVERED
+            return ClickerWindowCheck.ALLOWED
+        } catch (e: Exception) {
+            return ClickerWindowCheck.FOCUS_CHANGED
+        }
     }
 
     internal fun submitClicker(gesture: GestureDescription, onDone: (Boolean) -> Unit): Boolean =

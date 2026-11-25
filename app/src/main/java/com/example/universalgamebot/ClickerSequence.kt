@@ -6,7 +6,10 @@ internal data class ClickProfile(
     val targets: List<ClickTarget> = listOf(ClickTarget(.5f, .5f)),
     val multi: Boolean = false,
     val rounds: Int = 0
-)
+) {
+    fun withAddedTarget(target: ClickTarget): ClickProfile =
+        copy(targets = targets + target, multi = multi || targets.isNotEmpty())
+}
 
 /** Main-thread scheduler. The delay belongs to the target whose press just completed. */
 internal class ClickerSequence(
@@ -39,7 +42,7 @@ internal class ClickerSequence(
         schedule(step, delay)
     }
 
-    fun play(profile: ClickProfile) {
+    fun play(profile: ClickProfile, settleMs: Long = 0) {
         if (state == State.RUNNING || inFlight) return
         if (state == State.STOPPED) {
             targets = if (profile.multi) profile.targets.toList() else profile.targets.take(1)
@@ -48,7 +51,7 @@ internal class ClickerSequence(
         }
         state = State.RUNNING
         changed(false)
-        waitForStep(remainingDelay)
+        waitForStep(maxOf(remainingDelay, settleMs))
         remainingDelay = 0
     }
 

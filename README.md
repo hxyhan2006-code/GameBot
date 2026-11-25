@@ -1,4 +1,4 @@
-# Universal Game Bot v0.13.0 (local proof of concept)
+# Universal Game Bot v0.13.1 (local proof of concept)
 
 [![Build APK](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml/badge.svg)](https://github.com/hxyhan2006-code/GameBot/actions/workflows/build-apk.yml)
 
@@ -8,7 +8,7 @@ An Android Kotlin project for a single Xiaomi 15T Pro or another Android 10+ pho
 
 ## Basic Auto Clicker
 
-Open **Auto Clicker** on the GameBot home screen and enable the existing accessibility service. Show the floating controls, then switch to the game. Drag a numbered marker to place it or tap it to edit its delay and press duration. In settings, enable **Multi Target** for multiple points and set the round count. Use 0 for unlimited rounds. Save or load named profiles from the same settings.
+Open **Auto Clicker** on the GameBot home screen and enable the existing accessibility service. Show the floating controls, then switch to the game. Drag a numbered marker to place it or tap it to edit its delay and press duration. Tap **+** to add numbered targets. Adding a second point enables **Multi Target** automatically. Set the round count in settings. Use 0 for unlimited rounds. Save or load named profiles from the same settings.
 
 Targets run in number order. Each delay starts after Android reports that the corresponding press finished. Editing markers disappear during playback and the panel stays touchable. Keep the panel clear of the click positions. Screen lock and rotation stop playback. After rotating, check the markers before restarting. Tap **Vision Bot** to close the floating controls and return to the built-in test games.
 

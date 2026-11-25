@@ -223,7 +223,7 @@
     <string name="clicker_settings">ตั้งค่า Auto Clicker</string>
     <string name="clicker_close">ปิดแถบควบคุม</string>
     <string name="clicker_collapse">ย่อหรือขยายแถบควบคุม</string>
-    <string name="clicker_failed">Auto Clicker หยุดแล้ว ตรวจว่าจุดคลิกไม่อยู่ใต้แถบควบคุม</string>
+    <string name="clicker_failed">Android ส่งการแตะไม่สำเร็จ กดเริ่มเพื่อลองอีกครั้ง</string>
     <string name="clicker_delay">เวลารอหลังคลิก (มิลลิวินาที)</string>
     <string name="clicker_seconds">กรอกเวลารอเป็นวินาที</string>
     <string name="clicker_press">ระยะเวลากด (มิลลิวินาที)</string>
@@ -241,4 +241,9 @@
     <string name="clicker_delay_seconds">เวลารอหลังคลิก (วินาที)</string>
     <string name="clicker_stop">หยุด</string>
     <string name="clicker_foreground">เปิดเกมก่อนกดเริ่ม</string>
+    <string name="clicker_panel_covers_target">ย้ายแถบควบคุมลอยออกจากจุดคลิก</string>
+    <string name="clicker_focus_changed">Auto Clicker หยุดเพราะเกมไม่ได้อยู่หน้าสุดแล้ว</string>
+    <string name="clicker_outside_game">ย้ายจุดคลิกเข้าไปในพื้นที่หน้าต่างเกม</string>
+    <string name="clicker_window_covers_target">มีหน้าต่างอื่นบังจุดคลิก ปิดหน้าต่างนั้นหรือย้ายจุด</string>
+    <string name="clicker_load_failed">โหลดโปรไฟล์ไม่สำเร็จ</string>
 </resources>
