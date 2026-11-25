@@ -6,6 +6,12 @@
 
 An Android Kotlin project for a single Xiaomi 15T Pro or another Android 10+ phone. This is **not a compiled APK**. It demonstrates a complete local observe → decide → tap loop in a built-in green-target game. No API key, internet, root, or PC is needed to **run** the resulting APK; a build environment is needed to **compile** it.
 
+## OceanSaga Auto Tower
+
+Select **OceanSaga Auto Tower** and press **Start**. Allow notifications to access Stop while playing.
+
+Grant full-screen capture, switch to Ocean Saga, and open the tower with the team already configured. The profile checks the foreground game about every 300 ms. It waits through loading and combat, closes a recognized victory, and waits for the next floor. Use **Stop** in the notification or return to GameBot and press **Stop**.
+
 ## Build (Android Studio)
 1. Install Android Studio on a computer, open this folder, and allow Gradle sync. Use JDK 17 and Android SDK 35.
 2. Build > Build Bundle(s) / APK(s) > Build APK(s).

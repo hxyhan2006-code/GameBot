@@ -101,6 +101,7 @@ class DecisionEngine(
     fun onActionResult(ok: Boolean, detail: String) {
         if (phase != BotPhase.ACTING) return
         if (!ok) { gestureFailed(detail); return }
+        current?.let(strategy::onGestureCompleted)
         doneAt = clock()
         lastEvalSeq = obs?.seq ?: -1
         evaluated = false

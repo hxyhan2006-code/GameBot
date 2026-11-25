@@ -40,9 +40,9 @@ class BotAccessibilityService : AccessibilityService() {
     /** package ของหน้าต่างที่ active (null ถ้าอ่านไม่ได้) ใช้เป็นข้อมูลประกอบ ไม่ใช่เงื่อนไขหลัก */
     fun activePackage(): String? = try { rootInActiveWindow?.packageName?.toString() } catch (e: Exception) { null }
 
-    fun tap(x: Float, y: Float, source: String, onDone: ((Boolean, String) -> Unit)? = null): Boolean {
+    fun tap(x: Float, y: Float, source: String, onDone: ((Boolean, String) -> Unit)? = null, allowed: () -> Boolean = { true }): Boolean {
         val path = Path().apply { moveTo(x, y); lineTo(x + 0.5f, y + 0.5f) }
-        return perform(path, 60, "$source tap (${x.toInt()},${y.toInt()})", source, onDone)
+        return perform(path, 60, "$source tap (${x.toInt()},${y.toInt()})", source, onDone, allowed)
     }
 
     fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, durationMs: Long, source: String, onDone: ((Boolean, String) -> Unit)? = null): Boolean {
@@ -55,7 +55,7 @@ class BotAccessibilityService : AccessibilityService() {
      * คืน true ถ้าระบบรับคำสั่งแล้ว (ผลจริงมาทาง onDone / DebugMonitor.gestureState) คืน false ถ้ายังมีท่าทางค้างอยู่
      * เรียกได้จากทุก thread: dispatchGesture ถูกส่งผ่าน main thread
      */
-    private fun perform(path: Path, durationMs: Long, desc: String, source: String, onDone: ((Boolean, String) -> Unit)?): Boolean {
+    private fun perform(path: Path, durationMs: Long, desc: String, source: String, onDone: ((Boolean, String) -> Unit)?, allowed: () -> Boolean = { true }): Boolean {
         if (!pending.compareAndSet(false, true)) {
             if (System.currentTimeMillis() - pendingSince < 3000) { DebugMonitor.skip("gesture still pending"); return false }
             pending.set(true) // ค้างนานผิดปกติ ปล่อยให้ส่งใหม่ได้
@@ -65,6 +65,11 @@ class BotAccessibilityService : AccessibilityService() {
         DebugMonitor.gestureState = "Dispatched"
         main.post {
             try {
+                if (!allowed()) {
+                    pending.set(false)
+                    onDone?.invoke(false, "capture stopped or foreground changed")
+                    return@post
+                }
                 val gesture = GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path, 0, durationMs)).build()
                 val accepted = dispatchGesture(gesture, object : GestureResultCallback() {
                     override fun onCompleted(g: GestureDescription?) {

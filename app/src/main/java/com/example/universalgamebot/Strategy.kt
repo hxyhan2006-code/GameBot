@@ -14,6 +14,7 @@ enum class Verdict {
  */
 interface Strategy {
     fun decide(obs: Observation): BotAction
+    fun onGestureCompleted(action: BotAction) {}
     fun verify(action: BotAction, before: Observation, after: Observation): Verdict
 }
 

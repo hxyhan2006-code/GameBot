@@ -108,7 +108,7 @@ class CaptureService : Service() {
                 DecisionEngine(
                     profile.createStrategy(this) ?: throw IllegalStateException("profile ${profile.id} has no strategy"),
                     profile.config.engine.let { if (limit > 0) it.copy(maxActions = limit) else it },
-                    GestureExecutor(packageName) { handler.post(it) }, listener, SystemClock::elapsedRealtime
+                    GestureExecutor(profile.externalPackage ?: packageName, ::captureArena) { handler.post(it) }, listener, SystemClock::elapsedRealtime
                 )
             }
             val mgr = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -121,7 +121,11 @@ class CaptureService : Service() {
                     stopSelf()
                 }
             }, handler)
-            val (w, h) = realScreenSize()
+            val (screenW, screenH) = realScreenSize()
+            // The tower is landscape even when capture consent opens in portrait.
+            val external = profile.externalPackage != null
+            val w = if (external) maxOf(screenW, screenH) else screenW
+            val h = if (external) minOf(screenW, screenH) else screenH
             val dpi = resources.displayMetrics.densityDpi
             reader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 3)
             display = projection?.createVirtualDisplay("GameBotCapture", w, h, dpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader?.surface, null, handler)
@@ -155,6 +159,14 @@ class CaptureService : Service() {
         stopSelf()
     }
 
+    private fun captureArena(): ArenaInfo? {
+        val pkg = profile.externalPackage ?: return ArenaGate.info
+        if (!running || BotAccessibilityService.instance?.activePackage() != pkg) return null
+        val (w, h) = realScreenSize()
+        if (w <= h) return null
+        return ArenaInfo(android.graphics.Rect(0, 0, w, h), w, h)
+    }
+
     /** Vision: สุ่มพิกเซลเฉพาะ arena → ตรวจจับ → แปลงพิกัดภาพเป็นพิกัดหน้าจอจริง → ส่งให้ Decision Engine */
     private fun processFrame(img: Image) {
         DebugMonitor.framesReceived.incrementAndGet()
@@ -162,8 +174,9 @@ class CaptureService : Service() {
         val now = SystemClock.elapsedRealtime()
         DebugMonitor.lastFrameAt = now
         if (now - lastProcessAt < profile.config.visionIntervalMs) { DebugMonitor.framesThrottled.incrementAndGet(); session?.onThrottled(); return }
-        val arena = ArenaGate.info
-        if (arena == null) { DebugMonitor.skip("game screen not in foreground (MainActivity paused)"); return }
+        if (profile.externalPackage != null) lastProcessAt = now
+        val arena = captureArena()
+        if (arena == null) { DebugMonitor.skip("waiting for the profile game screen"); return }
         val scaleX = img.width / arena.screenW.toFloat(); val scaleY = img.height / arena.screenH.toFloat()
         if (kotlin.math.abs(scaleX - scaleY) > 0.02f) { DebugMonitor.skip("size mismatch img=${img.width}x${img.height} screen=${arena.screenW}x${arena.screenH}"); return }
         lastProcessAt = now
@@ -248,9 +261,9 @@ class CaptureService : Service() {
     }
 
     override fun onDestroy() {
+        running = false
         engine?.release() // ปล่อยนิ้วจอยที่ค้าง (ถ้ามี) ก่อนปิดบริการ
         finishSession()
-        running = false
         BotState.set(false)
         if (DebugMonitor.captureState != "Error") DebugMonitor.captureState = "Idle"
         handler.removeCallbacksAndMessages(null)

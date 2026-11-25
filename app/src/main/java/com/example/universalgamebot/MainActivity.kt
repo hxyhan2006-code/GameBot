@@ -53,6 +53,7 @@ class MainActivity : Activity() {
     private var lastStatsAt = 0L
     private val ui = Handler(Looper.getMainLooper())
     private val requestCodeCapture = 101
+    private val requestTowerNotifications = 205
     private var pendingScore = 0
 
     private val debugTick = object : Runnable {
@@ -205,7 +206,7 @@ class MainActivity : Activity() {
         }
         info.addView(scoreText, LinearLayout.LayoutParams(-2, -2))
         info.addView(infoRight, LinearLayout.LayoutParams(0, -2, 1f).apply { leftMargin = dp(12) })
-        root.addView(info, lp(8))
+        if (profile.externalPackage == null) root.addView(info, lp(8))
 
         // arena = เกมของโปรไฟล์ + ชั้นกรอบ Vision (ขนาดคงที่ทุกสถานะ)
         surface = profile.createSurface(this) { sc, mi -> GroundTruth.update(sc, mi); runOnUiThread { updateScore() } }
@@ -224,7 +225,8 @@ class MainActivity : Activity() {
         val tDebug = toolButton(Icon.CODE, "Debug") { showDebug() }
         val tReport = toolButton(Icon.BARS, getString(R.string.tool_report)) { copyReport() }
         boxesTool = tBoxes.second
-        for (t in listOf(tTest, tBoxes, tDebug, tReport)) tools.addView(t.first, LinearLayout.LayoutParams(0, -2, 1f))
+        val availableTools = if (profile.externalPackage == null) listOf(tTest, tBoxes, tDebug, tReport) else listOf(tDebug, tReport)
+        for (t in availableTools) tools.addView(t.first, LinearLayout.LayoutParams(0, -2, 1f))
         idleGroup.addView(tools, lp(6))
 
         runGroup = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
@@ -234,7 +236,7 @@ class MainActivity : Activity() {
         for ((i, b) in listOf(s1, s2, s3).withIndex()) stats.addView(b.first, LinearLayout.LayoutParams(0, -2, 1f).apply { if (i > 0) leftMargin = dp(8) })
         runGroup.addView(stats, lp())
         runGroup.addView(actionButton(getString(R.string.btn_emergency), Palette.DANGER, Palette.TEXT) { emergencyStop("button") }.also { it.minimumHeight = dp(64); it.minHeight = dp(64); it.textSize = 20f }, lp(8))
-        runGroup.addView(actionButton(getString(R.string.btn_stop), Palette.CARD, Palette.TEXT) { stopService(Intent(this, CaptureService::class.java)) }.also { it.minimumHeight = dp(48); it.minHeight = dp(48); it.textSize = 15f; it.background = roundRect(Palette.CARD, 14, Palette.OFF) }, lp(8))
+        runGroup.addView(actionButton(getString(R.string.btn_stop), Palette.CARD, Palette.TEXT) { emergencyStop("stop button") }.also { it.minimumHeight = dp(48); it.minHeight = dp(48); it.textSize = 15f; it.background = roundRect(Palette.CARD, 14, Palette.OFF) }, lp(8))
 
         val bottom = FrameLayout(this)
         bottom.addView(idleGroup, FrameLayout.LayoutParams(-1, -2))
@@ -264,7 +266,7 @@ class MainActivity : Activity() {
         scoreText.text = getString(R.string.score_fmt, surface.score) + if (surface.mistakes > 0) "   " + getString(R.string.mistakes_fmt, surface.mistakes) else ""
     }
 
-    private fun limitOn() = getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("limit100", false)
+    private fun limitOn() = profile.externalPackage == null && getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("limit100", false)
 
     /** อัปเดตทุกอย่างที่ขึ้นกับสถานะ: ป้ายหัว, สลับโซนปุ่ม (ก่อนเริ่ม/ทำงาน), สถิติสั้น ๆ, ข้อความขวาของการ์ดคะแนน */
     private fun refreshUi() {
@@ -367,8 +369,23 @@ class MainActivity : Activity() {
             Toast.makeText(this, R.string.toast_need_accessibility, Toast.LENGTH_LONG).show()
             return
         }
+        if (profile.externalPackage != null && Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED &&
+            !getPreferences(MODE_PRIVATE).getBoolean("askedTowerNotifications", false)) {
+            getPreferences(MODE_PRIVATE).edit().putBoolean("askedTowerNotifications", true).apply()
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), requestTowerNotifications)
+            return
+        }
         val mgr = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        startActivityForResult(mgr.createScreenCaptureIntent(), requestCodeCapture)
+        val consent = if (profile.externalPackage != null && Build.VERSION.SDK_INT >= 34) {
+            mgr.createScreenCaptureIntent(android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay())
+        } else mgr.createScreenCaptureIntent()
+        startActivityForResult(consent, requestCodeCapture)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == requestTowerNotifications && grantResults.isNotEmpty()) startCapture()
     }
 
     @Deprecated("Deprecated in Java")

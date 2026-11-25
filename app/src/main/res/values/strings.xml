@@ -76,4 +76,6 @@
     <string name="streak_fmt">Goals in a row %1$d / %2$d</string>
     <string name="goal_streak_fmt">Goal: %d goals in a row</string>
     <string name="limit_hint">Auto-stop at 100 actions</string>
+    <string name="ocean_saga_name">OceanSaga Auto Tower</string>
+    <string name="ocean_saga_desc">Start capture, then switch to the tower in Ocean Saga in landscape. Use Stop in the GameBot notification to end the run.</string>
 </resources>

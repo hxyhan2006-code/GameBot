@@ -33,6 +33,7 @@ interface GameSurface {
  */
 interface GameProfile {
     val id: String
+    val externalPackage: String? get() = null
     val nameRes: Int
     val descRes: Int
     val visionMethod: String
@@ -46,6 +47,6 @@ interface GameProfile {
 }
 
 object GameProfiles {
-    val all: List<GameProfile> = listOf(GreenDotProfile, BullseyeProfile, SwipeBallProfile, FootballProfile)
+    val all: List<GameProfile> = listOf(GreenDotProfile, BullseyeProfile, SwipeBallProfile, FootballProfile, OceanSagaProfile)
     fun byId(id: String?): GameProfile = all.firstOrNull { it.id == id } ?: all[0]
 }
